@@ -123,8 +123,7 @@ class StamApp extends BaseComponent {
       await this.sendMessageTo(this.sideBar.componentId,MESSAGES.ADD_SIDE_WINDOW, { type: 'OutputSideWindow', height: 200 });
       await this.sendMessageTo(this.sideBar.componentId,MESSAGES.ADD_SIDE_WINDOW, { type: 'TVSideWindow', height: 200 });
       await this.sendMessageTo(this.sideBar.componentId,MESSAGES.ADD_SIDE_WINDOW, { type: 'SocketSideWindow', height: 200 });
-      await this.sendMessageTo(this.rightBar.componentId,MESSAGES.ADD_SIDE_WINDOW, { type: 'ProjectSideWindow', height: 200, width:300 });
-      await this.sendMessageTo(this.rightBar.componentId,MESSAGES.ADD_SIDE_WINDOW, { type: 'TVSideWindow', height: 200 });
+      await this.sendMessageTo(this.rightBar.componentId,MESSAGES.ADD_SIDE_WINDOW, { type: 'TeacherSideWindow', height: 200 });
     }
 
     // Send RENDER messages to components-> they display themselves

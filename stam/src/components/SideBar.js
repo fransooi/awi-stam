@@ -23,6 +23,7 @@
 import ProjectSideWindow from './sidewindows/ProjectSideWindow.js';
 import OutputSideWindow from './sidewindows/OutputSideWindow.js';
 import TVSideWindow from './sidewindows/TVSideWindow.js';
+import TeacherSideWindow from './sidewindows/TeacherSideWindow.js';
 import SocketSideWindow from './sidewindows/SocketSideWindow.js';
 import BaseComponent, { MESSAGES } from '../utils/BaseComponent.js';
 import messageBus from '../utils/MessageBus.mjs';
@@ -361,6 +362,10 @@ class SideBar extends BaseComponent {
         case 'output':
         case 'OutputSideWindow':
           window = new OutputSideWindow(this.componentId,null,data.height);
+          break;
+        case 'teacher':
+        case 'TeacherSideWindow':
+          window = new TeacherSideWindow(this.componentId,null,data.height);
           break;
         case 'tv':
         case 'TVSideWindow':

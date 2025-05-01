@@ -1,0 +1,32 @@
+graph TD
+    subgraph User Browser
+        A[STAM Editor UI]
+    end
+
+    subgraph AWI Server
+        B1[WebSocket Handler]
+        B2[HTTP Server]
+        B3[Project Connector]
+        B4[Other Connectors]
+        B5[Memory System\n(Memories, Souvenirs)]
+        B6[Bubbles (Instructions)]
+    end
+
+    subgraph File System / Data
+        C1[Project Files]
+        C2[Configs/Data]
+    end
+
+    %% Flows
+    A -- "WebSocket:\nOpen/Save Project,\nFile Operations" --> B1
+    B1 -- "Project Events" --> B3
+    B3 -- "Read/Write" --> C1
+    B3 -- "Responds with File Data" --> B1
+    B1 -- "File Data/Status" --> A
+
+    A -- "HTTP:\nLoad Static Files (e.g. Phaser app)" --> B2
+    B2 -- "Serve Files" --> C1
+
+    B1 -- "Trigger Instructions" --> B6
+    B6 -- "Access/Store Memories" --> B5
+    B5 -- "Persist/Recall" --> C2

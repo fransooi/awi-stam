@@ -6,17 +6,6 @@
             "request": "launch",
             "url": "http://localhost:5173?debug=1",
             "webRoot": "${workspaceFolder}/stam/src",
-        },
-        {
-            "name": "AWI",
-            "program": "${workspaceFolder}/engine/linux-node-prompt.mjs",
-            "request": "launch",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "console": "integratedTerminal",
-            "outputCapture": "std",
-            "type": "node"
         }
     ]
 }
