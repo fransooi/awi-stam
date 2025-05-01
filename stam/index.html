@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>STAM - Programmable Code Operating System</title>
+    <!-- Font Awesome for modern icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- Custom styles for modern icon buttons -->
+    <style>      
+      /* Button-specific colors */
+      .new-button {
+        color: #90CAF9 !important;
+      }
+      
+      .open-button {
+        color: #FFE082 !important;
+      }
+      
+      .save-button {
+        color: #A5D6A7 !important;
+      }
+      
+      .run-button {
+        color: #81C784 !important;
+        background-color: transparent !important;
+      }
+      
+      .debug-button {
+        color: #FFB74D !important;
+        background-color: transparent !important;
+      }
+      
+      .share-button {
+        color: #9FA8DA !important;
+      }
+      
+      .help-button {
+        color: #CE93D8 !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <!-- Menu Bar -->
+      <div id="menu-bar">
+        <div class="menu-items">
+          <div class="menu-item">File</div>
+          <div class="menu-item">Edit</div>
+          <div class="menu-item">View</div>
+          <div class="menu-item">Run</div>
+          <div class="menu-item">Help</div>
+        </div>
+      </div>
+      
+      <!-- Main Content Area -->
+      <div id="main-content">
+        <!-- Information Area (Left Panel) -->
+        <div id="info-area">
+        </div>
+        
+        <div id="editor-area-container">
+          <!-- Icon Area -->
+          <div id="icon-area">
+            <!-- Icon area will be populated by JavaScript -->
+            <select id="mode-selector">
+            </select>
+          </div>
+          
+          <!-- Source Editor Area -->
+          <div id="editor-area">
+            <!-- Editor will be populated by JavaScript -->
+          </div>
+        </div>
+        <div id="right-bar" class="right-bar"></div>
+      </div>
+      
+      <!-- Status Line -->
+      <div id="status-line">
+        Ready
+      </div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
