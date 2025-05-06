@@ -348,8 +348,8 @@ export default class BaseComponent {
    * @param {Object} messageData - Data to send with the message
    * @returns {Promise} - Promise that resolves with the response
    */
-  sendRequestTo(targetComponentId, messageType, messageData = {}) {
-    var answer = messageBus.sendRequest(targetComponentId, messageType, {
+  async sendRequestTo(targetComponentId, messageType, messageData = {}) {
+    var answer = await messageBus.sendRequest(targetComponentId, messageType, {
       type: messageType,
       data: messageData,
       from: this.componentId

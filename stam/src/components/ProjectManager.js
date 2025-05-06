@@ -33,7 +33,9 @@ export const PROJECTMESSAGES = {
   RELOAD_FILE: 'PROJECT_RELOAD_FILE',
   SAVE_FILE: 'PROJECT_SAVE_FILE',
   FILE_SAVED: 'PROJECT_FILE_SAVED',
-  NEW_FILE_ADDED: 'PROJECT_NEW_FILE_ADDED'
+  NEW_FILE_ADDED: 'PROJECT_NEW_FILE_ADDED',
+  GET_PROJECT: 'PROJECT_GET_PROJECT',
+  GET_TEMPLATE: 'PROJECT_GET_TEMPLATE',
 };
 
 class ProjectManager extends BaseComponent {
@@ -54,6 +56,8 @@ class ProjectManager extends BaseComponent {
     this.messageMap[PROJECTMESSAGES.RELOAD_FILE] = this.handleReloadFile;
     this.messageMap[MENUCOMMANDS.NEW_FILE] = this.handleNewFile;
     this.messageMap[PROJECTMESSAGES.SAVE_FILE] = this.handleSaveFile;
+    this.messageMap[PROJECTMESSAGES.GET_PROJECT] = this.handleGetProject;
+    this.messageMap[PROJECTMESSAGES.GET_TEMPLATE] = this.handleGetTemplate;
   }
 
   async init(options = {}) {
@@ -174,6 +178,23 @@ class ProjectManager extends BaseComponent {
 
   async handleDisconnected(data, senderId) {
     
+  }
+
+  async handleGetTemplate(data, senderId) {
+    if ( !await this.sendRequestTo( 'class:SocketSideWindow', SOCKETMESSAGES.ENSURE_CONNECTED, {}))
+      return null;
+    var templates = await this.root.fileSystem.getTemplates({ mode: this.root.currentMode })
+    if ( templates )
+      return await this.showNewProjectDialog(templates);
+    return null;
+  }
+  async handleGetProjectList(data, senderId) {
+    if ( !await this.sendRequestTo( 'class:SocketSideWindow', SOCKETMESSAGES.ENSURE_CONNECTED, {}))
+      return null;
+    var projects = await this.root.fileSystem.getProjectList({ mode: this.root.currentMode });
+    if (projects)
+      return await this.showOpenProjectDialog(projects);
+    return null;
   }
 
   async handleNewProject(data, senderId) {

@@ -177,6 +177,44 @@ class EditorWebSocket extends EditorBase
         this.awi.awi.editor.print( text, { user: 'awi' } );
         this.reply( errorParameters );
     }
+
+    // Classroom commands
+    async command_connectTeacher( parameters, message )
+    {
+        return await this.call_classroom('command_connectTeacher', parameters, message);
+    }
+    async command_disconnectTeacher( parameters, message )
+    {
+        return await this.call_classroom('command_disconnectTeacher', parameters, message);
+    }
+    async command_connectStudent( parameters, message )
+    {
+        return await this.call_classroom('command_connectStudent', parameters, message);
+    }
+    async command_disconnectStudent( parameters, message )
+    {
+        return await this.call_classroom('command_disconnectStudent', parameters, message);
+    }
+    async command_studentConnected( parameters, message )
+    {
+        return this.replyError( this.newError( 'awi:command-not-implemented', { user: this.userName } ) );
+    }
+    async command_studentDisconnected( parameters, message )
+    {
+        return this.replyError( this.newError( 'awi:command-not-implemented', { user: this.userName } ) );
+    }
+    async call_classroom(command, parameters, message)
+    {
+        if ( this.awi.awi.webrtcServer )
+        {
+            if ( this.awi.awi.webrtcServer[command] )
+                return await this.awi.awi.webrtcServer[command]( parameters, message, this );
+            return this.replyError( this.newError( 'awi:socket-classroom', { user: this.userName } ) );
+        }
+        return this.replyError( this.newError( 'awi:socket-classroom', { user: this.userName } ) );
+    }
+
+    // AWI commands
 	async command_prompt( parameters, message )
 	{
         var answer;

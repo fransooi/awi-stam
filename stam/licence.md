@@ -28,7 +28,7 @@ This file is open-source under the conditions contained in this licence.
 - Regardless of use, you must always credit the original author (Francois Lionet) in your product or documentation.
 
 ### 4. MIT-Licensed Dependencies
-- This project uses third-party libraries (such as CodeMirror, Vite, TailwindCSS, PostCSS, Autoprefixer) that are licensed under the MIT License.
+- This project uses third-party libraries (such as CodeMirror, Vite, Autoprefixer) that are licensed under the MIT License.
 - You must comply with their respective licenses, which are included in their distributions and allow use in both open-source and commercial projects.
 
 ### 5. Disclaimer

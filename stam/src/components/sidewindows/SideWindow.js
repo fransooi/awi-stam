@@ -37,6 +37,7 @@ class SideWindow extends BaseComponent {
     this.messageMap[MESSAGES.WINDOW_CLOSE] = this.handleWindowClose;
     this.messageMap[MESSAGES.WINDOW_RESIZE] = this.handleWindowResize;
     this.messageMap[MESSAGES.WINDOW_ENLARGE] = this.handleWindowEnlarge;
+    this._customButtons = new Map(); // Track custom buttons/icons
   }
 
   /**
@@ -139,6 +140,81 @@ class SideWindow extends BaseComponent {
     });
     return this.container;
   }
+
+  /**
+   * Add a custom TEXT button to the title bar.
+   * @param {Object} param0
+   * @param {string} param0.text - The button text (unique per button)
+   * @param {string} param0.hint - Tooltip text
+   * @param {function} param0.onClick - Click callback
+   */
+    addTextButton({ text, hint, onClick, id }) {
+      if (!this.header || !this.buttons) return;
+      const key = `text:${text}`;
+      if (this._customButtons.has(key)) return this._customButtons.get(key); // prevent duplicate, return existing
+
+      const btn = document.createElement('button');
+      btn.className = 'side-window-btn side-window-btn--text side-window-btn--custom';
+      btn.textContent = text;
+      btn.title = hint || text;
+      if (id) {
+        btn.id = id;
+      } else {
+        btn.dataset.buttonKey = key;
+      }
+      btn.addEventListener('click', onClick);
+
+      this._insertCustomButton(btn);
+      this._customButtons.set(key, btn);
+      return btn;
+    }
+
+  /**
+   * Add a custom ICON button to the title bar.
+   * @param {Object} param0
+   * @param {string} param0.iconName - Font Awesome icon name (e.g., 'fa-play')
+   * @param {string} param0.hint - Tooltip text
+   * @param {function} param0.onClick - Click callback
+   */
+  addIconButton({ iconName, hint, onClick }) {
+    if (!this.header || !this.buttons) return;
+    const key = `icon:${iconName}`;
+    if (this._customButtons.has(key)) return; // prevent duplicate
+
+    const btn = document.createElement('button');
+    btn.className = 'side-window-btn side-window-btn--icon side-window-btn--custom';
+    btn.title = hint || iconName;
+    btn.innerHTML = `<i class="fa ${iconName}"></i>`;
+    btn.addEventListener('click', onClick);
+
+    this._insertCustomButton(btn);
+    this._customButtons.set(key, btn);
+  }
+
+  /**
+   * Insert a custom button before the enlarge button (or before controls if not found).
+   * @param {HTMLElement} btn
+   */
+  _insertCustomButton(btn) {
+    // Find enlarge button
+    const enlargeBtn = this.buttons.querySelector('.side-window-enlarge');
+    if (enlargeBtn) {
+      this.buttons.insertBefore(btn, enlargeBtn);
+    } else {
+      this.buttons.insertBefore(btn, this.buttons.firstChild);
+    }
+  }
+
+  /**
+   * Optionally clear all custom buttons (for future theme switching, etc.)
+   */
+  clearCustomButtons() {
+    for (const btn of this._customButtons.values()) {
+      btn.remove();
+    }
+    this._customButtons.clear();
+  }
+  
 
   /**
    * Handle window toggle command

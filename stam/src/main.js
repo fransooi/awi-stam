@@ -31,11 +31,13 @@ import BaseComponent from './utils/BaseComponent.js';
 import { MESSAGES } from './utils/BaseComponent.js';
 import { SOCKETMESSAGES } from './components/sidewindows/SocketSideWindow.js';
 import { MENUCOMMANDS } from './components/MenuBar.js';
+import { CLASSROOMCOMMANDS } from './components/ClassroomManager.js';
 import PreferenceDialog from './components/PreferenceDialog.js';
 import messageBus from './utils/MessageBus.mjs';
 import Utilities from './utils/Utilities.js';
 import FileSystem from './utils/FileSystem.js';
 import ProjectManager from './components/ProjectManager.js';
+import ClassroomManager from './components/ClassroomManager.js';
 
 // Main application class
 class StamApp extends BaseComponent {
@@ -65,6 +67,7 @@ class StamApp extends BaseComponent {
     this.utilities = new Utilities();
     this.fileSystem = new FileSystem(this.componentId);
     this.project = new ProjectManager(this.componentId);
+    this.classroom = new ClassroomManager(this.componentId);
     
     // Initialize all components with the correct mode from the start
     this.sideBar = new SideBar(this.componentId,'info-area');
@@ -121,9 +124,8 @@ class StamApp extends BaseComponent {
     if (!layout){
       await this.sendMessageTo(this.sideBar.componentId,MESSAGES.ADD_SIDE_WINDOW, { type: 'ProjectSideWindow', height: 200, width:300 });
       await this.sendMessageTo(this.sideBar.componentId,MESSAGES.ADD_SIDE_WINDOW, { type: 'OutputSideWindow', height: 200 });
-      await this.sendMessageTo(this.sideBar.componentId,MESSAGES.ADD_SIDE_WINDOW, { type: 'TVSideWindow', height: 200 });
+//      await this.sendMessageTo(this.sideBar.componentId,MESSAGES.ADD_SIDE_WINDOW, { type: 'TVSideWindow', height: 200 });
       await this.sendMessageTo(this.sideBar.componentId,MESSAGES.ADD_SIDE_WINDOW, { type: 'SocketSideWindow', height: 200 });
-      await this.sendMessageTo(this.rightBar.componentId,MESSAGES.ADD_SIDE_WINDOW, { type: 'TeacherSideWindow', height: 200 });
     }
 
     // Send RENDER messages to components-> they display themselves
@@ -135,12 +137,10 @@ class StamApp extends BaseComponent {
     await this.broadcastUp(MESSAGES.LAYOUT_READY);
 
     // Send CONNECT message to socket
-    /*
-    if ( this.debug)
+    if (this.debug)
       await this.sendMessageTo('class:SocketSideWindow',SOCKETMESSAGES.CONNECT, {userName: 'francois', url: this.webSocketUrl});
-    else
-    */
-      await this.sendMessageTo('class:SocketSideWindow',SOCKETMESSAGES.CONNECT_IF_CONNECTED);
+//    else
+//      await this.sendMessageTo('class:SocketSideWindow',SOCKETMESSAGES.CONNECT_IF_CONNECTED);
 
     // Log initialization
     console.log('STAM Application initialized in ' + this.currentMode + ' mode');

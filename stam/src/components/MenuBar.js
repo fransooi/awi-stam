@@ -23,6 +23,7 @@
 import BaseComponent, { MESSAGES } from '../utils/BaseComponent.js';
 import PopupMenu from './PopupMenu.js';
 import { SOCKETMESSAGES } from '../components/sidewindows/SocketSideWindow.js';
+import { CLASSROOMCOMMANDS } from '../components/ClassroomManager.js';
 
 // Define message types for preference handling
 export const MENUCOMMANDS = {
@@ -263,29 +264,35 @@ class MenuBar extends BaseComponent {
   
   getDefaultMenuStructure() {
     return [
-      { name: 'Project', items: [
-        { name: 'New', command: MENUCOMMANDS.NEW_PROJECT },
-        { name: 'Open', command: MENUCOMMANDS.OPEN_PROJECT },
-        { name: 'Save', command: MENUCOMMANDS.SAVE_PROJECT },
-        { name: 'Save As', command: MENUCOMMANDS.SAVE_AS_PROJECT },
-        { name: 'Close', command: MENUCOMMANDS.CLOSE_PROJECT }
-      ] },
       { name: 'File', items: [
-        { name: 'New', command: MENUCOMMANDS.NEW_FILE },
-        { name: 'Open', command: MENUCOMMANDS.OPEN_FILE },
-        { name: 'Save', command: MENUCOMMANDS.SAVE_FILE },
-        { name: 'Save As', command: MENUCOMMANDS.SAVE_AS_FILE },
-        { name: 'Close', command: MENUCOMMANDS.CLOSE_FILE }
+        { name: 'New Project', command: MENUCOMMANDS.NEW_PROJECT },
+        { name: 'Open Project', command: MENUCOMMANDS.OPEN_PROJECT },
+        { name: 'Save Project', command: MENUCOMMANDS.SAVE_PROJECT },
+        { name: 'Save Project As', command: MENUCOMMANDS.SAVE_AS_PROJECT },
+        { name: 'Close Project', command: MENUCOMMANDS.CLOSE_PROJECT },
+        '-',
+        { name: 'New File', command: MENUCOMMANDS.NEW_FILE },
+        { name: 'Open File', command: MENUCOMMANDS.OPEN_FILE },
+        { name: 'Save File', command: MENUCOMMANDS.SAVE_FILE },
+        { name: 'Save As File', command: MENUCOMMANDS.SAVE_AS_FILE },
+        { name: 'Close File', command: MENUCOMMANDS.CLOSE_FILE }
       ] },
       { name: 'Edit', items: [
         { name: 'Undo', command: MENUCOMMANDS.UNDO },
         { name: 'Redo', command: MENUCOMMANDS.REDO },
+        '-',
         { name: 'Cut', command: MENUCOMMANDS.CUT },
         { name: 'Copy', command: MENUCOMMANDS.COPY },
         { name: 'Paste', command: MENUCOMMANDS.PASTE },
         { name: 'Find', command: MENUCOMMANDS.FIND },
         { name: 'Replace', command: MENUCOMMANDS.REPLACE },
+        '-',
         { name: 'Preferences', command: MENUCOMMANDS.PREFERENCES }
+      ] },
+      { name: 'Classroom', items: [
+        { name: 'Create Classroom', command: CLASSROOMCOMMANDS.CREATE_CLASSROOM },
+        { name: 'Join Classroom', command: CLASSROOMCOMMANDS.JOIN_CLASSROOM },
+        { name: 'Leave Classroom', command: CLASSROOMCOMMANDS.LEAVE_CLASSROOM }
       ] },
       { name: 'Run', items: [
         { name: 'Run', command: MENUCOMMANDS.RUN },

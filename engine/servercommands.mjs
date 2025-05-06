@@ -20,5 +20,12 @@ export const SERVERCOMMANDS = {
     LOGIN: 'login',
     GET_TEMPLATES: 'getTemplates',
     RELOAD_FILE: 'reloadFile',
-    GET_PROJECT_LIST: 'getProjectList'
+    GET_PROJECT_LIST: 'getProjectList',
+    CONNECT_TEACHER: 'connectTeacher',
+    DISCONNECT_TEACHER: 'disconnectTeacher',
+    CONNECT_STUDENT: 'connectStudent',
+    DISCONNECT_STUDENT: 'disconnectStudent',
+    STUDENT_CONNECTED: 'studentConnected',
+    CONNECT_TEACHER_TRANSPORT: 'connectTeacherTransport',
+    CREATE_TEACHER_PRODUCER: 'createTeacherProducer',
 };

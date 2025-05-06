@@ -30,7 +30,7 @@ html, body {
   background-color: #1e293b;
   color: white;
   display: flex;
-  padding: 8px;
+  padding: 2px;
   border-bottom: 1px solid #334155;
   justify-content: space-between;
   align-items: center;
@@ -43,7 +43,7 @@ html, body {
 
 .menu-item {
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 2px 4px;
   border-radius: 4px;
   position: relative;
 }
@@ -318,6 +318,37 @@ html, body {
   align-items: center;
   justify-content: center;
   min-width: 80px;
+}
+
+/* Button-specific colors */
+.new-button {
+  color: #90CAF9 !important;
+}
+
+.open-button {
+  color: #FFE082 !important;
+}
+
+.save-button {
+  color: #A5D6A7 !important;
+}
+
+.run-button {
+  color: #81C784 !important;
+  background-color: transparent !important;
+}
+
+.debug-button {
+  color: #FFB74D !important;
+  background-color: transparent !important;
+}
+
+.share-button {
+  color: #9FA8DA !important;
+}
+
+.help-button {
+  color: #CE93D8 !important;
 }
 
 .icon-button:hover {

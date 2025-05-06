@@ -140,6 +140,92 @@
   background-color: #3b82f6;
 }
 
+/* Generic SideWindow Button Styles */
+.side-window-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  min-width: 18px;
+  min-height: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: #FFFFFF;
+  margin-right: 0px;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s, transform 0.08s;
+  position: relative;
+  padding: 0 0px;
+  box-sizing: border-box;
+}
+
+.side-window-btn:last-child {
+  margin-right: 0;
+}
+
+.side-window-btn:focus {
+  outline: none;
+}
+
+.side-window-btn:hover,
+.side-window-btn:focus-visible {
+  background-color: #3b82f6;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(59,130,246,0.10);
+}
+
+.side-window-btn:active {
+  transform: translate(2px, 2px);
+}
+
+
+.side-window-btn:last-child {
+  margin-right: 0;
+}
+
+.side-window-btn:hover,
+.side-window-btn:focus {
+  background-color: #3b82f6;
+  color: #fff;
+  outline: none;
+}
+
+/* For text buttons */
+.side-window-btn--text {
+  font-weight: 500;
+  padding: 0 4px;
+  min-width: 40px;
+  justify-content: center;
+  border-radius: 4px;
+  border: 1px solid rgba(59,130,246,0.25);
+  letter-spacing: 0.01em;
+}
+
+
+/* For Font Awesome icon buttons */
+.side-window-btn--icon {
+  padding: 0 0px;
+  border-radius: 4px;
+}
+.side-window-btn--icon i {
+  font-size: 12px;
+  width: 12px;
+  height: 12px;
+  display: inline-block;
+}
+
+/* Mark custom buttons for future theming */
+/* Improved hover effect for text buttons */
+.side-window-btn--text:hover,
+.side-window-btn--text:focus {
+  background-color: #3b82f6;
+  color: #fff;
+  outline: none;
+  box-shadow: 0 1px 4px rgba(59, 130, 246, 0.08);
+}
+
 .indicator-container {
   display: flex;
   align-items: center;

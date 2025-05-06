@@ -26,7 +26,6 @@ import TVSideWindow from './sidewindows/TVSideWindow.js';
 import TeacherSideWindow from './sidewindows/TeacherSideWindow.js';
 import SocketSideWindow from './sidewindows/SocketSideWindow.js';
 import BaseComponent, { MESSAGES } from '../utils/BaseComponent.js';
-import messageBus from '../utils/MessageBus.mjs';
 
 class SideBar extends BaseComponent {
   constructor(parentId,containerId,componentName='SideBar') {
@@ -53,8 +52,8 @@ class SideBar extends BaseComponent {
     });    
 
     // Create the SideWindows contained int he layout
-    if (options.layout) {
-      this.createSideWindows(options.layout.componentTypes.SideBar);
+    if (options.layout && options.layout.componentTypes[this.componentName]) {
+      this.createSideWindows(options.layout.componentTypes[this.componentName]);
     }
   }
 
@@ -257,6 +256,34 @@ class SideBar extends BaseComponent {
     // Container for children
     return this.windowsContainer;
   }
+
+  // Here you should  put code to render only the new sidewindow,
+  // taking care of updating all the sizes and positions of the existing windows
+  // and also rendering the new window.
+  addWindowToDisplay(window) {
+    // Create a window wrapper
+    const windowWrapper = document.createElement('div');
+    windowWrapper.className = 'side-window-wrapper';
+    windowWrapper.style.position = 'relative';
+    windowWrapper.style.width = '100%';
+    // Set flex properties based on minimized state
+    if (window.isMinimized && window.isMinimized()) {
+      windowWrapper.style.height = `${window.headerHeight}px`;
+      windowWrapper.style.minHeight = `${window.headerHeight}px`;
+      windowWrapper.style.flex = '0 0 auto';
+    } else {
+      windowWrapper.style.height = `${window.height}px`;
+      windowWrapper.style.minHeight = `${window.headerHeight}px`;
+      windowWrapper.style.flex = '1 1 auto';
+    }
+    // Add the window wrapper to the container
+    this.windowsContainer.appendChild(windowWrapper);
+    window.parentContainer = windowWrapper;
+    // Actually render the window into its wrapper
+    if (typeof window.render === 'function') {
+      window.render(windowWrapper);
+    }
+  }
   
   /**
    * Patch the SideWindow.getWindowObjectFromElement method to use our registry
@@ -383,7 +410,9 @@ class SideBar extends BaseComponent {
       this.windows.push(window);
       if (data.width) 
         this.widthToSet=data.width;   
-        
+      // If we already had a render, performs a limited render
+      if (this.parentContainer)
+        this.addWindowToDisplay(window);
       return window;
     }
     return null;
