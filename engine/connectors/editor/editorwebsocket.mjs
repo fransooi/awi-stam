@@ -195,6 +195,18 @@ class EditorWebSocket extends EditorBase
     {
         return await this.call_classroom('command_disconnectStudent', parameters, message);
     }
+    async command_createClassroom( parameters, message )
+    {
+        return await this.call_classroom('command_createClassroom', parameters, message);
+    }
+    async command_joinClassroom( parameters, message )
+    {
+        return await this.call_classroom('command_joinClassroom', parameters, message);
+    }
+    async command_leaveClassroom( parameters, message )
+    {
+        return await this.call_classroom('command_leaveClassroom', parameters, message);
+    }
     async command_studentConnected( parameters, message )
     {
         return this.replyError( this.newError( 'awi:command-not-implemented', { user: this.userName } ) );

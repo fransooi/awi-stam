@@ -67,9 +67,19 @@ class ClassroomManager extends BaseComponent {
       var classroomInfo = await this.showCreateClassroomDialog();
       if (classroomInfo)
       {
-        // we will implement the classroom creation in the future here.
-        await this.sendMessageTo('class:SideBar', MESSAGES.ADD_SIDE_WINDOW, { type: 'TeacherSideWindow', height: 200 });        
-        this.classroomOpen='teacher';
+        // Send CREATE_CLASSROOM command to AWI server via FileSystem
+        var response = await this.root.fileSystem.createClassroom(classroomInfo);
+        if (response.isSuccess())
+        {
+          this.classroomInfo = classroomInfo;
+          this.classroomName = classroomInfo.name;
+          this.classroomOpen='teacher';
+          await this.sendMessageTo('class:SideBar', MESSAGES.ADD_SIDE_WINDOW, { type: 'TeacherSideWindow', height: 200 });        
+        }
+        else
+        {
+          this.root.messageBar.showErrorMessage(response.error);
+        }
       }
     }
   }
