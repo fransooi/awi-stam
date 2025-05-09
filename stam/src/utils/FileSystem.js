@@ -53,6 +53,8 @@ export default class FileSystem extends BaseComponent {
       {
         if ( !parameters.mode )
           parameters.mode = this.root.currentMode;
+        if ( !parameters.handle )
+          parameters.handle = this.handle;
         return this.sendRequestTo(this.root.socket.componentId,SOCKETMESSAGES.REQUEST_RESPONSE, { command: command, parameters: parameters });
       }
       return new Promise((resolve, reject) => {
@@ -60,11 +62,13 @@ export default class FileSystem extends BaseComponent {
       });          
     }
 
-    handleConnected() {
+    handleConnected(parameters, senderId) {
+      this.handle = parameters.handle;
       this.isConnected = true;
     }
 
-    handleDisconnected() {
+    handleDisconnected(parameters, senderId) {
+      this.handle = '';
       this.isConnected = false;
     }
     

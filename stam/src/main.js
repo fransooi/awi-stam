@@ -85,6 +85,8 @@ class StamApp extends BaseComponent {
     this.URLParameters = this.utilities.getURLParameters();     
     if (this.URLParameters.debug)
       this.debug = true;
+    if (this.URLParameters.url)
+      this.webSocketUrl = this.URLParameters.url;
     
     this.messageMap[MESSAGES.LAYOUT_INFO] = this.handleLayoutInfo;
     this.messageMap[MESSAGES.MODE_CHANGED] = this.handleModeChanged;    

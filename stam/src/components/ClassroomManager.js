@@ -69,7 +69,7 @@ class ClassroomManager extends BaseComponent {
       {
         // Send CREATE_CLASSROOM command to AWI server via FileSystem
         var response = await this.root.fileSystem.createClassroom(classroomInfo);
-        if (response.isSuccess())
+        if (!response.error)
         {
           this.classroomInfo = classroomInfo;
           this.classroomName = classroomInfo.name;
@@ -312,8 +312,8 @@ class ClassroomManager extends BaseComponent {
       projectNameRow.appendChild(chooseBtn);
       projectSection.appendChild(projectNameRow);
       // Project icon update logic
-      let projectIconUrl = null;
-      let selectedProjectName = null;
+      let projectIconUrl = '';
+      let selectedProjectName = '';
       let projectTemplate = [];
       let projectList = [];
 
