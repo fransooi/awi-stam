@@ -1,8 +1,7 @@
 {
     "configurations": [
         {
-            "name": "STAM",
-            "type": "msedge",
+            "type": "node",
             "request": "launch",
             "url": "http://localhost:5173?debug=1&url=ws://192.168.1.66:1033",
             "webRoot": "${workspaceFolder}/stam/src",

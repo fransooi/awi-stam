@@ -58,29 +58,50 @@ class ConnectorClassroomServer extends ConnectorBase
         super.quit(options);
     }
 
-    async command_connectTeacher(parameters, message, editor) {
-        const teacherHandle = parameters.handle;
-        let classroomId = this.awi.utilities.getUniqueIdentifier(this.classrooms, 'classroom', this.classroomCount++);
-        if (!this.classrooms[classroomId]) {
-            const classroom = {
-                editor,
-                classroomId,
-                teacherHandle,
-                students: {},
-                signalingState: {},
-                created: Date.now(),
-                metadata: parameters.metadata || {},
-            };
-            this.classrooms[classroomId] = classroom;
-            this.awi.awi.editor.print(`Created classroom ${classroomId}`, { user: 'awi' });
-        } else {
-            this.awi.awi.editor.print(`Classroom ${classroomId} already exists`, { user: 'awi' });
+    async command_createClassroom(parameters, message, editor) {
+        // Check that a classroom with the same title does not already exist
+        for (let classroomId in this.classrooms) {
+            if (this.classrooms[classroomId].title.toLowerCase() === parameters.title.toLowerCase()) {
+                this.replyError(this.newError('awi:classroom-already-exists', { title: parameters.title }), message, editor);
+                return;
+            }
         }
-        // --- Mediasoup integration: create mediasoup room and teacher transport ---
+        let classroomId = this.awi.utilities.getUniqueIdentifier(this.classrooms, 'classroom', this.classroomCount++);
+        const classroom = {
+            editor,
+            classroomId,
+            teacherHandle: '',
+            students: {},
+            signalingState: {},
+            created: Date.now(),
+            title: parameters.title,
+            description: parameters.description,
+            icon: parameters.icon,
+            takeControl: parameters.takeControl,
+            mode: parameters.mode,
+            projectType: parameters.projectType,
+            projectName: parameters.projectName,
+            projectGlobal: parameters.projectGlobal,
+            classroomUrl: parameters.classroomUrl
+        };
+        this.classrooms[classroomId] = classroom;
+        this.awi.editor.print(`Created classroom ${classroomId}`, { user: 'awi' });
+        this.replySuccess(this.newAnswer({ classroomId }), message, editor);
+    }
+    
+    async command_connectTeacher(parameters, message, editor) {
+        const classroomId = parameters.classroomId;
+        var classroom = this.classrooms[classroomId];
+        if (!classroom) {
+            this.replyError(this.newError('awi:classroom-not-found', { classroomId }), message, editor);
+            return;
+        }
+        const teacherHandle = this.awi.utilities.getUniqueIdentifier(this.classrooms, 'teacher', this.classroomCount++);
         try {
             const mediasoupServer = this.awi.awi.mediasoupServer;
             // Create mediasoup room and transport for teacher
-            const transportParams = await mediasoupServer.createTeacherTransport(classroomId, teacherHandle, parameters.mediasoupOptions || {});
+            classroom.teacherHandle = teacherHandle;
+            classroom.transportParams = await mediasoupServer.createTeacherTransport(classroomId, teacherHandle, parameters.mediasoupOptions || {});
             // Reply with classroomId, teacherHandle, and mediasoup transport params
             this.replySuccess(this.newAnswer({ classroomId, teacherHandle, mediasoupTransport: transportParams }), message, editor);
         } catch (err) {
@@ -204,16 +225,16 @@ class ConnectorClassroomServer extends ConnectorBase
             this.replyError(this.newError('awi:classroom-not-found', { classroomId }), message, editor);
         }
     }
-    replyError( error, message )
+    replyError( error, message, editor )
 	{
 		if ( message )
-			this.reply( { error: error.getPrint() }, message );
+			editor.reply( { error: error.getPrint() }, message );
 		return error;
     }
-    replySuccess( answer, message )
+    replySuccess( answer, message, editor )
     {
         if ( message )
-            this.reply( answer.data, message );
+            editor.reply( answer.data, message );
         return answer;
     }
 }
