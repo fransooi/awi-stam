@@ -1,11 +1,15 @@
 {
     "configurations": [
         {
-            "name": "STAM",
-            "type": "msedge",
+            "type": "node",
             "request": "launch",
-            "url": "http://localhost:5173?debug=1",
-            "webRoot": "${workspaceFolder}/stam/src",
+            "name": "Launch Program",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "console": "integratedTerminal",
+            "outputCapture": "std",
+            "program": "engine/linux-node-prompt.mjs"
         }
     ]
 }

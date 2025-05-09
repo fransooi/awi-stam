@@ -173,7 +173,7 @@ class EditorWebSocket extends EditorBase
             errorParameters.error = 'awi:socket-error-processing-command';
             errorParameters.catchedError = e;
         }
-        var text = this.awi.messages.getMessage( errorParameters, { command: message.command } );
+        var text = this.awi.messages.getMessage( errorParameters.error, { command: message.command } );
         this.awi.awi.editor.print( text, { user: 'awi' } );
         this.reply( errorParameters );
     }
@@ -217,10 +217,10 @@ class EditorWebSocket extends EditorBase
     }
     async call_classroom(command, parameters, message)
     {
-        if ( this.awi.awi.webrtcServer )
+        if ( this.awi.awi.classroomServer )
         {
-            if ( this.awi.awi.webrtcServer[command] )
-                return await this.awi.awi.webrtcServer[command]( parameters, message, this );
+            if ( this.awi.awi.classroomServer[command] )
+                return await this.awi.awi.classroomServer[command]( parameters, message, this );
             return this.replyError( this.newError( 'awi:socket-classroom', { user: this.userName } ) );
         }
         return this.replyError( this.newError( 'awi:socket-classroom', { user: this.userName } ) );

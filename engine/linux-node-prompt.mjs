@@ -61,6 +61,8 @@ function getArguments()
 				rootDirectory: '/home/francois/Awi-Data/public',
 				enableHttps: false,
 			} },
+			{ name: 'connectors/network/classroomserver', config: { priority: 98 }, options: {} },
+			{ name: 'connectors/network/mediasoupserver', config: { priority: 98 }, options: {} },
             { name: 'bubbles/awi/*', config: {}, options: {} },
             { name: 'souvenirs/awi/*', config: {}, options: {} },
             { name: 'memories/awi/*', config: {}, options: {} },

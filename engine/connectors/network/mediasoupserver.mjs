@@ -21,6 +21,7 @@
 import ConnectorBase from '../../connector.mjs'
 import { SERVERCOMMANDS } from '../../servercommands.mjs'
 import * as mediasoup from 'mediasoup';
+import os from 'os';
 export { ConnectorMediasoupServer as Connector }
 
 class ConnectorMediasoupServer extends ConnectorBase
@@ -39,16 +40,16 @@ class ConnectorMediasoupServer extends ConnectorBase
     async connect(options) {
         super.connect(options);
         // Start mediasoup workers
-        const numWorkers = options?.numWorkers || require('os').cpus().length;
+        const numWorkers = options?.numWorkers || os.cpus().length;
         for (let i = 0; i < numWorkers; ++i) {
             const worker = await mediasoup.createWorker();
             worker.on('died', () => {
-                this.awi.awi.editor.print('Mediasoup worker died, exiting...', { user: 'awi' });
+                this.awi.editor.print('Mediasoup worker died, exiting...', { user: 'awi' });
                 process.exit(1);
             });
             this.mediasoupWorkers.push(worker);
         }
-        this.awi.awi.editor.print(`Started ${numWorkers} mediasoup workers`, { user: 'awi' });
+        this.awi.editor.print(`Started ${numWorkers} mediasoup workers`, { user: 'awi' });
         return this.setConnected(true);
     }
     async quit(options) {
@@ -82,7 +83,7 @@ class ConnectorMediasoupServer extends ConnectorBase
         const router = await worker.createRouter({ mediaCodecs });
         const room = { router, transports: {}, producers: {}, consumers: {} };
         this.rooms[classroomId] = room;
-        this.awi.awi.editor.print(`Created mediasoup room for classroom ${classroomId}`, { user: 'awi' });
+        this.awi.editor.print(`Created mediasoup room for classroom ${classroomId}`, { user: 'awi' });
         return room;
     }
 
