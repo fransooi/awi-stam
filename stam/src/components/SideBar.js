@@ -20,11 +20,6 @@
 * It extends the BaseComponent class and implements the necessary methods
 * for handling status updates and temporary status messages.
 */
-import ProjectSideWindow from './sidewindows/ProjectSideWindow.js';
-import OutputSideWindow from './sidewindows/OutputSideWindow.js';
-import TVSideWindow from './sidewindows/TVSideWindow.js';
-import TeacherSideWindow from './sidewindows/TeacherSideWindow.js';
-import SocketSideWindow from './sidewindows/SocketSideWindow.js';
 import BaseComponent, { MESSAGES } from '../utils/BaseComponent.js';
 
 class SideBar extends BaseComponent {
@@ -380,42 +375,28 @@ class SideBar extends BaseComponent {
    */
   async handleAddSideWindow(data, sender) {
     if (data.type) {
-      let window; 
-      switch (data.type) {
-        case 'project':
-        case 'ProjectSideWindow':
-          window = new ProjectSideWindow(this.componentId,null,data.height);
-          break; 
-        case 'output':
-        case 'OutputSideWindow':
-          window = new OutputSideWindow(this.componentId,null,data.height);
-          break;
-        case 'teacher':
-        case 'TeacherSideWindow':
-          window = new TeacherSideWindow(this.componentId,null,data.height);
-          break;
-        case 'tv':
-        case 'TVSideWindow':
-          window = new TVSideWindow(this.componentId,null,data.height);
-          break;
-        case 'socket':
-        case 'SocketSideWindow':
-          window = new SocketSideWindow(this.componentId,null,data.height);
-          break;
-        default:
-          console.warn(`Unknown window type: ${data.type}`);
-          return null;
-      }
-      await this.sendMessageTo(window.componentId,MESSAGES.INIT,this.options);
-      this.windows.push(window);
-      if (data.width) 
-        this.widthToSet=data.width;   
-      // If we already had a render, performs a limited render
-      if (this.parentContainer)
-        this.addWindowToDisplay(window);
+      let window = null;
+      try {
+        // Dynamically import the SideWindow class based on the type
+        const module = await import(`./sidewindows/${data.type}.js`);
+        const SideWindowClass = module.default;
+        window = new SideWindowClass(this.componentId, null, data.height);
+        await this.sendMessageTo(window.componentId, MESSAGES.INIT, this.options);
+        this.windows.push(window);
+        if (data.width) 
+          this.widthToSet=data.width;   
+        // If we already had a render, performs a limited render
+        if (this.parentContainer)
+          this.addWindowToDisplay(window);
+        if(typeof data.minimized !== 'undefined')
+          await window.setMinimized(data.minimized);
       return window;
+      } catch (err) {
+        console.warn(`Could not load SideWindow for type: ${data.type}`, err);
+        return {error:`Could not load SideWindow for type: ${data.type}`};
+      }
     }
-    return null;
+    return {error:`No type specified`};
   }
 
   /**

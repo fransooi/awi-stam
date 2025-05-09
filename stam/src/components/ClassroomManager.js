@@ -23,11 +23,17 @@
 import BaseComponent, { MESSAGES } from '../utils/BaseComponent.js';
 import { SOCKETMESSAGES } from './sidewindows/SocketSideWindow.js';
 import { MENUCOMMANDS } from './MenuBar.js'
+import * as mediasoupClient from 'mediasoup-client';
 
 export const CLASSROOMCOMMANDS = {
   CREATE_CLASSROOM: 'CLASSROOM_CREATE',
   JOIN_CLASSROOM: 'CLASSROOM_JOIN',
   LEAVE_CLASSROOM: 'CLASSROOM_LEAVE',
+  TEACHER_CONNECT: 'TEACHER_CONNECT',
+  TEACHER_CONNECTED: 'TEACHER_CONNECTED',
+  STUDENT_CONNECT: 'STUDENT_CONNECT',
+  STUDENT_CONNECTED: 'STUDENT_CONNECTED',
+  GET_CAMERA_SETTINGS: 'GET_CAMERA_SETTINGS',
 };
 
 class ClassroomManager extends BaseComponent {
@@ -45,6 +51,9 @@ class ClassroomManager extends BaseComponent {
     this.messageMap[CLASSROOMCOMMANDS.CREATE_CLASSROOM] = this.handleCreateClassroom;
     this.messageMap[CLASSROOMCOMMANDS.JOIN_CLASSROOM] = this.handleJoinClassroom;
     this.messageMap[CLASSROOMCOMMANDS.LEAVE_CLASSROOM] = this.handleLeaveClassroom;
+    this.messageMap[CLASSROOMCOMMANDS.TEACHER_CONNECT] = this.handleTeacherConnect;
+    this.messageMap[CLASSROOMCOMMANDS.STUDENT_CONNECT] = this.handleStudentConnect;
+    this.messageMap[CLASSROOMCOMMANDS.GET_CAMERA_SETTINGS] = this.handleGetCameraSettings;
   }
 
   async init(options = {}) {
@@ -68,9 +77,10 @@ class ClassroomManager extends BaseComponent {
       if (classroomInfo)
       {
         // Send CREATE_CLASSROOM command to AWI server via FileSystem
-        var response = await this.root.fileSystem.createClassroom(classroomInfo);
+        var response = await this.root.fileSystem.createClassroom({classroomInfo});
         if (!response.error)
         {
+          this.classroomId = response.classroomId;
           this.classroomInfo = classroomInfo;
           this.classroomName = classroomInfo.name;
           this.classroomOpen='teacher';
@@ -84,12 +94,111 @@ class ClassroomManager extends BaseComponent {
     }
   }
 
+  async handleTeacherConnect(data, senderId) {
+    // If already connected, disconnect first (optional: implement disconnect logic)
+    if (this.teacherConnected) {
+      // Optionally disconnect previous session here
+      this.teacherConnected = false;
+    }
+    // Start mediasoup connection
+    var answer =await this.connectTeacherMediasoup(data.stream);
+    if (answer)
+    {
+      this.teacherConnected = true;
+      var answer = await this.sendRequestTo('class:RightBar',MESSAGES.ADD_SIDE_WINDOW, { type: 'TeacherViewSideWindow', height: 200 });
+      if (!answer.error)
+      {
+        this.broadcast(CLASSROOMCOMMANDS.TEACHER_CONNECTED, { classroomId: this.classroomId });
+        return true;
+      }
+    }
+    return false;
+  }
+
+  async connectTeacherMediasoup(stream) {
+    try {
+      // 1. Create mediasoup Device
+      this.mediasoupDevice = new mediasoupClient.Device();
+
+      // 2. Get router RTP capabilities from backend
+      let response = await this.root.fileSystem.connectTeacher({
+        action: 'getRouterRtpCapabilities',
+        classroomId: this.classroomId
+      });
+      if (response.error) throw new Error(response.error);
+      const rtpCapabilities = response.rtpCapabilities;
+
+      // 3. Load Device
+      await this.mediasoupDevice.load({ routerRtpCapabilities: rtpCapabilities });
+
+      // 4. Create transport on backend
+      response = await this.root.fileSystem.connectTeacher({
+        action: 'createTransport',
+        classroomId: this.classroomId
+      });
+      if (response.error) throw new Error(response.error);
+      const { transportParams, teacherHandle } = response;
+
+      // 5. Create send transport on client
+      this.sendTransport = this.mediasoupDevice.createSendTransport(transportParams);
+
+      // 6. Wire up DTLS connect event
+      this.sendTransport.on('connect', async ({ dtlsParameters }, callback, errback) => {
+        try {
+          const resp = await this.root.fileSystem.connectTeacher({
+            action: 'connectTransport',
+            classroomId: this.classroomId,
+            teacherHandle,
+            dtlsParameters
+          });
+          if (resp.error) throw new Error(resp.error);
+          callback();
+        } catch (err) {
+          errback(err);
+        }
+      });
+
+      // 7. Wire up produce event
+      this.sendTransport.on('produce', async ({ kind, rtpParameters }, callback, errback) => {
+        try {
+          const resp = await this.root.fileSystem.connectTeacher({
+            action: 'produce',
+            classroomId: this.classroomId,
+            teacherHandle,
+            kind,
+            rtpParameters
+          });
+          if (resp.error) throw new Error(resp.error);
+          callback({ id: resp.producerId });
+        } catch (err) {
+          errback(err);
+        }
+      });
+
+      // 8. Produce audio/video tracks
+      for (const track of stream.getTracks()) {
+        await this.sendTransport.produce({ track });
+      }
+
+      // 9. Notify TeacherSideWindow of success
+      this.teacherConnected = true;
+      this.teacherStream = stream;
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
   async handleJoinClassroom(data, senderId) {
     if (!this.classroomOpen)
     {
       await this.sendMessageTo('class:RightBar', MESSAGES.ADD_SIDE_WINDOW, { type: 'StudentSideWindow', height: 400 });
       this.classroomOpen='student';
     }
+  }
+
+  async handleStudentConnect(data, senderId) {
+    
   }
 
   async handleLeaveClassroom(data, senderId) {
@@ -353,7 +462,7 @@ class ClassroomManager extends BaseComponent {
           dialog.show();
           // For now, just pick the first template (mockup)
           if (projectTemplate) {
-            selectedProjectName = projectTemplate.name || projectTemplate.title || projectTemplate;
+            selectedProjectName = projectTemplate.projectName;
             projectNameValue.textContent = selectedProjectName;
             if (!iconChangedByUser && projectTemplate.iconUrl) {
               iconPreview.src = projectTemplate.iconUrl;
@@ -425,7 +534,7 @@ class ClassroomManager extends BaseComponent {
       okBtn.onclick = () => {
         // Collect all data
         const data = {
-          title: titleInput.value,
+          name: titleInput.value,
           description: descInput.value,
           icon: iconFile || iconPreview.src,
           takeControl: controlCheckbox.checked,
@@ -433,7 +542,7 @@ class ClassroomManager extends BaseComponent {
           projectType: radioNew.checked ? 'new' : 'load',
           projectName: selectedProjectName,
           projectGlobal: globalCheckbox.checked,
-          classroomUrl: urlInput.value
+          url: urlInput.value
         };
         document.body.removeChild(overlay);
         resolve(data);
@@ -443,6 +552,222 @@ class ClassroomManager extends BaseComponent {
       titleInput.focus();
     });
   }
+
+  async handleGetCameraSettings(data, senderId) {
+    return await this.showCameraSettingsDialog(data);  
+  }
+
+  async showCameraSettingsDialog(data = {}) {
+    // Remove any previous dialog
+    let oldDialog = document.getElementById('teacher-camera-settings-dialog');
+    if (oldDialog) oldDialog.parentNode.removeChild(oldDialog);
+
+    // Extract preset values from data
+    const presetCameraId = data.selectedCameraId || '';
+    const presetMicId = data.selectedMicId || '';
+    const presetOutputId = data.selectedOutputId || '';
+    const presetSpeakerOn = data.speakerOn !== undefined ? data.speakerOn : true;
+    const presetVolume = data.volume !== undefined ? data.volume : 1.0;
+
+    return new Promise((resolve) => {
+      // Create overlay
+      const overlay = document.createElement('div');
+      overlay.id = 'teacher-camera-settings-dialog';
+      overlay.className = 'playlist-dialog'; // Reuse modal CSS
+      overlay.style.zIndex = 2000;
+
+      // Dialog content
+      const dialog = document.createElement('div');
+      dialog.className = 'playlist-dialog-content';
+      dialog.style.maxWidth = '400px';
+
+      // Dialog header
+      const header = document.createElement('div');
+      header.className = 'playlist-dialog-header';
+      header.style.display = 'flex';
+      header.style.justifyContent = 'space-between';
+      header.style.alignItems = 'center';
+      header.innerHTML = '<span>Settings</span>';
+      // Close button
+      const closeBtn = document.createElement('button');
+      closeBtn.className = 'playlist-dialog-close';
+      closeBtn.innerHTML = '&times;';
+      closeBtn.onclick = () => {
+        document.body.removeChild(overlay);
+        resolve(null);
+      };
+      header.appendChild(closeBtn);
+      dialog.appendChild(header);
+
+      // Form
+      const form = document.createElement('form');
+      form.style.display = 'flex';
+      form.style.flexDirection = 'column';
+      form.style.gap = '14px';
+      form.onsubmit = e => { e.preventDefault(); };
+
+      // Camera select
+      const cameraGroup = document.createElement('div');
+      const cameraLabel = document.createElement('label');
+      cameraLabel.textContent = 'Camera:';
+      cameraLabel.htmlFor = 'settings-camera';
+      const cameraSelect = document.createElement('select');
+      cameraSelect.id = 'settings-camera';
+      cameraSelect.style.width = '100%';
+      cameraGroup.appendChild(cameraLabel);
+      cameraGroup.appendChild(cameraSelect);
+      form.appendChild(cameraGroup);
+
+      // Microphone select
+      const micGroup = document.createElement('div');
+      const micLabel = document.createElement('label');
+      micLabel.textContent = 'Microphone:';
+      micLabel.htmlFor = 'settings-mic';
+      const micSelect = document.createElement('select');
+      micSelect.id = 'settings-mic';
+      micSelect.style.width = '100%';
+      micGroup.appendChild(micLabel);
+      micGroup.appendChild(micSelect);
+      form.appendChild(micGroup);
+
+      // Output select
+      const outputGroup = document.createElement('div');
+      const outputLabel = document.createElement('label');
+      outputLabel.textContent = 'Audio Output:';
+      outputLabel.htmlFor = 'settings-output';
+      const outputSelect = document.createElement('select');
+      outputSelect.id = 'settings-output';
+      outputSelect.style.width = '100%';
+      outputGroup.appendChild(outputLabel);
+      outputGroup.appendChild(outputSelect);
+      form.appendChild(outputGroup);
+
+      // Speaker ON/OFF and volume
+      const soundGroup = document.createElement('div');
+      soundGroup.style.display = 'flex';
+      soundGroup.style.alignItems = 'center';
+      soundGroup.style.gap = '10px';
+      // Speaker checkbox
+      const speakerCheckbox = document.createElement('input');
+      speakerCheckbox.type = 'checkbox';
+      speakerCheckbox.id = 'settings-speaker';
+      speakerCheckbox.style.marginRight = '6px';
+      // Speaker icon
+      const speakerIcon = document.createElement('span');
+      speakerIcon.innerHTML = '<i class="fa fa-volume-up"></i>';
+      speakerIcon.style.fontSize = '18px';
+      speakerIcon.style.marginRight = '4px';
+      // Volume slider
+      const volumeSlider = document.createElement('input');
+      volumeSlider.type = 'range';
+      volumeSlider.min = '0';
+      volumeSlider.max = '100';
+      volumeSlider.value = Math.round((presetVolume || 1.0) * 100);
+      volumeSlider.style.flex = '1';
+      volumeSlider.id = 'settings-volume';
+      // Enable/disable slider based on checkbox
+      speakerCheckbox.onchange = () => {
+        volumeSlider.disabled = !speakerCheckbox.checked;
+        speakerIcon.innerHTML = speakerCheckbox.checked ? '<i class="fa fa-volume-up"></i>' : '<i class="fa fa-volume-off"></i>';
+      };
+      soundGroup.appendChild(speakerCheckbox);
+      soundGroup.appendChild(speakerIcon);
+      soundGroup.appendChild(volumeSlider);
+      form.appendChild(soundGroup);
+
+      // Buttons
+      const buttonRow = document.createElement('div');
+      buttonRow.className = 'playlist-dialog-buttons';
+      // Cancel button
+      const cancelBtn = document.createElement('button');
+      cancelBtn.type = 'button';
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.onclick = () => {
+        document.body.removeChild(overlay);
+        resolve(null);
+      };
+      // OK button
+      const okBtn = document.createElement('button');
+      okBtn.type = 'button';
+      okBtn.textContent = 'OK';
+      okBtn.style.backgroundColor = '#3b82f6';
+      okBtn.style.color = '#fff';
+      okBtn.onclick = () => {
+        const result = {
+          selectedCameraId: cameraSelect.value,
+          selectedMicId: micSelect.value,
+          selectedOutputId: outputSelect.value,
+          speakerOn: speakerCheckbox.checked,
+          volume: parseInt(volumeSlider.value, 10) / 100,
+        };
+        document.body.removeChild(overlay);
+        resolve(result);
+      };
+      buttonRow.appendChild(cancelBtn);
+      buttonRow.appendChild(okBtn);
+      form.appendChild(buttonRow);
+
+      dialog.appendChild(form);
+      overlay.appendChild(dialog);
+      document.body.appendChild(overlay);
+
+      // Helper: populate device selects
+      const populateDevices = () => {
+        navigator.mediaDevices.enumerateDevices().then(devices => {
+          // Cameras
+          cameraSelect.innerHTML = '';
+          let foundCamera = false;
+          devices.filter(d => d.kind === 'videoinput').forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d.deviceId;
+            opt.textContent = d.label || 'Camera ' + (cameraSelect.length + 1);
+            if (opt.value === presetCameraId) {
+              opt.selected = true;
+              foundCamera = true;
+            }
+            cameraSelect.appendChild(opt);
+          });
+          if (!foundCamera && cameraSelect.options.length > 0) cameraSelect.options[0].selected = true;
+          // Microphones
+          micSelect.innerHTML = '';
+          let foundMic = false;
+          devices.filter(d => d.kind === 'audioinput').forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d.deviceId;
+            opt.textContent = d.label || 'Microphone ' + (micSelect.length + 1);
+            if (opt.value === presetMicId) {
+              opt.selected = true;
+              foundMic = true;
+            }
+            micSelect.appendChild(opt);
+          });
+          if (!foundMic && micSelect.options.length > 0) micSelect.options[0].selected = true;
+          // Outputs (audiooutput)
+          outputSelect.innerHTML = '';
+          let foundOutput = false;
+          devices.filter(d => d.kind === 'audiooutput').forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d.deviceId;
+            opt.textContent = d.label || 'Speaker ' + (outputSelect.length + 1);
+            if (opt.value === presetOutputId) {
+              opt.selected = true;
+              foundOutput = true;
+            }
+            outputSelect.appendChild(opt);
+          });
+          if (!foundOutput && outputSelect.options.length > 0) outputSelect.options[0].selected = true;
+        });
+        // Speaker and volume
+        speakerCheckbox.checked = presetSpeakerOn;
+        volumeSlider.value = Math.round((presetVolume || 1.0) * 100);
+        volumeSlider.disabled = !presetSpeakerOn;
+        speakerIcon.innerHTML = presetSpeakerOn ? '<i class="fa fa-volume-up"></i>' : '<i class="fa fa-volume-off"></i>';
+      };
+      populateDevices();
+    });
+  }
+
+
 }
 export default ClassroomManager;
 

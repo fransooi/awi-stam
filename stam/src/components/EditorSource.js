@@ -106,30 +106,20 @@ class EditorSource extends BaseComponent {
   }
   
   async loadModeSpecificConfig(mode) {
-    try {     
+    try {
       // Dynamically import the editor module for the current mode
       let ConfigModule;
-      
-      switch (mode) {
-        case 'phaser':
-          ConfigModule = await import('./modes/phaser/editor.js');
-          break;
-        case 'stos':
-          ConfigModule = await import('./modes/stos/editor.js');
-          break;
-        case 'amos1_3':
-          ConfigModule = await import('./modes/amos1_3/editor.js');
-          break;
-        case 'amosPro':
-          ConfigModule = await import('./modes/amosPro/editor.js');
-          break;
-        case 'c64':
-          ConfigModule = await import('./modes/c64/editor.js');
-          break;
-        case 'javascript':
-        default:
+      try {
+        ConfigModule = await import(`./modes/${mode}/editor.js`);
+      } catch (err) {
+        // Fallback to javascript if mode-specific module not found
+        try {
           ConfigModule = await import('./modes/javascript/editor.js');
-          break;
+          console.warn(`Could not load editor config for mode: ${mode}. Falling back to javascript.`, err);
+        } catch (fallbackErr) {
+          console.error('Could not load fallback javascript editor config.', fallbackErr);
+          throw fallbackErr;
+        }
       }
       
       // Always use the single editor container

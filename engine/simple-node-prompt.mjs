@@ -38,8 +38,22 @@ async function startAwi( prompt, config )
     }
 }
 
+// Returns the letter of the current drive (Windows only)
+function getCurrentDriveLetter() {
+    if (process.platform === 'win32') {
+        const cwd = process.cwd();
+        if (cwd && cwd.length > 1 && cwd[1] === ':') {
+            return cwd[0].toUpperCase();
+        }
+    }
+    return null;
+}
+
 function getArguments()
 {
+	//var driveLetter = getCurrentDriveLetter();
+	var templatesPath = 'D:/Awi-Data/public/templates';
+	var httpRootDirectory = 'D:/Awi-Data/public';
 	var answer =
 	{
 		prompt: 'fran',
@@ -53,11 +67,11 @@ function getArguments()
             { name: 'connectors/awi/time', config: { priority: 99  }, options: {} },
             { name: 'connectors/editor/editor', config: { priority: 99 }, options: { default: 'commandline', config: {} } },
             { name: 'connectors/network/websocketserver', config: { priority: 99 }, options: { 
-				templatesPath: 'W:/Awi-Data/public/templates'
+				templatesPath: templatesPath
 			} },
 			{ name: 'connectors/network/httpserver', config: { priority: 98 }, options: {  
 				port: 3333,
-				rootDirectory: 'D:/Awi-Data/public',
+				rootDirectory: httpRootDirectory,
 				enableHttps: false,
 			} },
 			{ name: 'connectors/network/classroomserver', config: { priority: 98 }, options: {} },

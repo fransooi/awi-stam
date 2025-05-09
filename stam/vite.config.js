@@ -24,12 +24,12 @@ export default defineConfig({
     // Optional: Set up a proxy for specific paths
     proxy: {
       '/awi-projects': {
-        target: 'http://217.154.15.90:3333/projects', // Replace with your AWI server URL
+        target: 'http://192.168.1.66:3333/projects', // Replace with your AWI server URL
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/awi-projects/, '')
       },
       '/awi-templates': {
-        target: 'http://217.154.15.90:3333/templates', // Replace with your AWI server URL
+        target: 'http://192.168.1.66:3333/templates', // Replace with your AWI server URL
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/awi-templates/, '')
       },

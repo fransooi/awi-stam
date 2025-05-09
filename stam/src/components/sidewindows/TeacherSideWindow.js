@@ -17,7 +17,7 @@
 * @short Teacher side window implementation
 */
 import SideWindow from './SideWindow.js';
-
+import { CLASSROOMCOMMANDS } from '../ClassroomManager.js';
 class TeacherSideWindow extends SideWindow {
   constructor(parentId, containerId, initialHeight = 200) {
     super('Teacher', 'Teacher', parentId, containerId, initialHeight);
@@ -27,11 +27,13 @@ class TeacherSideWindow extends SideWindow {
     this.connectButton = null;
     this.setupButton = null;
     // Settings properties
-    this.selectedCameraId = '';
-    this.selectedMicId = '';
-    this.selectedOutputId = '';
-    this.speakerOn = true;
-    this.volume = 1.0; // 0.0 - 1.0
+    this.cameraSettings = {
+      selectedCameraId: '',
+      selectedMicId: '',
+      selectedOutputId: '',
+      speakerOn: true,
+      volume: 1.0 // 0.0 - 1.0
+    };
   }
 
   async init(options) {
@@ -99,7 +101,7 @@ class TeacherSideWindow extends SideWindow {
       this.videoElement = document.createElement('video');
       this.videoElement.className = 'side-window-video';
       this.videoElement.autoplay = true;
-      this.videoElement.muted = !this.speakerOn;
+      this.videoElement.muted = !this.cameraSettings.speakerOn;
       this.videoElement.playsInline = true;
       this.videoElement.srcObject = this.stream;
       this.videoElement.style.background = 'black';
@@ -107,10 +109,10 @@ class TeacherSideWindow extends SideWindow {
       this.videoElement.style.width = '100%';
       this.videoElement.style.height = 'auto';
       // Volume
-      this.videoElement.volume = this.volume;
+      this.videoElement.volume = this.cameraSettings.volume;
       // Try to set sinkId for output selection (if supported)
-      if (this.selectedOutputId && typeof this.videoElement.sinkId !== 'undefined') {
-        this.videoElement.setSinkId(this.selectedOutputId).catch(() => {});
+      if (this.cameraSettings.selectedOutputId && typeof this.videoElement.sinkId !== 'undefined') {
+        this.videoElement.setSinkId(this.cameraSettings.selectedOutputId).catch(() => {});
       }
       // Helper to update video height based on aspect ratio
       const updateVideoHeight = () => {
@@ -133,36 +135,42 @@ class TeacherSideWindow extends SideWindow {
   }
 
   async handleConnectClick() {
+    if (!this.cameraSettings.selectedCameraId || !this.cameraSettings.selectedMicId)
+    {
+      var settings = await this.sendRequestTo('class:ClassroomManager', 'GET_CAMERA_SETTINGS', this.cameraSettings);
+      if ( settings )
+        this.cameraSettings = settings;
+    }
+    if (!this.cameraSettings.selectedCameraId || !this.cameraSettings.selectedMicId)
+      return;
+
     // Request camera and microphone with selected device IDs if set
     try {
       const constraints = {
-        video: this.selectedCameraId ? { deviceId: { exact: this.selectedCameraId } } : true,
-        audio: this.selectedMicId ? { deviceId: { exact: this.selectedMicId } } : true
+        video: this.cameraSettings.selectedCameraId ? { deviceId: { exact: this.cameraSettings.selectedCameraId } } : true,
+        audio: this.cameraSettings.selectedMicId ? { deviceId: { exact: this.cameraSettings.selectedMicId } } : true
       };
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      this.stream = stream;
-      this.connected = true;
-      this.updateContent();
-      // Update button text and handler
-      if (this.connectBtn) {
-        this.connectBtn.textContent = 'Disconnect';
-        this.connectBtn.title = 'Disconnect from camera and microphone';
-        // Remove previous click handlers
-        this.connectBtn.replaceWith(this.connectBtn.cloneNode(true));
-        this.connectBtn = document.getElementById('teacher-connect-btn');
-        this.connectBtn.onclick = () => this.handleDisconnectClick();
+      // Send request to ClassroomManager to start mediasoup connection
+      var answer = await this.sendRequestTo('class:ClassroomManager', CLASSROOMCOMMANDS.TEACHER_CONNECT, { stream }); 
+      if (answer.error)
+      {
+        this.connected = false;
+        this.stream = null;
+        this.updateContent();
+        alert('Could not access camera/microphone: ' + answer.error);
       }
-      // Future: here we would initiate WebRTC connection to AWI server using this.stream
+      else
+      {
+        this.connected = true;
+        this.stream = stream;
+        this.updateContent();
+      }
     } catch (err) {
       this.connected = false;
       this.stream = null;
       this.updateContent();
       alert('Could not access camera/microphone: ' + err.message);
-      if (this.connectBtn) {
-        this.connectBtn.textContent = 'Connect';
-        this.connectBtn.title = 'Connect to camera and microphone';
-        this.connectBtn.onclick = () => this.handleConnectClick();
-      }
     }
   }
 
@@ -185,213 +193,10 @@ class TeacherSideWindow extends SideWindow {
     }
   }
 
-  async showSettingsDialog() {
-    // Remove any previous dialog
-    let oldDialog = document.getElementById('teacher-settings-dialog');
-    if (oldDialog) oldDialog.parentNode.removeChild(oldDialog);
-
-    // Create overlay
-    const overlay = document.createElement('div');
-    overlay.id = 'teacher-settings-dialog';
-    overlay.className = 'playlist-dialog'; // Reuse modal CSS
-    overlay.style.zIndex = 2000;
-
-    // Dialog content
-    const dialog = document.createElement('div');
-    dialog.className = 'playlist-dialog-content';
-    dialog.style.maxWidth = '400px';
-
-    // Dialog header
-    const header = document.createElement('div');
-    header.className = 'playlist-dialog-header';
-    header.style.display = 'flex';
-    header.style.justifyContent = 'space-between';
-    header.style.alignItems = 'center';
-    header.innerHTML = '<span>Settings</span>';
-    // Close button
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'playlist-dialog-close';
-    closeBtn.innerHTML = '&times;';
-    closeBtn.onclick = () => document.body.removeChild(overlay);
-    header.appendChild(closeBtn);
-    dialog.appendChild(header);
-
-    // Form
-    const form = document.createElement('form');
-    form.style.display = 'flex';
-    form.style.flexDirection = 'column';
-    form.style.gap = '14px';
-    form.onsubmit = e => { e.preventDefault(); };
-
-    // Camera select
-    const cameraGroup = document.createElement('div');
-    const cameraLabel = document.createElement('label');
-    cameraLabel.textContent = 'Camera:';
-    cameraLabel.htmlFor = 'settings-camera';
-    const cameraSelect = document.createElement('select');
-    cameraSelect.id = 'settings-camera';
-    cameraSelect.style.width = '100%';
-    cameraGroup.appendChild(cameraLabel);
-    cameraGroup.appendChild(cameraSelect);
-    form.appendChild(cameraGroup);
-
-    // Microphone select
-    const micGroup = document.createElement('div');
-    const micLabel = document.createElement('label');
-    micLabel.textContent = 'Microphone:';
-    micLabel.htmlFor = 'settings-mic';
-    const micSelect = document.createElement('select');
-    micSelect.id = 'settings-mic';
-    micSelect.style.width = '100%';
-    micGroup.appendChild(micLabel);
-    micGroup.appendChild(micSelect);
-    form.appendChild(micGroup);
-
-    // Output select
-    const outputGroup = document.createElement('div');
-    const outputLabel = document.createElement('label');
-    outputLabel.textContent = 'Audio Output:';
-    outputLabel.htmlFor = 'settings-output';
-    const outputSelect = document.createElement('select');
-    outputSelect.id = 'settings-output';
-    outputSelect.style.width = '100%';
-    outputGroup.appendChild(outputLabel);
-    outputGroup.appendChild(outputSelect);
-    form.appendChild(outputGroup);
-
-    // Speaker ON/OFF and volume
-    const soundGroup = document.createElement('div');
-    soundGroup.style.display = 'flex';
-    soundGroup.style.alignItems = 'center';
-    soundGroup.style.gap = '10px';
-    // Speaker checkbox
-    const speakerCheckbox = document.createElement('input');
-    speakerCheckbox.type = 'checkbox';
-    speakerCheckbox.id = 'settings-speaker';
-    speakerCheckbox.style.marginRight = '6px';
-    // Speaker icon
-    const speakerIcon = document.createElement('span');
-    speakerIcon.innerHTML = '<i class="fa fa-volume-up"></i>';
-    speakerIcon.style.fontSize = '18px';
-    speakerIcon.style.marginRight = '4px';
-    // Volume slider
-    const volumeSlider = document.createElement('input');
-    volumeSlider.type = 'range';
-    volumeSlider.min = '0';
-    volumeSlider.max = '100';
-    volumeSlider.value = '100';
-    volumeSlider.style.flex = '1';
-    volumeSlider.id = 'settings-volume';
-    // Enable/disable slider based on checkbox
-    speakerCheckbox.onchange = () => {
-      volumeSlider.disabled = !speakerCheckbox.checked;
-      speakerIcon.innerHTML = speakerCheckbox.checked ? '<i class="fa fa-volume-up"></i>' : '<i class="fa fa-volume-off"></i>';
-    };
-    soundGroup.appendChild(speakerCheckbox);
-    soundGroup.appendChild(speakerIcon);
-    soundGroup.appendChild(volumeSlider);
-    form.appendChild(soundGroup);
-
-    // Buttons
-    const buttonRow = document.createElement('div');
-    buttonRow.className = 'playlist-dialog-buttons';
-    // Cancel button
-    const cancelBtn = document.createElement('button');
-    cancelBtn.type = 'button';
-    cancelBtn.textContent = 'Cancel';
-    cancelBtn.onclick = () => document.body.removeChild(overlay);
-    // OK button
-    const okBtn = document.createElement('button');
-    okBtn.type = 'button';
-    okBtn.textContent = 'OK';
-    okBtn.style.backgroundColor = '#3b82f6';
-    okBtn.style.color = '#fff';
-    okBtn.onclick = () => {
-      // Save settings here as needed
-      this.selectedCameraId = cameraSelect.value;
-      this.selectedMicId = micSelect.value;
-      this.selectedOutputId = outputSelect.value;
-      this.speakerOn = speakerCheckbox.checked;
-      this.volume = parseInt(volumeSlider.value, 10) / 100;
-      document.body.removeChild(overlay);
-      // If connected, re-acquire stream if camera/mic changed
-      if (this.connected) {
-        this.handleConnectClick();
-      }
-      // If video element exists, update audio output and volume
-      if (this.videoElement) {
-        this.videoElement.muted = !this.speakerOn;
-        this.videoElement.volume = this.volume;
-        if (this.selectedOutputId && typeof this.videoElement.sinkId !== 'undefined') {
-          this.videoElement.setSinkId(this.selectedOutputId).catch(() => {});
-        }
-      }
-    };
-    buttonRow.appendChild(cancelBtn);
-    buttonRow.appendChild(okBtn);
-    form.appendChild(buttonRow);
-
-    dialog.appendChild(form);
-    overlay.appendChild(dialog);
-    document.body.appendChild(overlay);
-
-    // Helper: populate device selects
-    const populateDevices = () => {
-      navigator.mediaDevices.enumerateDevices().then(devices => {
-        // Cameras
-        cameraSelect.innerHTML = '';
-        let foundCamera = false;
-        devices.filter(d => d.kind === 'videoinput').forEach(d => {
-          const opt = document.createElement('option');
-          opt.value = d.deviceId;
-          opt.textContent = d.label || 'Camera ' + (cameraSelect.length + 1);
-          if (d.deviceId === this.selectedCameraId) {
-            opt.selected = true;
-            foundCamera = true;
-          }
-          cameraSelect.appendChild(opt);
-        });
-        if (!foundCamera && cameraSelect.options.length > 0) cameraSelect.options[0].selected = true;
-        // Microphones
-        micSelect.innerHTML = '';
-        let foundMic = false;
-        devices.filter(d => d.kind === 'audioinput').forEach(d => {
-          const opt = document.createElement('option');
-          opt.value = d.deviceId;
-          opt.textContent = d.label || 'Microphone ' + (micSelect.length + 1);
-          if (d.deviceId === this.selectedMicId) {
-            opt.selected = true;
-            foundMic = true;
-          }
-          micSelect.appendChild(opt);
-        });
-        if (!foundMic && micSelect.options.length > 0) micSelect.options[0].selected = true;
-        // Outputs (audiooutput)
-        outputSelect.innerHTML = '';
-        let foundOutput = false;
-        devices.filter(d => d.kind === 'audiooutput').forEach(d => {
-          const opt = document.createElement('option');
-          opt.value = d.deviceId;
-          opt.textContent = d.label || 'Speaker ' + (outputSelect.length + 1);
-          if (d.deviceId === this.selectedOutputId) {
-            opt.selected = true;
-            foundOutput = true;
-          }
-          outputSelect.appendChild(opt);
-        });
-        if (!foundOutput && outputSelect.options.length > 0) outputSelect.options[0].selected = true;
-      });
-      // Speaker and volume
-      speakerCheckbox.checked = this.speakerOn;
-      volumeSlider.value = Math.round((this.volume || 1.0) * 100);
-      volumeSlider.disabled = !this.speakerOn;
-      speakerIcon.innerHTML = this.speakerOn ? '<i class="fa fa-volume-up"></i>' : '<i class="fa fa-volume-off"></i>';
-    };
-    populateDevices();
-  }
-
-  handleSetupClick() {
-    this.showSettingsDialog();
+  async handleSetupClick() {
+    var settings = await this.sendRequestTo('class:ClassroomManager', 'GET_CAMERA_SETTINGS', this.cameraSettings);
+    if ( settings )
+      this.cameraSettings = settings;
   }
 
   _removeCustomButtons() {
@@ -404,11 +209,11 @@ class TeacherSideWindow extends SideWindow {
    */
   async getLayoutInfo() {
     const layoutInfo = await super.getLayoutInfo();
-    layoutInfo.selectedCameraId = this.selectedCameraId;
-    layoutInfo.selectedMicId = this.selectedMicId;
-    layoutInfo.selectedOutputId = this.selectedOutputId;
-    layoutInfo.speakerOn = this.speakerOn;
-    layoutInfo.volume = this.volume;
+    layoutInfo.selectedCameraId = this.cameraSettings.selectedCameraId;
+    layoutInfo.selectedMicId = this.cameraSettings.selectedMicId;
+    layoutInfo.selectedOutputId = this.cameraSettings.selectedOutputId;
+    layoutInfo.speakerOn = this.cameraSettings.speakerOn;
+    layoutInfo.volume = this.cameraSettings.volume;
     return layoutInfo;
   }
 
@@ -416,11 +221,11 @@ class TeacherSideWindow extends SideWindow {
    * Override applyLayout to restore settings
    */
   async applyLayout(layoutInfo) {
-    if (layoutInfo.selectedCameraId !== undefined) this.selectedCameraId = layoutInfo.selectedCameraId;
-    if (layoutInfo.selectedMicId !== undefined) this.selectedMicId = layoutInfo.selectedMicId;
-    if (layoutInfo.selectedOutputId !== undefined) this.selectedOutputId = layoutInfo.selectedOutputId;
-    if (layoutInfo.speakerOn !== undefined) this.speakerOn = layoutInfo.speakerOn;
-    if (layoutInfo.volume !== undefined) this.volume = layoutInfo.volume;
+    if (layoutInfo.selectedCameraId !== undefined) this.cameraSettings.selectedCameraId = layoutInfo.selectedCameraId;
+    if (layoutInfo.selectedMicId !== undefined) this.cameraSettings.selectedMicId = layoutInfo.selectedMicId;
+    if (layoutInfo.selectedOutputId !== undefined) this.cameraSettings.selectedOutputId = layoutInfo.selectedOutputId;
+    if (layoutInfo.speakerOn !== undefined) this.cameraSettings.speakerOn = layoutInfo.speakerOn;
+    if (layoutInfo.volume !== undefined) this.cameraSettings.volume = layoutInfo.volume;
     await super.applyLayout(layoutInfo);
     // If connected, update stream and UI
     if (this.connected) {

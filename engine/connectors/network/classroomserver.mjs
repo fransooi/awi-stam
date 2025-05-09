@@ -61,8 +61,8 @@ class ConnectorClassroomServer extends ConnectorBase
     async command_createClassroom(parameters, message, editor) {
         // Check that a classroom with the same title does not already exist
         for (let classroomId in this.classrooms) {
-            if (this.classrooms[classroomId].title.toLowerCase() === parameters.title.toLowerCase()) {
-                this.replyError(this.newError('awi:classroom-already-exists', { title: parameters.title }), message, editor);
+            if (this.classrooms[classroomId].classroomInfo.name.toLowerCase() === parameters.classroomInfo.name.toLowerCase()) {
+                this.replyError(this.newError('awi:classroom-already-exists', { name: parameters.classroomInfo.name }), message, editor);
                 return;
             }
         }
@@ -74,21 +74,20 @@ class ConnectorClassroomServer extends ConnectorBase
             students: {},
             signalingState: {},
             created: Date.now(),
-            title: parameters.title,
-            description: parameters.description,
-            icon: parameters.icon,
-            takeControl: parameters.takeControl,
-            mode: parameters.mode,
-            projectType: parameters.projectType,
-            projectName: parameters.projectName,
-            projectGlobal: parameters.projectGlobal,
-            classroomUrl: parameters.classroomUrl
+            classroomInfo: parameters.classroomInfo
         };
         this.classrooms[classroomId] = classroom;
         this.awi.editor.print(`Created classroom ${classroomId}`, { user: 'awi' });
         this.replySuccess(this.newAnswer({ classroomId }), message, editor);
     }
     
+    // Add a student to an existing classroom
+    async command_joinClassroom(parameters, message, editor)
+    {
+        
+    }
+
+    // Handles mediasoup signaling actions for teacher real-time streaming
     async command_connectTeacher(parameters, message, editor) {
         const classroomId = parameters.classroomId;
         var classroom = this.classrooms[classroomId];
@@ -96,135 +95,56 @@ class ConnectorClassroomServer extends ConnectorBase
             this.replyError(this.newError('awi:classroom-not-found', { classroomId }), message, editor);
             return;
         }
-        const teacherHandle = this.awi.utilities.getUniqueIdentifier(this.classrooms, 'teacher', this.classroomCount++);
+        const mediasoupServer = this.awi.mediasoupServer;
         try {
-            const mediasoupServer = this.awi.awi.mediasoupServer;
-            // Create mediasoup room and transport for teacher
-            classroom.teacherHandle = teacherHandle;
-            classroom.transportParams = await mediasoupServer.createTeacherTransport(classroomId, teacherHandle, parameters.mediasoupOptions || {});
-            // Reply with classroomId, teacherHandle, and mediasoup transport params
-            this.replySuccess(this.newAnswer({ classroomId, teacherHandle, mediasoupTransport: transportParams }), message, editor);
+            switch (parameters.action) {
+                case 'getRouterRtpCapabilities': {
+                    // Return RTP capabilities for the classroom's mediasoup router
+                    const room = await mediasoupServer.createClassroomMediasoupRoom(classroomId);
+                    this.replySuccess(this.newAnswer({ rtpCapabilities: room.router.rtpCapabilities }), message, editor);
+                    break;
+                }
+                case 'createTransport': {
+                    // Create a WebRTC transport for the teacher
+                    const teacherHandle = parameters.teacherHandle || this.awi.utilities.getUniqueIdentifier(this.classrooms, 'teacher', this.classroomCount++);
+                    classroom.teacherHandle = teacherHandle;
+                    const transportParams = await mediasoupServer.createTeacherTransport(classroomId, teacherHandle, parameters.mediasoupOptions || {});
+                    classroom.transportParams = transportParams;
+                    this.replySuccess(this.newAnswer({ classroomId, teacherHandle, transportParams }), message, editor);
+                    break;
+                }
+                case 'connectTransport': {
+                    // Connect the teacher's transport with DTLS parameters
+                    const teacherHandle = parameters.teacherHandle;
+                    await mediasoupServer.connectTeacherTransport(classroomId, teacherHandle, parameters.dtlsParameters);
+                    this.replySuccess(this.newAnswer({ classroomId, teacherHandle, status: 'transport-connected' }), message, editor);
+                    break;
+                }
+                case 'produce': {
+                    // Create a producer for the teacher's media
+                    const teacherHandle = parameters.teacherHandle;
+                    const producerId = await mediasoupServer.createTeacherProducer(classroomId, teacherHandle, parameters.kind, parameters.rtpParameters);
+                    this.replySuccess(this.newAnswer({ classroomId, teacherHandle, producerId }), message, editor);
+                    break;
+                }
+                default: {
+                    this.replyError(this.newError('awi:unknown-mediasoup-action', { action: parameters.action }), message, editor);
+                }
+            }
         } catch (err) {
             this.replyError(this.newError('awi:mediasoup-error', { error: err.message }), message, editor);
         }
     }
-    // Step 2: Teacher DTLS connect (called after initial transport creation)
-    async command_connectTeacherTransport(parameters, message, editor) {
-        const { classroomId, teacherHandle, dtlsParameters } = parameters;
-        try {
-            const mediasoupServer = this.awi.awi.mediasoupServer;
-            await mediasoupServer.connectTeacherTransport(classroomId, teacherHandle, dtlsParameters);
-            this.replySuccess(this.newAnswer({ classroomId, teacherHandle, status: 'dtls-connected' }), message, editor);
-        } catch (err) {
-            this.replyError(this.newError('awi:mediasoup-dtls-error', { error: err.message }), message, editor);
-        }
-    }
-
-    // Step 3: Teacher creates a media producer (audio/video)
-    async command_createTeacherProducer(parameters, message, editor) {
-        const { classroomId, teacherHandle, kind, rtpParameters } = parameters;
-        try {
-            const mediasoupServer = this.awi.awi.mediasoupServer;
-            const producerId = await mediasoupServer.createTeacherProducer(classroomId, teacherHandle, kind, rtpParameters);
-            this.replySuccess(this.newAnswer({ classroomId, teacherHandle, producerId, kind }), message, editor);
-        } catch (err) {
-            this.replyError(this.newError('awi:mediasoup-producer-error', { error: err.message }), message, editor);
-        }
+    async command_disconnectTeacher( parameters, message, editor )
+    {
     }
 
     async command_connectStudent( parameters, message, editor )
     {
-        const studentHandle = this.awi.utilities.getUniqueIdentifier( this.classrooms, 'student', this.classroomCount++ );
-        const classroomId = parameters.classroomId;
-        if (this.classrooms[classroomId]) {
-            this.classrooms[classroomId].students[studentHandle] = {
-                handle: studentHandle,
-                editor: editor,
-                metadata: parameters.metadata || {}, // Any extra info
-            };
-            this.awi.awi.editor.print(`Student ${studentHandle} connected to classroom ${classroomId}`, { user: 'awi' });
-
-            // Send studentConnected command to teacher
-            this.classrooms[classroomId].editor.sendCommand({
-                command: SERVERCOMMANDS.STUDENT_CONNECTED,
-                parameters: {
-                    classroomId: classroomId,
-                    studentHandle: studentHandle,
-                    metadata: student.metadata,
-                },
-            });
-            // Send studentConnected command to all students
-            for (let studentHandle in this.classrooms[classroomId].students) {
-                var student = this.classrooms[classroomId].students[studentHandle];
-                if (student.handle != studentHandle) {
-                    student.editor.sendCommand({
-                        command: SERVERCOMMANDS.STUDENT_CONNECTED,
-                        parameters: {
-                            classroomId: classroomId,
-                            studentHandle: studentHandle,
-                        },
-                        metadata: student.metadata,
-                    });
-                }
-            }
-            this.replySuccess(this.newAnswer({ classroomId, studentHandle }), message, editor);
-        } else {
-            this.awi.awi.editor.print(`Classroom ${classroomId} not found`, { user: 'awi' });
-            this.replyError(this.newError('awi:classroom-not-found', { classroomId }), message, editor);
-        }
     }
     async command_disconnectStudent( parameters, message, editor )
     {
-        const studentHandle = parameters.studentHandle;
-        const classroomId = parameters.classroomId;
-        if (this.classrooms[classroomId]) {
-            if (this.classrooms[classroomId].students[studentHandle]) {
-                delete this.classrooms[classroomId].students[studentHandle];
-                this.awi.awi.editor.print(`Deleted student ${studentHandle} from classroom ${classroomId}`, { user: 'awi' });
-                // Send studentDisconnected command to teacher
-                this.classrooms[classroomId].editor.sendCommand({
-                    command: SERVERCOMMANDS.STUDENT_DISCONNECTED,
-                    parameters: {
-                        classroomId: classroomId,
-                        studentHandle: studentHandle,
-                    },
-                });
-                // Send studentDisconnected command to all students
-                for (let studentHandle in this.classrooms[classroomId].students) {
-                    var student = this.classrooms[classroomId].students[studentHandle];
-                    if (student.handle != studentHandle) {
-                        student.editor.sendCommand({
-                            command: SERVERCOMMANDS.STUDENT_DISCONNECTED,
-                            parameters: {
-                                classroomId: classroomId,
-                                studentHandle: studentHandle,
-                            },
-                        });
-                    }
-                }
-                this.replySuccess(this.newAnswer({ classroomId, studentHandle }), message, editor);
-            } else {
-                this.awi.awi.editor.print(`Student ${studentHandle} not found in classroom ${classroomId}`, { user: 'awi' });
-                this.replyError(this.newError('awi:student-not-found', { studentHandle, classroomId }), message, editor);
-            }
-        } else {
-            this.awi.awi.editor.print(`Classroom ${classroomId} not found`, { user: 'awi' });
-            this.replyError(this.newError('awi:classroom-not-found', { classroomId }), message, editor);
-        }
-    }
-    async command_disconnectTeacher( parameters, message, editor )
-    {
-        const teacherHandle = parameters.handle;
-        const classroomId = teacherHandle;
-        if (this.classrooms[classroomId]) {
-            delete this.classrooms[classroomId];
-            this.awi.awi.editor.print(`Deleted classroom ${classroomId}`, { user: 'awi' });
-            this.replySuccess(this.newAnswer({ classroomId, status: 'deleted' }), message, editor);
-        } else {
-            this.awi.awi.editor.print(`Classroom ${classroomId} not found`, { user: 'awi' });
-            this.replyError(this.newError('awi:classroom-not-found', { classroomId }), message, editor);
-        }
-    }
+ }
     replyError( error, message, editor )
 	{
 		if ( message )

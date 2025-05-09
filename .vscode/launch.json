@@ -1,9 +1,22 @@
 {
     "configurations": [
         {
-            "type": "node",
+            "name": "AWI",
+            "program": "${workspaceFolder}/engine/simple-node-prompt.mjs",
             "request": "launch",
-            "url": "http://localhost:5173?debug=1&url=ws://192.168.1.66:1033",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "runtimeArgs": ["--preserve-symlinks"],
+            "console": "integratedTerminal",
+            "outputCapture": "std",
+            "type": "node"
+        },
+        {
+            "name": "STAM",
+            "type": "msedge",
+            "request": "launch",
+            "url": "http://localhost:5173?debug=1",
             "webRoot": "${workspaceFolder}/stam/src",
         }
     ]

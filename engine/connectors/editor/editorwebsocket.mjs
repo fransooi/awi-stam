@@ -179,7 +179,7 @@ class EditorWebSocket extends EditorBase
     }
 
     // Classroom commands
-    async command_connectTeacher( parameters, message )
+    async command_connectTeacher(parameters, message) 
     {
         return await this.call_classroom('command_connectTeacher', parameters, message);
     }

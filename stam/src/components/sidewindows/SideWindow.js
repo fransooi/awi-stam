@@ -267,7 +267,10 @@ class SideWindow extends BaseComponent {
    */
   async setMinimized(minimized) {
     if(this.minimized !== minimized) {
-      await this.toggle();
+      if (!this.container)
+        this.minimized = minimized;
+      else
+        await this.toggle();
     }
   }
   async toggle() {

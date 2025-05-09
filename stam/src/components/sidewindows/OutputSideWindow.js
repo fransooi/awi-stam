@@ -68,54 +68,39 @@ class OutputSideWindow extends SideWindow {
       // Check if we already have this implementation in the cache
       if (this.modeImplementationsCache[mode]) {
         this.modeImplementation = this.modeImplementationsCache[mode];
-        return;
+        return this.modeImplementation;
       }
-      
       // Dynamically import the output module for the specified mode
       let OutputImplementation;
-      
-      switch (mode) {
-        case 'stos':
-          const stosModule = await import('../modes/stos/output.js');
-          OutputImplementation = stosModule.default;
-          break;
-        case 'amos1_3':
-          const amos13Module = await import('../modes/amos1_3/output.js');
-          OutputImplementation = amos13Module.default;
-          break;
-        case 'amosPro':
-          const amosProModule = await import('../modes/amosPro/output.js');
-          OutputImplementation = amosProModule.default;
-          break;
-        case 'c64':
-          const c64Module = await import('../modes/c64/output.js');
-          OutputImplementation = c64Module.default;
-          break;
-        case 'phaser':
-          const phaserModule = await import('../modes/phaser/output.js');
-          OutputImplementation = phaserModule.default;
-          break;
-        case 'javascript':
-        default:
-          const javascriptModule = await import('../modes/javascript/output.js');
-          OutputImplementation = javascriptModule.default;
-          break;
+      try {
+        const module = await import(`../modes/${mode}/output.js`);
+        OutputImplementation = module.default;
+      } catch (err) {
+        // Fallback to javascript if mode-specific module not found
+        try {
+          const fallbackModule = await import('../modes/javascript/output.js');
+          OutputImplementation = fallbackModule.default;
+          console.warn(`Could not load output module for mode: ${mode}. Falling back to javascript.`, err);
+        } catch (fallbackErr) {
+          console.error('Could not load fallback javascript output module.', fallbackErr);
+          throw fallbackErr;
+        }
       }
-      
-      // Create a new instance of the mode-specific implementation
-      this.modeImplementation = new OutputImplementation(this.componentId,this.containerId,this.height);
-      await this.modeImplementation.init({mode:mode});
-
-      // Cache the implementation for future use
-      this.modeImplementationsCache[mode] = this.modeImplementation;
-      
-      return this.modeImplementation;
-      
+      // Create and initialize the mode-specific implementation
+      const modeImplementation = new OutputImplementation(this.componentId, this.containerId, this.height);
+      if (typeof modeImplementation.init === 'function') {
+        await modeImplementation.init({ mode });
+      }
+      // Cache the instance and assign
+      this.modeImplementationsCache[mode] = modeImplementation;
+      this.modeImplementation = modeImplementation;
+      return modeImplementation;
     } catch (error) {
       console.error(`Error loading output implementation for mode ${mode}:`, error);
       // Fallback to base implementation
-      var modeImplementation = new BaseOutput(this.componentId,this.containerId,this.height);
+      const modeImplementation = new BaseOutput(this.componentId, this.containerId, this.height);
       this.modeImplementationsCache[mode] = modeImplementation;
+      this.modeImplementation = modeImplementation;
       return modeImplementation;
     }
   }

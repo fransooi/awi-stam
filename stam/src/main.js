@@ -61,7 +61,7 @@ class StamApp extends BaseComponent {
       { value: 'c64', text: 'Commodore 64' }
     ];
     this.currentMode = 'phaser'; 
-    this.webSocketUrl = 'ws://217.154.15.90:1033';
+    this.webSocketUrl = 'ws://192.168.1.66:1033';
     
     // Initialize utilities
     this.utilities = new Utilities();
@@ -127,7 +127,7 @@ class StamApp extends BaseComponent {
       await this.sendMessageTo(this.sideBar.componentId,MESSAGES.ADD_SIDE_WINDOW, { type: 'ProjectSideWindow', height: 200, width:300 });
       await this.sendMessageTo(this.sideBar.componentId,MESSAGES.ADD_SIDE_WINDOW, { type: 'OutputSideWindow', height: 200 });
 //      await this.sendMessageTo(this.sideBar.componentId,MESSAGES.ADD_SIDE_WINDOW, { type: 'TVSideWindow', height: 200 });
-      await this.sendMessageTo(this.sideBar.componentId,MESSAGES.ADD_SIDE_WINDOW, { type: 'SocketSideWindow', height: 200 });
+      await this.sendMessageTo(this.sideBar.componentId,MESSAGES.ADD_SIDE_WINDOW, { type: 'SocketSideWindow', height: 200, minimized: true });
     }
 
     // Send RENDER messages to components-> they display themselves

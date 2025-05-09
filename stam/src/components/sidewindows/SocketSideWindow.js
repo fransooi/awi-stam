@@ -563,14 +563,37 @@ class SocketSideWindow extends SideWindow {
   /**
    * Add a message to the message list
    * @param {string} direction - Direction of the message ('sent' or 'received')
-   * @param {string} content - Content of the message
+   * @param {string} data - Content of the message
    */
-  addMessage(direction, content) {
-
-    if ( typeof content === 'undefined' )
+  addMessage(direction, data, text) {
+    if ( typeof data === 'undefined' )
       return;
 
     // Create message object
+    var content = '';
+    if ( typeof data === 'string' )
+      content = data;
+    else 
+    {
+      if (direction == 'sent') 
+      {
+        content = data.command;
+        if (data.parameters && data.parameters.action)
+          content += '-' + data.parameters.action;
+      }
+      else if (direction == 'received')
+      {
+        if (data.responseTo)
+          content = data.responseTo;
+        else if (data.command)
+          content = data.command;
+        if (data.error)
+          content += '- ERROR: ' + data.error;
+      }
+    }
+    if (text)
+      content += '\n' + text;
+
     const message = {
       direction,
       content,
@@ -834,19 +857,12 @@ class SocketSideWindow extends SideWindow {
     this.updateReceiveIndicator();
     this.updateReceiveIndicatorTooltip();
 
-    // Get message text
-    var text = message.command;
-    if (message.responseTo)
-      text = message.responseTo;
-
     // Connected?
     if (message.responseTo === SERVERCOMMANDS.CONNECT) 
     {
+      this.addMessage('received', message);    
       if (!message.error) 
       {
-        this.addMessage('received', text);    
-        text = '';
-
         // Handle login prompt
         if (this.accountInfo)
         {
@@ -884,26 +900,18 @@ class SocketSideWindow extends SideWindow {
           this.broadcast(SOCKETMESSAGES.CONNECTED, message.parameters);  
         }
       }
-      else{
-        text = message.error;
-      }
+      return;
     }
 
-    // Prompt?
+    // Prompt? Display the response (temporary)
     if (message.command === SERVERCOMMANDS.PROMPT) 
     {
-      if (!message.error)
-      {
-        text += '\n' + message.parameters.text;
-        this.addMessage('received', text);    
-        text = '';
-      }
+      this.addMessage('received', message, message.parameters.text);    
     }
-
-    // Add any remaining text
-    if (text) 
-      this.addMessage('received', text);
-
+    else
+    {
+      this.addMessage('received', message);
+    }
     // Send message to root
     this.sendMessageToRoot(SOCKETMESSAGES.MESSAGE_RECEIVED,message);
   }
@@ -1002,7 +1010,7 @@ class SocketSideWindow extends SideWindow {
 
       // Increment sent counter
       this.messagesSent++;
-      this.addMessage('sent', data.command);
+      this.addMessage('sent', data);
       
       // Update send indicator
       this.updateSendIndicator();
@@ -1019,7 +1027,7 @@ class SocketSideWindow extends SideWindow {
 
       // Increment sent counter
       this.messagesSent++;
-      this.addMessage('sent', data.command);
+      this.addMessage('sent', data);
       this.updateSendIndicator();
       this.updateSendIndicatorTooltip();
 
@@ -1027,10 +1035,7 @@ class SocketSideWindow extends SideWindow {
         this.client.requestResponse(data.command,data.parameters)
         .then(data => {
           // Add response to display
-          if (!data.parameters.error)
-            this.addMessage('received', data.responseTo);
-          else
-            this.addMessage('received', data.responseTo + ': ' + data.parameters.error);
+          this.addMessage('received', data);
           
           // Update receive indicator
           this.updateReceiveIndicator();
@@ -1041,7 +1046,7 @@ class SocketSideWindow extends SideWindow {
         })
         .catch(data => {
           // Add error to display
-          this.addMessage('received', data.responseTo + '\n' + data.parameters.error);
+          this.addMessage('received', data);
           
           // Update receive indicator
           this.updateReceiveIndicator();

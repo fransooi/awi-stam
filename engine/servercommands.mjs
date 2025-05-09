@@ -26,8 +26,6 @@ export const SERVERCOMMANDS = {
     CONNECT_STUDENT: 'connectStudent',
     DISCONNECT_STUDENT: 'disconnectStudent',
     STUDENT_CONNECTED: 'studentConnected',
-    CONNECT_TEACHER_TRANSPORT: 'connectTeacherTransport',
-    CREATE_TEACHER_PRODUCER: 'createTeacherProducer',
     CREATE_CLASSROOM: 'createClassroom',
     JOIN_CLASSROOM: 'joinClassroom',
     LEAVE_CLASSROOM: 'leaveClassroom',

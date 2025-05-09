@@ -77,27 +77,18 @@ class IconBar extends BaseComponent {
       try {
         // Dynamically import the icons module for the current mode
         let IconsModule;
-        switch (mode) {
-          case 'phaser':
-            IconsModule = await import('./modes/phaser/icons.js');
-            break;
-          case 'stos':
-            IconsModule = await import('./modes/stos/icons.js');
-            break;
-          case 'amos1_3':
-            IconsModule = await import('./modes/amos1_3/icons.js');
-            break;
-          case 'amosPro':
-            IconsModule = await import('./modes/amosPro/icons.js');
-            break;
-          case 'c64':
-            IconsModule = await import('./modes/c64/icons.js');
-            break;
-          case 'javascript':
-          default:
+        try {
+          IconsModule = await import(`./modes/${mode}/icons.js`);
+        } catch (err) {
+          // Fallback to javascript if mode-specific module not found
+          try {
             IconsModule = await import('./modes/javascript/icons.js');
-            break;
-        }       
+            console.warn(`Could not load icons for mode: ${mode}. Falling back to javascript.`, err);
+          } catch (fallbackErr) {
+            console.error('Could not load fallback javascript icons module.', fallbackErr);
+            throw fallbackErr;
+          }
+        }
         // Create and render the mode-specific icons
         this.modeSpecificIconsCache[mode] = new IconsModule.default(this.componentId);
       } catch (error) {
