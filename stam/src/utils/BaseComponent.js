@@ -87,7 +87,7 @@ export default class BaseComponent {
       this
     );
     
-    console.log(`Component ${componentName} created with ID: ${this.componentId}`);
+    //console.log(`Component ${componentName} created with ID: ${this.componentId}`);
   }
   
   async render(containerId=null) {
@@ -157,7 +157,7 @@ export default class BaseComponent {
   async handleMessage(messageType, messageData, senderId) {
     if (this.messageMap[messageType])
     {
-      console.log(`- ${messageType} received by ${this.componentId}, sent by ${senderId}`/*,messageData.data*/);
+      //console.log(`- ${messageType} received by ${this.componentId}, sent by ${senderId}`/*,messageData.data*/);
       return await this.messageMap[messageType].call(this,messageData.data,senderId);
     }
     return false;
@@ -415,7 +415,7 @@ export default class BaseComponent {
    * Clean up resources when component is destroyed
    */
   async destroy() {
-    console.log(`Destroying component: ${this.componentId}`);
+    //console.log(`Destroying component: ${this.componentId}`);
     
     // Unregister from message bus
     if (this.unsubscribeFromMessages) {

@@ -150,7 +150,7 @@ class WebSocketClient {
    * @private
    */
   onOpen(event) {
-    console.log('WebSocket connection established');
+    //console.log('WebSocket connection established');
     this.isConnected = true;
     this.loggedIn = false;
     this.reconnectAttempts = 0;

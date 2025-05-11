@@ -21,7 +21,7 @@
 */
 export default class Utilities {
   constructor() {
-    console.log('Utilities initialized');
+    //console.log('Utilities initialized');
   }
 
   /**

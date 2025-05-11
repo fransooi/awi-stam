@@ -91,11 +91,20 @@ class TeacherSideWindow extends SideWindow {
     this.content.innerHTML = '';
     this.content.className = 'side-window-content';
     if (!this.connected) {
-      // Not connected: show message
-      const msg = document.createElement('div');
-      msg.className = 'side-window-placeholder';
-      msg.innerText = 'Not connected';
-      this.content.appendChild(msg);
+      // Not connected: show connecting video
+      this.videoElement = document.createElement('video');
+      this.videoElement.className = 'side-window-video';
+      this.videoElement.autoplay = true;
+      this.videoElement.playsInline = true;
+      this.videoElement.controls = false;
+      this.videoElement.style.background = 'black';
+      this.videoElement.style.width = '100%';
+      this.videoElement.style.height = 'auto';
+      this.videoElement.src = '/connecting.mp4';
+      this.videoElement.loop = true;
+      this.videoElement.muted = true;
+      this.videoElement.play();
+      this.content.appendChild(this.videoElement);
     } else if (this.stream) {
       // Connected: show video
       this.videoElement = document.createElement('video');
@@ -162,6 +171,8 @@ class TeacherSideWindow extends SideWindow {
       }
       else
       {
+        const videoTrack = stream.getVideoTracks()[0];
+        console.log('Teacher video enabled:', videoTrack.enabled, 'readyState:', videoTrack.readyState);
         this.connected = true;
         this.stream = stream;
         this.updateContent();

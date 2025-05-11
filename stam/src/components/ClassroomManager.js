@@ -100,26 +100,9 @@ class ClassroomManager extends BaseComponent {
       // Optionally disconnect previous session here
       this.teacherConnected = false;
     }
-    // Start mediasoup connection
-    var answer =await this.connectTeacherMediasoup(data.stream);
-    if (answer)
-    {
-      this.teacherConnected = true;
-      var answer = await this.sendRequestTo('class:RightBar',MESSAGES.ADD_SIDE_WINDOW, { type: 'TeacherViewSideWindow', height: 200 });
-      if (!answer.error)
-      {
-        this.broadcast(CLASSROOMCOMMANDS.TEACHER_CONNECTED, { classroomId: this.classroomId });
-        return true;
-      }
-    }
-    return false;
-  }
-
-  async connectTeacherMediasoup(stream) {
     try {
       // 1. Create mediasoup Device
       this.mediasoupDevice = new mediasoupClient.Device();
-
       // 2. Get router RTP capabilities from backend
       let response = await this.root.fileSystem.connectTeacher({
         action: 'getRouterRtpCapabilities',
@@ -127,21 +110,20 @@ class ClassroomManager extends BaseComponent {
       });
       if (response.error) throw new Error(response.error);
       const rtpCapabilities = response.rtpCapabilities;
-
+      const iceServers = response.iceServers || [{ urls: 'stun:stun.l.google.com:19302' }];
       // 3. Load Device
       await this.mediasoupDevice.load({ routerRtpCapabilities: rtpCapabilities });
-
       // 4. Create transport on backend
       response = await this.root.fileSystem.connectTeacher({
         action: 'createTransport',
         classroomId: this.classroomId
       });
       if (response.error) throw new Error(response.error);
-      const { transportParams, teacherHandle } = response;
-
+      const { transportParams, teacherHandle, iceServers: transportIceServers } = response;
+      // Use the iceServers from transport response if present, else fallback
+      const effectiveIceServers = transportIceServers || iceServers;
       // 5. Create send transport on client
-      this.sendTransport = this.mediasoupDevice.createSendTransport(transportParams);
-
+      this.sendTransport = this.mediasoupDevice.createSendTransport({ ...transportParams, iceServers: effectiveIceServers });
       // 6. Wire up DTLS connect event
       this.sendTransport.on('connect', async ({ dtlsParameters }, callback, errback) => {
         try {
@@ -157,7 +139,6 @@ class ClassroomManager extends BaseComponent {
           errback(err);
         }
       });
-
       // 7. Wire up produce event
       this.sendTransport.on('produce', async ({ kind, rtpParameters }, callback, errback) => {
         try {
@@ -174,34 +155,145 @@ class ClassroomManager extends BaseComponent {
           errback(err);
         }
       });
-
       // 8. Produce audio/video tracks
-      for (const track of stream.getTracks()) {
-        await this.sendTransport.produce({ track });
+      for (const track of data.stream.getTracks()) {
+        var answer = await this.sendTransport.produce({ track });
+        console.log('Teacher produce answer:', answer);
       }
-
-      // 9. Notify TeacherSideWindow of success
       this.teacherConnected = true;
-      this.teacherStream = stream;
-      return true;
+      this.teacherStream = data.stream;
+      // 9. Notify TeacherSideWindow of success
+      const sideWindowAnswer = await this.sendRequestTo('class:RightBar', MESSAGES.ADD_SIDE_WINDOW, { type: 'TeacherViewSideWindow', height: 200 });
+      if (!sideWindowAnswer.error) {
+        this.broadcast(CLASSROOMCOMMANDS.TEACHER_CONNECTED, { classroomId: this.classroomId });
+        return true;
+      } else {
+        return false;
+      }
     } catch (err) {
+      console.error('Error in handleTeacherConnect:', err);
       return false;
     }
   }
 
   async handleJoinClassroom(data, senderId) {
-    if (!this.classroomOpen)
-    {
-      await this.sendMessageTo('class:RightBar', MESSAGES.ADD_SIDE_WINDOW, { type: 'StudentSideWindow', height: 400 });
-      this.classroomOpen='student';
+    var classroomId = data.classroomId;
+    if (!classroomId) {
+      return { error: 'No classroomId provided.' };
     }
+    let response = await this.root.fileSystem.joinClassroom({
+      classroomId: classroomId
+    });
+    if (response.error) {
+      return { error: response.error };
+    }
+    //this.classroomInfo = response.classroomInfo;
+    //this.classroomName = response.classroomInfo.name;
+    //await this.sendMessageTo('class:RightBar', MESSAGES.ADD_SIDE_WINDOW, { type: 'StudentSideWindow', height: 400 });
+    return { classroomInfo: response.classroomInfo, studentHandle: response.studentHandle };
   }
 
   async handleStudentConnect(data, senderId) {
-    
+    // Connect as a student using only the provided classroomId
+    const classroomId = data.classroomId;
+    if (!classroomId) {
+      return { error: 'No classroomId provided.' };
+    }
+    const studentHandle = data.studentHandle;
+    if (!studentHandle) {
+      return { error: 'No studentHandle provided.' };
+    }
+    try {
+      // 1. Create mediasoup Device
+      const device = new mediasoupClient.Device();
+      // 2. Get router RTP capabilities from AWI server
+      let response = await this.root.fileSystem.connectStudent({
+        action: 'getRouterRtpCapabilities',
+        classroomId,
+        studentHandle
+      });
+      if (response.error) throw new Error(response.error);
+      const rtpCapabilities = response.rtpCapabilities;
+      const iceServers = response.iceServers || [{ urls: 'stun:stun.l.google.com:19302' }];
+      // 3. Load Device
+      await device.load({ routerRtpCapabilities: rtpCapabilities });
+      // 4. Create transport on backend
+      response = await this.root.fileSystem.connectStudent({
+        action: 'createTransport',
+        classroomId,
+        studentHandle
+      });
+      if (response.error) throw new Error(response.error);
+      const { id, iceParameters, iceCandidates, dtlsParameters } = response.transportParams;
+      const transportIceServers = response.iceServers;
+      const effectiveIceServers = transportIceServers || iceServers;
+      // 5. Create receive transport in client
+      const recvTransport = device.createRecvTransport({
+        id,
+        iceParameters,
+        iceCandidates,
+        dtlsParameters,
+        iceServers: effectiveIceServers
+      });
+      // 6. Wire up DTLS connect event
+      recvTransport.on('connect', async ({ dtlsParameters }, callback, errback) => {
+        try {
+          const resp = await this.root.fileSystem.connectStudent({
+            action: 'connectTransport',
+            classroomId,
+            studentHandle,
+            dtlsParameters
+          });
+          if (resp.error) throw new Error(resp.error);
+          callback();
+        } catch (err) {
+          errback(err);
+        }
+      });
+      // 7. Get teacher's producer info from server
+      response = await this.root.fileSystem.connectStudent({
+        action: 'consume',
+        classroomId,
+        studentHandle,
+        rtpCapabilities
+      });
+      if (response.error) throw new Error(response.error);
+      const { consumerParams } = response;
+      if (!consumerParams || (typeof consumerParams !== 'object')) {
+        throw new Error('No consumer parameters received');
+      }
+      // 8. Consume audio/video tracks
+      //const consumer = await recvTransport.consume(consumerParams);
+      //await consumer.resume();
+      //const stream = new MediaStream([consumer.track]);
+      //return { stream };
+      const tracks = [];
+      for (const kind of ['audio', 'video']) {
+        const params = consumerParams[kind];
+        if (params) {
+          const { id, producerId, kind, rtpParameters } = params;
+          //const { consumer, track } 
+          var consumer= await recvTransport.consume({
+            id,
+            producerId,
+            kind,
+            rtpParameters
+          });
+          await consumer.resume();
+          var track = consumer.track;
+          tracks.push(track);
+        }
+      }
+      if (!tracks.length) throw new Error('No tracks received from teacher');
+      // 9. Create MediaStream from all tracks (audio/video)
+      const stream = new MediaStream(tracks);
+      return { stream };
+    } catch (err) {
+      return { error: err.message || 'Error connecting as student.' };
+    }
   }
 
-  async handleLeaveClassroom(data, senderId) {
+async handleLeaveClassroom(data, senderId) {
     if (this.classroomOpen)
     {
       if (this.classroomOpen=='teacher')

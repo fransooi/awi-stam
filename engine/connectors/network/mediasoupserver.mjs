@@ -86,13 +86,16 @@ class ConnectorMediasoupServer extends ConnectorBase
         this.awi.editor.print(`Created mediasoup room for classroom ${classroomId}`, { user: 'awi' });
         return room;
     }
+    getClassroomMediasoupRoom(classroomId) {
+        return this.rooms[classroomId];
+    }
 
     // Called by classroomserver to set up teacher's transport
     async createTeacherTransport(classroomId, teacherHandle, options = {}) {
         const room = await this.createClassroomMediasoupRoom(classroomId);
         // Create a WebRTC transport for the teacher
         const transport = await room.router.createWebRtcTransport({
-            listenIps: [{ ip: '0.0.0.0', announcedIp: options.announcedIp || null }],
+            listenIps: [{ ip: '0.0.0.0', announcedIp: options.announcedIp || '192.168.1.66' }],
             enableUdp: true,
             enableTcp: true,
             preferUdp: true
@@ -123,8 +126,152 @@ class ConnectorMediasoupServer extends ConnectorBase
         const transport = room.transports[teacherHandle];
         if (!transport) throw new Error('Transport not found');
         const producer = await transport.produce({ kind, rtpParameters });
-        room.producers[teacherHandle] = producer;
+        if (!room.producers[teacherHandle]) room.producers[teacherHandle] = {};
+        room.producers[teacherHandle][kind] = producer;
+        await producer.resume();
+        console.log(`[mediasoup] Created producer for ${teacherHandle} kind=${kind} paused=${producer.paused}`);
         return producer.id;
+    }
+
+    // Called by classroomserver to set up student's transport
+    async createStudentTransport(classroomId, studentHandle, options = {}) {
+        const room = await this.createClassroomMediasoupRoom(classroomId);
+        // Use same transport options as teacher
+        const transport = await room.router.createWebRtcTransport({
+            listenIps: [{ ip: '0.0.0.0', announcedIp: options.announcedIp || '192.168.1.66' }],
+            enableUdp: true,
+            enableTcp: true,
+            preferUdp: true
+        });
+        room.transports[studentHandle] = transport;
+        return {
+            id: transport.id,
+            iceParameters: transport.iceParameters,
+            iceCandidates: transport.iceCandidates,
+            dtlsParameters: transport.dtlsParameters
+        };
+    }
+
+    // Connect a student's transport with DTLS parameters
+    async connectStudentTransport(classroomId, studentHandle, dtlsParameters) {
+        const room = this.rooms[classroomId];
+        if (!room) throw new Error('Classroom not found');
+        const transport = room.transports[studentHandle];
+        if (!transport) throw new Error('Transport not found');
+        await transport.connect({ dtlsParameters });
+        return true;
+    }
+
+    // Create a producer for the student's media (if students can produce)
+    async createStudentProducer(classroomId, studentHandle, kind, rtpParameters) {
+        const room = this.rooms[classroomId];
+        if (!room) throw new Error('Classroom not found');
+        const transport = room.transports[studentHandle];
+        if (!transport) throw new Error('Transport not found');
+        const producer = await transport.produce({ kind, rtpParameters });
+        room.producers[studentHandle] = producer;
+        return producer.id;
+    }
+
+    // Create a consumer for the student's transport to consume teacher's media
+    async createStudentConsumer(classroomId, studentHandle, teacherHandle, kind, rtpCapabilities) {
+        const room = this.rooms[classroomId];
+        if (!room) throw new Error('Classroom not found');
+        const studentTransport = room.transports[studentHandle];
+        if (!studentTransport) throw new Error('Student transport not found');
+        // Retrieve the teacher's producer for the requested kind
+        const teacherProducers = room.producers[teacherHandle];
+        if (!teacherProducers || !teacherProducers[kind]) return null;
+        const teacherProducer = teacherProducers[kind];
+        // Check RTP capabilities
+        console.log(`[mediasoup] Student ${studentHandle} consuming kind=${kind} with rtpCapabilities=`, JSON.stringify(rtpCapabilities));
+        const canConsume = room.router.canConsume({ producerId: teacherProducer.id, rtpCapabilities });
+        console.log(`[mediasoup] canConsume for producerId=${teacherProducer.id} kind=${kind}:`, canConsume);
+        if (!canConsume) {
+            return null;
+        }
+        const consumer = await studentTransport.consume({
+            producerId: teacherProducer.id,
+            rtpCapabilities,
+            paused: false
+        });
+        console.log(`[mediasoup] Created consumer for student=${studentHandle} kind=${kind} paused=${consumer.paused} producerPaused=${consumer.producerPaused}`);
+        // Store consumer for cleanup
+        if (!room.consumers[studentHandle]) room.consumers[studentHandle] = [];
+        room.consumers[studentHandle].push(consumer);
+        await consumer.resume();
+        return {
+            id: consumer.id,
+            producerId: teacherProducer.id,
+            kind: consumer.kind,
+            rtpParameters: consumer.rtpParameters,
+            type: consumer.type,
+            producerPaused: consumer.producerPaused
+        };
+    }
+
+    // Disconnect and clean up the teacher's transport
+    async disconnectTeacherTransport(classroomId, teacherHandle) {
+        const room = this.rooms[classroomId];
+        if (!room) throw new Error('Classroom not found');
+        const transport = room.transports[teacherHandle];
+        if (!transport) throw new Error('Transport not found');
+        // Close associated producer if exists
+        if (room.producers[teacherHandle]) {
+            await room.producers[teacherHandle].close();
+            delete room.producers[teacherHandle];
+        }
+        await transport.close();
+        delete room.transports[teacherHandle];
+        return true;
+    }
+
+    // Disconnect and clean up the student's transport
+    async disconnectStudentTransport(classroomId, studentHandle) {
+        const room = this.rooms[classroomId];
+        if (!room) throw new Error('Classroom not found');
+        const transport = room.transports[studentHandle];
+        if (!transport) throw new Error('Transport not found');
+        // Close associated producer if exists (if students can produce)
+        if (room.producers[studentHandle]) {
+            await room.producers[studentHandle].close();
+            delete room.producers[studentHandle];
+        }
+        await transport.close();
+        delete room.transports[studentHandle];
+        return true;
+    }
+
+    // Clean up all mediasoup resources for a classroom
+    async endClassroom(classroomId) {
+        const room = this.rooms[classroomId];
+        if (!room) return true; // Already cleaned up
+        // Close all producers
+        for (const producer of Object.values(room.producers)) {
+            try { await producer.close(); } catch (e) {}
+        }
+        // Close all consumers
+        if (room.consumers) {
+            for (const consumerList of Object.values(room.consumers)) {
+                if (Array.isArray(consumerList)) {
+                    for (const consumer of consumerList) {
+                        try { await consumer.close(); } catch (e) {}
+                    }
+                } else if (consumerList) {
+                    try { await consumerList.close(); } catch (e) {}
+                }
+            }
+        }
+        // Close all transports
+        for (const transport of Object.values(room.transports)) {
+            try { await transport.close(); } catch (e) {}
+        }
+        // Close the router
+        if (room.router) {
+            try { await room.router.close(); } catch (e) {}
+        }
+        delete this.rooms[classroomId];
+        return true;
     }
 
     replyError(error, message) {

@@ -61,7 +61,7 @@ class StamApp extends BaseComponent {
       { value: 'c64', text: 'Commodore 64' }
     ];
     this.currentMode = 'phaser'; 
-    this.webSocketUrl = 'ws://192.168.1.66:1033';
+    this.webSocketUrl = 'ws://192.168.1.66:1033';  //'ws://localhost:1033'; 
     
     // Initialize utilities
     this.utilities = new Utilities();
@@ -145,7 +145,7 @@ class StamApp extends BaseComponent {
 //      await this.sendMessageTo('class:SocketSideWindow',SOCKETMESSAGES.CONNECT_IF_CONNECTED);
 
     // Log initialization
-    console.log('STAM Application initialized in ' + this.currentMode + ' mode');
+    //console.log('STAM Application initialized in ' + this.currentMode + ' mode');
     
   }
   

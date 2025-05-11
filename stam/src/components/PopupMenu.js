@@ -425,7 +425,7 @@ export default class PopupMenu extends BaseComponent {
    * @returns {boolean} - True if the message was handled
    */
   async handleMessage(messageType, messageData, sender) {
-    console.log(`PopupMenu received message: ${messageType}`, messageData);
+    //console.log(`PopupMenu received message: ${messageType}`, messageData);
     return super.handleMessage(messageType, messageData, sender);
   }
   

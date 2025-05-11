@@ -53,11 +53,20 @@ class TeacherViewSideWindow extends SideWindow {
     this.videoElement.style.background = 'black';
     this.videoElement.style.width = '100%';
     this.videoElement.style.height = 'auto';
+    // Display static video for testing
+    this.videoElement.src = '/connecting.mp4';
+    this.videoElement.loop = true;
+    this.videoElement.muted = true;
+    this.videoElement.play();
     this.content.appendChild(this.videoElement);
     return this.container;
   }
   async handleTeacherConnected(data, senderId) {
-    await this.connectToClassroom(data.classroomId);
+    var self = this;
+    setTimeout(function()
+    {
+      self.connectToClassroom(data.classroomId);
+    }, 1000);
   }
   async connectToClassroom(classroomId) {
     if (!classroomId) {
@@ -65,15 +74,44 @@ class TeacherViewSideWindow extends SideWindow {
       return;
     }
     try {
-      const response = await this.sendRequestTo('class:ClassroomManager', 'STUDENT_CONNECT', { classroomId: this.classroomId });
-      if (response && response.stream) {
-        this.stream = response.stream;
-        this.classroomId = classroomId;
-        this.videoElement.srcObject = this.stream;
-        this.error = null;
+      const response1 = await this.sendRequestTo('class:ClassroomManager', CLASSROOMCOMMANDS.JOIN_CLASSROOM, { classroomId });
+      if (response1.error) {
+        this.showError(response1.error);
+        return;
+      }    
+      const response2 = await this.sendRequestTo('class:ClassroomManager', CLASSROOMCOMMANDS.STUDENT_CONNECT, { classroomId, studentHandle: response1.studentHandle });
+      if (response2.error) {
+        this.showError(response2.error);
+        return;
+      }
+      if (response2.stream) {
+        var self = this;
+        setTimeout(function()
+        {
+          self.stream = response2.stream;
+          self.classroomId = classroomId;
+          self.studentHandle = response1.studentHandle;
+          self.videoElement.srcObject = self.stream;
+          self.videoElement.autoplay = true;
+          self.videoElement.playsInline = true;
+          self.videoElement.muted = false;
+          //self.videoElement.setAttribute('data-peer', response1.studentHandle);
+          self.videoElement.play();
+          self.error = null;
+          // Diagnostic: listen for mute/unmute on video track
+          const videoTrack = self.stream.getVideoTracks()[0];
+          if (videoTrack) {
+            console.log('Student video track muted state (immediately after assignment):', videoTrack.muted);
+            videoTrack.onunmute = () => console.log('Student video track ONUNMUTE event fired!');
+            videoTrack.onmute = () => {
+              console.log('Student video track ONMUTE event fired!');
+              self.videoElement.muted=false;
+            };
+          }
+        }, 1000);
         return true;
-      } else if (response && response.error) {
-        this.showError(response.error);
+      } else if (response2.error) {
+        this.showError(response2.error);
       } else {
         this.showError('Unknown error while connecting to classroom.');
       }

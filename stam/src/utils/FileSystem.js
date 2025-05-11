@@ -31,7 +31,7 @@ export default class FileSystem extends BaseComponent {
       this.messageMap[SOCKETMESSAGES.DISCONNECTED] = this.handleDisconnected;
       this.isConnected = false;
       // Poke all server commands as functions.
-      var source = 'console.log(this);\n';
+      var source = '';
       for(var c in SERVERCOMMANDS)
       {
         this.messageMap[SERVERCOMMANDS[c]] = this.handleServerCommand;

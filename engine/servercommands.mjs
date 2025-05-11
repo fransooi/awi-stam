@@ -27,6 +27,9 @@ export const SERVERCOMMANDS = {
     DISCONNECT_STUDENT: 'disconnectStudent',
     STUDENT_CONNECTED: 'studentConnected',
     CREATE_CLASSROOM: 'createClassroom',
+    END_CLASSROOM: 'endClassroom',
+    DELETE_CLASSROOM: 'deleteClassroom',
     JOIN_CLASSROOM: 'joinClassroom',
     LEAVE_CLASSROOM: 'leaveClassroom',
+    GET_CLASSROOM_LIST: 'getClassroomList',
 };
