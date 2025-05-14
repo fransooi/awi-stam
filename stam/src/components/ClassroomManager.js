@@ -26,14 +26,22 @@ import { MENUCOMMANDS } from './MenuBar.js'
 import * as mediasoupClient from 'mediasoup-client';
 
 export const CLASSROOMCOMMANDS = {
-  CREATE_CLASSROOM: 'CLASSROOM_CREATE',
-  JOIN_CLASSROOM: 'CLASSROOM_JOIN',
-  LEAVE_CLASSROOM: 'CLASSROOM_LEAVE',
+  CREATE_CLASSROOM: 'CREATE_CLASSROOM',
+  JOIN_CLASSROOM: 'JOIN_CLASSROOM',
+  DELETE_CLASSROOM: 'DELETE_CLASSROOM',
+  LEAVE_CLASSROOM: 'LEAVE_CLASSROOM',
+  TEACHER_LEAVE_CLASSROOM: 'TEACHER_LEAVE_CLASSROOM',
+  STUDENT_LEAVE_CLASSROOM: 'STUDENT_LEAVE_CLASSROOM',
   TEACHER_CONNECT: 'TEACHER_CONNECT',
+  TEACHER_DISCONNECT: 'TEACHER_DISCONNECT',
   TEACHER_CONNECTED: 'TEACHER_CONNECTED',
+  TEACHER_DISCONNECTED: 'TEACHER_DISCONNECTED',
   STUDENT_CONNECT: 'STUDENT_CONNECT',
   STUDENT_CONNECTED: 'STUDENT_CONNECTED',
+  STUDENT_DISCONNECT: 'STUDENT_DISCONNECT',
+  STUDENT_DISCONNECTED: 'STUDENT_DISCONNECTED',
   GET_CAMERA_SETTINGS: 'GET_CAMERA_SETTINGS',
+  TEACHER_VIEW_CONNECT: 'TEACHER_VIEW_CONNECT',
 };
 
 class ClassroomManager extends BaseComponent {
@@ -50,9 +58,14 @@ class ClassroomManager extends BaseComponent {
     this.messageMap[SOCKETMESSAGES.DISCONNECTED] = this.handleDisconnected;
     this.messageMap[CLASSROOMCOMMANDS.CREATE_CLASSROOM] = this.handleCreateClassroom;
     this.messageMap[CLASSROOMCOMMANDS.JOIN_CLASSROOM] = this.handleJoinClassroom;
+    this.messageMap[CLASSROOMCOMMANDS.DELETE_CLASSROOM] = this.handleDeleteClassroom;
     this.messageMap[CLASSROOMCOMMANDS.LEAVE_CLASSROOM] = this.handleLeaveClassroom;
+    this.messageMap[CLASSROOMCOMMANDS.TEACHER_LEAVE_CLASSROOM] = this.handleTeacherLeaveClassroom;
+    this.messageMap[CLASSROOMCOMMANDS.STUDENT_LEAVE_CLASSROOM] = this.handleStudentLeaveClassroom;
     this.messageMap[CLASSROOMCOMMANDS.TEACHER_CONNECT] = this.handleTeacherConnect;
+    this.messageMap[CLASSROOMCOMMANDS.TEACHER_DISCONNECT] = this.handleTeacherDisconnect;
     this.messageMap[CLASSROOMCOMMANDS.STUDENT_CONNECT] = this.handleStudentConnect;
+    this.messageMap[CLASSROOMCOMMANDS.STUDENT_DISCONNECT] = this.handleStudentDisconnect;
     this.messageMap[CLASSROOMCOMMANDS.GET_CAMERA_SETTINGS] = this.handleGetCameraSettings;
   }
 
@@ -71,20 +84,97 @@ class ClassroomManager extends BaseComponent {
   }
 
   async handleCreateClassroom(data, senderId) {
-    if (!this.classroomOpen)
+    if (!this.teacherClassroomOpen)
     {
       var classroomInfo = await this.showCreateClassroomDialog();
       if (classroomInfo)
       {
         // Send CREATE_CLASSROOM command to AWI server via FileSystem
         var response = await this.root.fileSystem.createClassroom({classroomInfo});
+        if (response.error)
+          this.root.messageBar.showErrorMessage(response.error);
+      }
+    }
+  }
+
+  async handleJoinClassroom(data, senderId) {
+    var classroomList = await this.root.fileSystem.getClassroomList();
+    if (!classroomList.error)
+    {
+      var response = await this.showJoinClassroomDialog(classroomList,this.root.userName);
+      if (response)
+      {
+        if (response.classroomType == 'teacher')
+        {
+          if (this.teacherClassroomOpen)
+            await this.handleTeacherLeaveClassroom();
+          // Send JOIN_CLASSROOM command to AWI server via FileSystem
+          var response = await this.root.fileSystem.joinClassroom({
+            type: 'teacher', 
+            classroomId: response.classroomId, 
+            displayName: response.displayName });
+          if (!response.error)
+          {
+            this.teacherClassroomOpen=true;
+            this.teacherClassroomId = response.classroomId;
+            this.teacherClassroomInfo = response.classroomInfo;
+            this.teacherHandle = response.teacherHandle;
+            this.teacherName = response.teacherName;
+            this.sendMessageTo('class:SideBar', MESSAGES.ADD_SIDE_WINDOW, { type: 'TeacherSideWindow', height: 400 }); 
+          }
+          else
+          {
+            this.root.messageBar.showErrorMessage(response.error);
+          }
+        }
+        else{
+          if (this.studentClassroomOpen)
+            await this.handleStudentLeaveClassroom();
+          // Send JOIN_CLASSROOM command to AWI server via FileSystem
+          var response = await this.root.fileSystem.joinClassroom({
+            type: 'student', 
+            classroomId: response.classroomId, 
+            displayName: response.displayName});
+          if (!response.error)
+          {
+            this.studentClassroomOpen=true;
+            this.studentClassroomId = response.classroomId;
+            this.studentClassroomInfo = response.classroomInfo;
+            this.studentHandle = response.studentHandle;
+            this.studentName = response.studentName;
+            await this.sendMessageTo('class:SideBar', MESSAGES.ADD_SIDE_WINDOW, { type: 'TeacherViewSideWindow', height: 400 }); 
+            if (this.teacherConnected)
+              await this.sendMessageTo('class:TeacherViewSideWindow', CLASSROOMCOMMANDS.TEACHER_VIEW_CONNECT, { classroomId: this.studentClassroomId, studentHandle: this.studentHandle });
+          }
+          else
+          {
+            this.root.messageBar.showErrorMessage(response.error);
+          }
+        }
+      }        
+    }
+    else
+    {
+      this.root.messageBar.showErrorMessage(response.error);
+    }
+  }
+  async handleDeleteClassroom(data, senderId) {
+    if (this.teacherClassroomOpen)
+      await this.handleTeacherLeaveClassroom();
+    if (this.studentClassroomOpen)
+      await this.handleStudentLeaveClassroom();
+    var classroomList = await this.root.fileSystem.getClassroomList();
+    if (!classroomList.error)
+    {
+      var teacherClassroomList = classroomList.filter(classroom => classroom.createdBy == this.root.userName);
+      var response = await this.showDeleteClassroomDialog(teacherClassroomList);
+      if (response)
+      {
+        // Send DELETE_CLASSROOM command to AWI server via FileSystem
+        var response = await this.root.fileSystem.deleteClassroom({classroomId: response.classroomId});
         if (!response.error)
         {
-          this.classroomId = response.classroomId;
-          this.classroomInfo = classroomInfo;
-          this.classroomName = classroomInfo.name;
-          this.classroomOpen='teacher';
-          await this.sendMessageTo('class:SideBar', MESSAGES.ADD_SIDE_WINDOW, { type: 'TeacherSideWindow', height: 200 });        
+          this.root.messageBar.showSuccessMessage('Classroom deleted successfully');
         }
         else
         {
@@ -92,21 +182,68 @@ class ClassroomManager extends BaseComponent {
         }
       }
     }
+    else
+    {
+      this.root.messageBar.showErrorMessage(response.error);
+    }
+  }
+  async handleLeaveClassroom(data,senderId){
+    await this.handleTeacherLeaveClassroom(data,senderId);
+    await this.handleStudentLeaveClassroom(data,senderId);
+  }
+  async handleTeacherLeaveClassroom(data, senderId) {
+    if (this.teacherClassroomOpen)
+    {
+      if (this.teacherConnected)
+        await this.handleTeacherDisconnect();
+      await this.root.fileSystem.leaveClassroom({
+        classroomId: this.teacherClassroomId,
+        teacherHandle: this.teacherHandle,
+        type: 'teacher'
+      });
+      this.teacherClassroomOpen=false;
+      this.teacherClassroomId = null;
+      this.teacherClassroomInfo = null;
+      this.teacherHandle = null;
+      this.teacherName = null;
+      await this.sendMessageTo('class:SideBar', MESSAGES.REMOVE_SIDE_WINDOW, { name: 'TeacherSideWindow' });
+    }
+  }
+
+  async handleStudentLeaveClassroom(data, senderId) {
+    if (this.studentClassroomOpen)
+    {
+      if (this.studentConnected)
+        await this.handleStudentDisconnect();
+      await this.root.fileSystem.leaveClassroom({
+        classroomId: this.studentClassroomId,
+        studentHandle: this.studentHandle,
+        type: 'student'
+      });
+      this.studentClassroomOpen=false;
+      this.studentClassroomId = null;
+      this.studentClassroomInfo = null;
+      this.studentHandle = null;
+      this.studentName = null;
+      await this.sendMessageTo('class:SideBar', MESSAGES.REMOVE_SIDE_WINDOW, { name: 'TeacherViewSideWindow' });
+    }
   }
 
   async handleTeacherConnect(data, senderId) {
-    // If already connected, disconnect first (optional: implement disconnect logic)
+    if (!this.teacherClassroomOpen)
+        return { error: 'No classroom open.' };
     if (this.teacherConnected) {
-      // Optionally disconnect previous session here
-      this.teacherConnected = false;
+      await this.handleTeacherDisconnect();
     }
+    var classroomId = this.teacherClassroomId;
     try {
       // 1. Create mediasoup Device
       this.mediasoupDevice = new mediasoupClient.Device();
       // 2. Get router RTP capabilities from backend
       let response = await this.root.fileSystem.connectTeacher({
         action: 'getRouterRtpCapabilities',
-        classroomId: this.classroomId
+        classroomId: classroomId,
+        teacherHandle: this.teacherHandle
       });
       if (response.error) throw new Error(response.error);
       const rtpCapabilities = response.rtpCapabilities;
@@ -116,7 +253,8 @@ class ClassroomManager extends BaseComponent {
       // 4. Create transport on backend
       response = await this.root.fileSystem.connectTeacher({
         action: 'createTransport',
-        classroomId: this.classroomId
+        classroomId: classroomId,
+        teacherHandle: this.teacherHandle
       });
       if (response.error) throw new Error(response.error);
       const { transportParams, teacherHandle, iceServers: transportIceServers } = response;
@@ -129,8 +267,8 @@ class ClassroomManager extends BaseComponent {
         try {
           const resp = await this.root.fileSystem.connectTeacher({
             action: 'connectTransport',
-            classroomId: this.classroomId,
-            teacherHandle,
+            classroomId: classroomId,
+            teacherHandle: this.teacherHandle,
             dtlsParameters
           });
           if (resp.error) throw new Error(resp.error);
@@ -144,8 +282,8 @@ class ClassroomManager extends BaseComponent {
         try {
           const resp = await this.root.fileSystem.connectTeacher({
             action: 'produce',
-            classroomId: this.classroomId,
-            teacherHandle,
+            classroomId: classroomId,
+            teacherHandle: this.teacherHandle,
             kind,
             rtpParameters
           });
@@ -162,47 +300,34 @@ class ClassroomManager extends BaseComponent {
       }
       this.teacherConnected = true;
       this.teacherStream = data.stream;
-      // 9. Notify TeacherSideWindow of success
-      const sideWindowAnswer = await this.sendRequestTo('class:RightBar', MESSAGES.ADD_SIDE_WINDOW, { type: 'TeacherViewSideWindow', height: 200 });
-      if (!sideWindowAnswer.error) {
-        this.broadcast(CLASSROOMCOMMANDS.TEACHER_CONNECTED, { classroomId: this.classroomId });
-        return true;
-      } else {
-        return false;
-      }
+      this.teacherHandle = teacherHandle;
+      this.broadcast(CLASSROOMCOMMANDS.TEACHER_CONNECTED, { classroomId: classroomId, teacherHandle: this.teacherHandle });
+      return true;
     } catch (err) {
-      console.error('Error in handleTeacherConnect:', err);
-      return false;
+      return { error: err.message };
     }
   }
 
-  async handleJoinClassroom(data, senderId) {
-    var classroomId = data.classroomId;
-    if (!classroomId) {
-      return { error: 'No classroomId provided.' };
+  async handleTeacherDisconnect(data, senderId) {
+    if (this.teacherConnected)
+    {
+      await this.root.fileSystem.disconnectTeacher({
+        classroomId: this.teacherClassroomId,
+        teacherHandle: this.teacherHandle
+      });
+      this.teacherConnected = false;
+      this.teacherStream = null;
+      this.broadcast(CLASSROOMCOMMANDS.TEACHER_DISCONNECTED, { classroomId: this.teacherClassroomId, teacherHandle: this.teacherHandle });
     }
-    let response = await this.root.fileSystem.joinClassroom({
-      classroomId: classroomId
-    });
-    if (response.error) {
-      return { error: response.error };
-    }
-    //this.classroomInfo = response.classroomInfo;
-    //this.classroomName = response.classroomInfo.name;
-    //await this.sendMessageTo('class:RightBar', MESSAGES.ADD_SIDE_WINDOW, { type: 'StudentSideWindow', height: 400 });
-    return { classroomInfo: response.classroomInfo, studentHandle: response.studentHandle };
   }
 
   async handleStudentConnect(data, senderId) {
     // Connect as a student using only the provided classroomId
-    const classroomId = data.classroomId;
-    if (!classroomId) {
+    const classroomId = this.studentClassroomId;
+    if (!classroomId)
       return { error: 'No classroomId provided.' };
-    }
-    const studentHandle = data.studentHandle;
-    if (!studentHandle) {
+    if (!this.studentHandle)
       return { error: 'No studentHandle provided.' };
-    }
     try {
       // 1. Create mediasoup Device
       const device = new mediasoupClient.Device();
@@ -210,7 +335,7 @@ class ClassroomManager extends BaseComponent {
       let response = await this.root.fileSystem.connectStudent({
         action: 'getRouterRtpCapabilities',
         classroomId,
-        studentHandle
+        studentHandle: this.studentHandle
       });
       if (response.error) throw new Error(response.error);
       const rtpCapabilities = response.rtpCapabilities;
@@ -221,7 +346,7 @@ class ClassroomManager extends BaseComponent {
       response = await this.root.fileSystem.connectStudent({
         action: 'createTransport',
         classroomId,
-        studentHandle
+        studentHandle: this.studentHandle
       });
       if (response.error) throw new Error(response.error);
       const { id, iceParameters, iceCandidates, dtlsParameters } = response.transportParams;
@@ -241,7 +366,7 @@ class ClassroomManager extends BaseComponent {
           const resp = await this.root.fileSystem.connectStudent({
             action: 'connectTransport',
             classroomId,
-            studentHandle,
+            studentHandle: this.studentHandle,
             dtlsParameters
           });
           if (resp.error) throw new Error(resp.error);
@@ -254,7 +379,7 @@ class ClassroomManager extends BaseComponent {
       response = await this.root.fileSystem.connectStudent({
         action: 'consume',
         classroomId,
-        studentHandle,
+        studentHandle: this.studentHandle,
         rtpCapabilities
       });
       if (response.error) throw new Error(response.error);
@@ -263,16 +388,11 @@ class ClassroomManager extends BaseComponent {
         throw new Error('No consumer parameters received');
       }
       // 8. Consume audio/video tracks
-      //const consumer = await recvTransport.consume(consumerParams);
-      //await consumer.resume();
-      //const stream = new MediaStream([consumer.track]);
-      //return { stream };
       const tracks = [];
       for (const kind of ['audio', 'video']) {
         const params = consumerParams[kind];
         if (params) {
           const { id, producerId, kind, rtpParameters } = params;
-          //const { consumer, track } 
           var consumer= await recvTransport.consume({
             id,
             producerId,
@@ -287,20 +407,23 @@ class ClassroomManager extends BaseComponent {
       if (!tracks.length) throw new Error('No tracks received from teacher');
       // 9. Create MediaStream from all tracks (audio/video)
       const stream = new MediaStream(tracks);
+      this.studentStream = stream;
       return { stream };
     } catch (err) {
       return { error: err.message || 'Error connecting as student.' };
     }
   }
 
-async handleLeaveClassroom(data, senderId) {
-    if (this.classroomOpen)
+  async handleStudentDisconnect(data, senderId) {
+    if (this.studentConnected)
     {
-      if (this.classroomOpen=='teacher')
-        await this.sendMessageTo('class:SideBar', MESSAGES.REMOVE_SIDE_WINDOW, { type: 'TeacherSideWindow', height: 400 });
-      else
-        await this.sendMessageTo('class:RightBar', MESSAGES.REMOVE_SIDE_WINDOW, { type: 'StudentSideWindow', height: 400 });
-      this.classroomOpen=false;
+      await this.root.fileSystem.disconnectStudent({
+        classroomId: this.studentClassroomId,
+        studentHandle: this.studentHandle
+      });
+      this.studentConnected = false;
+      this.studentStream = null;
+      this.broadcast(CLASSROOMCOMMANDS.STUDENT_DISCONNECTED, { classroomId: this.studentClassroomId, studentHandle: this.studentHandle });
     }
   }
 
@@ -312,6 +435,356 @@ async handleLeaveClassroom(data, senderId) {
   async applyLayout(layout) {
     await super.applyLayout(layout);
   }
+
+  async showDeleteClassroomDialog(classroomInfoList) {
+    return new Promise((resolve) => {
+      // Overlay
+      const overlay = document.createElement('div');
+      overlay.className = 'classroom-dialog-overlay';
+      overlay.style = `position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:10000;background:rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;`;
+
+      // Dialog
+      const dialog = document.createElement('div');
+      dialog.className = 'classroom-dialog';
+      dialog.style = `background:#23232a;max-width:640px;width:96vw;padding:26px 32px 18px 32px;border-radius:5px;box-shadow:0 4px 8px rgba(0,0,0,0.32);font-family:sans-serif;position:relative;border:1px solid #444;color:#eee;`;
+      overlay.appendChild(dialog);
+      dialog.hide = function() { overlay.style.display = 'none'; };
+      dialog.show = function() { overlay.style.display = 'flex'; };
+      overlay.style.display = 'flex';
+
+      // Title
+      const title = document.createElement('h2');
+      title.textContent = 'Delete a Classroom';
+      title.style = 'color:#eee;margin-bottom:12px;';
+      dialog.appendChild(title);
+
+      // Scrollable classroom list
+      const listContainer = document.createElement('div');
+      listContainer.style = 'max-height:260px;overflow-y:auto;margin-bottom:12px;border:1px solid #333;border-radius:4px;background:#19191e;';
+      dialog.appendChild(listContainer);
+
+      // Helper for classroom icon
+      function classroomIcon(iconUrl) {
+        const img = document.createElement('img');
+        img.src = iconUrl || '/classroom.png?v=' + Date.now();
+        img.alt = 'Icon';
+        img.onerror = function(){ this.src='/classroom.png?v=' + Date.now(); };
+        img.style = 'width:48px;height:48px;object-fit:cover;border-radius:8px;background:#222;border:1px solid #444;';
+        return img;
+      }
+
+      // Selection state
+      let selectedIdx = -1;
+      let selectedClassroom = null;
+      // Render classroom list
+      classroomInfoList.forEach((info, idx) => {
+        const item = document.createElement('div');
+        item.className = 'classroom-list-item';
+        item.style = 'display:flex;align-items:flex-start;gap:14px;padding:10px 14px;cursor:pointer;border-bottom:1px solid #29293a;transition:background 0.18s;';
+        if (idx === classroomInfoList.length-1) item.style += 'border-bottom:none;';
+        // Icon
+        const icon = classroomIcon(info.iconUrl);
+        item.appendChild(icon);
+        // Info
+        const infoCol = document.createElement('div');
+        infoCol.style = 'flex:1 1 0;min-width:0;';
+        // Title
+        const title = document.createElement('div');
+        title.textContent = info.title || info.name || 'Untitled classroom';
+        title.style = 'color:#eee;font-size:1.13em;font-weight:600;line-height:1.1;margin-bottom:2px;word-break:break-word;';
+        infoCol.appendChild(title);
+        // Description
+        const desc = document.createElement('div');
+        desc.textContent = info.description || '';
+        desc.style = 'color:#bbb;font-size:0.97em;line-height:1.2;white-space:pre-line;word-break:break-word;';
+        infoCol.appendChild(desc);
+        item.appendChild(infoCol);
+        // Select logic
+        item.onclick = () => {
+          // Unselect all
+          [...listContainer.children].forEach(c => c.style.background = 'transparent');
+          item.style.background = '#2a3a5a';
+          selectedIdx = idx;
+          selectedClassroom = info;
+          updateOkButton();
+        };
+        // Double-click = select and simulate OK
+        item.ondblclick = () => {
+          selectedIdx = idx;
+          selectedClassroom = info;
+          updateOkButton();
+          okBtn.click();
+        };
+        listContainer.appendChild(item);
+      });
+
+      // --- Buttons ---
+      const btnRow = document.createElement('div');
+      btnRow.style = 'display:flex;justify-content:flex-end;gap:14px;margin-top:10px;';
+      // OK
+      const okBtn = document.createElement('button');
+      okBtn.textContent = 'OK';
+      okBtn.style = 'min-width:110px;font-size:1.08em;';
+      // Cancel
+      const cancelBtn = document.createElement('button');
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.style = 'min-width:80px;font-size:1.08em;';
+      btnRow.appendChild(cancelBtn);
+      btnRow.appendChild(okBtn);
+      dialog.appendChild(btnRow);
+
+      // --- Button logic ---
+      function updateOkButton() {
+        if (selectedClassroom) {
+          okBtn.disabled = false;
+          okBtn.style.opacity = '1';
+        } else {
+          okBtn.disabled = true;
+          okBtn.style.opacity = '0.6';
+        }
+      }
+      // Cancel action
+      cancelBtn.onclick = () => {
+        document.body.removeChild(overlay);
+        resolve(null);
+      };
+      // OK action
+      okBtn.onclick = () => {
+        if (!selectedClassroom) return;
+        document.body.removeChild(overlay);
+        resolve({ classroomId: selectedClassroom.id });
+      };
+      // Keyboard: Enter/ESC
+      dialog.onkeydown = (e) => {
+        if (e.key === 'Escape') { cancelBtn.click(); }
+        if (e.key === 'Enter' && okBtn.disabled === false) okBtn.click();
+      };
+      // Add to DOM
+      document.body.appendChild(overlay);
+      // Initial state
+      updateOkButton();
+    });
+  }
+  async showJoinClassroomDialog(classroomInfoList, userName) {
+    return new Promise((resolve) => {
+      // Overlay
+      const overlay = document.createElement('div');
+      overlay.className = 'classroom-dialog-overlay';
+      overlay.style = `position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:10000;background:rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;`;
+
+      // Dialog
+      const dialog = document.createElement('div');
+      dialog.className = 'classroom-dialog';
+      dialog.style = `background:#23232a;max-width:640px;width:96vw;padding:26px 32px 18px 32px;border-radius:5px;box-shadow:0 4px 8px rgba(0,0,0,0.32);font-family:sans-serif;position:relative;border:1px solid #444;color:#eee;`;
+      overlay.appendChild(dialog);
+      dialog.hide = function() { overlay.style.display = 'none'; };
+      dialog.show = function() { overlay.style.display = 'flex'; };
+      overlay.style.display = 'flex';
+
+      // Title
+      const title = document.createElement('h2');
+      title.textContent = 'Join a Classroom';
+      title.style = 'color:#eee;margin-bottom:12px;';
+      dialog.appendChild(title);
+
+      // Display name input
+      const nameRow = document.createElement('div');
+      nameRow.style = 'margin-bottom:10px;display:flex;align-items:center;gap:8px;';
+      const nameLabel = document.createElement('label');
+      nameLabel.textContent = 'Display name:';
+      nameLabel.style = 'min-width:110px;color:#eee;';
+      nameLabel.htmlFor = 'join-classroom-displayname';
+      nameRow.appendChild(nameLabel);
+      const nameInput = document.createElement('input');
+      nameInput.type = 'text';
+      nameInput.id = 'join-classroom-displayname';
+      nameInput.value = userName || '';
+      nameInput.style = 'flex:1 1 0;padding:5px 10px;font-size:1.08em;background:#222;border:1px solid #444;color:#eee;border-radius:3px;';
+      nameRow.appendChild(nameInput);
+      dialog.appendChild(nameRow);
+
+      // Scrollable classroom list
+      const listContainer = document.createElement('div');
+      listContainer.style = 'max-height:260px;overflow-y:auto;margin-bottom:12px;border:1px solid #333;border-radius:4px;background:#19191e;';
+      dialog.appendChild(listContainer);
+
+      // Helper for classroom icon
+      function classroomIcon(iconUrl) {
+        const img = document.createElement('img');
+        img.src = iconUrl || '/classroom.png?v=' + Date.now();
+        img.alt = 'Icon';
+        img.onerror = function(){ this.src='/classroom.png?v=' + Date.now(); };
+        img.style = 'width:48px;height:48px;object-fit:cover;border-radius:8px;background:#222;border:1px solid #444;';
+        return img;
+      }
+
+      // Selection state
+      let selectedIdx = -1;
+      let selectedClassroom = null;
+      // Render classroom list
+      classroomInfoList.forEach((info, idx) => {
+        const item = document.createElement('div');
+        item.className = 'classroom-list-item';
+        item.style = `
+          display: flex;
+          align-items: stretch;
+          gap: 18px;
+          padding: 0 0 0 0;
+          margin: 0 0 8px 0;
+          background: #23233a;
+          border-radius: 12px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.09);
+          cursor: pointer;
+          transition: background 0.18s, box-shadow 0.18s;
+          border: 1.5px solid #2d2d46;
+          min-height: 104px;
+          overflow: hidden;
+        `;
+        item.onmouseover = () => {
+          item.style.background = '#2a3452';
+          item.style.boxShadow = '0 4px 16px rgba(40,70,150,0.11)';
+        };
+        item.onmouseout = () => {
+          item.style.background = '#23233a';
+          item.style.boxShadow = '0 2px 8px rgba(0,0,0,0.09)';
+        };
+        // Icon
+        const icon = classroomIcon(info.iconUrl);
+        icon.style.width = '104px';
+        icon.style.height = '104px';
+        icon.style.objectFit = 'cover';
+        icon.style.borderRadius = '12px 0 0 12px';
+        icon.style.background = '#222';
+        icon.style.border = 'none';
+        icon.style.flex = '0 0 104px';
+        icon.style.alignSelf = 'stretch';
+        icon.style.display = 'block';
+        item.appendChild(icon);
+        // Info
+        const infoCol = document.createElement('div');
+        infoCol.style = 'flex:1 1 0;min-width:0;padding:16px 18px;display:flex;flex-direction:column;justify-content:center;';
+        // Title
+        const title = document.createElement('div');
+        title.textContent = info.title || info.name || 'Untitled classroom';
+        title.style = 'color:#eee;font-size:1.22em;font-weight:700;line-height:1.15;margin-bottom:3px;word-break:break-word;letter-spacing:0.01em;';
+        infoCol.appendChild(title);
+        // Description
+        const desc = document.createElement('div');
+        desc.textContent = info.description || '';
+        desc.style = 'color:#bbb;font-size:1.01em;line-height:1.23;white-space:pre-line;word-break:break-word;margin-bottom:2px;';
+        infoCol.appendChild(desc);
+        // Creator
+        const creator = document.createElement('div');
+        creator.textContent = info.createdBy ? `Created by: ${info.createdBy}` : '';
+        creator.style = 'color:#8ea0c4;font-size:0.97em;margin-top:2px;';
+        infoCol.appendChild(creator);
+        item.appendChild(infoCol);
+
+        // Select logic
+        item.onclick = () => {
+          // Unselect all
+          [...listContainer.children].forEach(c => c.style.background = 'transparent');
+          item.style.background = '#2a3a5a';
+          selectedIdx = idx;
+          selectedClassroom = info;
+          updateJoinButtons();
+        };
+        // Double-click = join as student if allowed
+        item.ondblclick = () => {
+          if (canJoinStudent()) okStudent.click();
+        };
+        listContainer.appendChild(item);
+      });
+
+      // --- Buttons ---
+      const btnRow = document.createElement('div');
+      btnRow.style = 'display:flex;justify-content:flex-end;gap:14px;margin-top:10px;';
+      // Join as Teacher
+      const okTeacher = document.createElement('button');
+      okTeacher.textContent = 'Join as Teacher';
+      okTeacher.style = 'min-width:110px;font-size:1.08em;';
+      // Join as Student
+      const okStudent = document.createElement('button');
+      okStudent.textContent = 'Join as Student';
+      okStudent.style = 'min-width:110px;font-size:1.08em;';
+      // Cancel
+      const cancelBtn = document.createElement('button');
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.style = 'min-width:80px;font-size:1.08em;';
+      btnRow.appendChild(cancelBtn);
+      btnRow.appendChild(okTeacher);
+      btnRow.appendChild(okStudent);
+      dialog.appendChild(btnRow);
+
+      // --- Button logic ---
+      function canJoinTeacher() {
+        return selectedClassroom && selectedClassroom.createdBy === userName;
+      }
+      function canJoinStudent() {
+        return true;
+      }
+      function updateJoinButtons() {
+        if (!selectedClassroom) {
+          okTeacher.disabled = true; okTeacher.style.opacity = '0.6';
+          okStudent.disabled = true; okStudent.style.opacity = '0.6';
+          return;
+        }
+        // Only creator can join as teacher
+        if (canJoinTeacher()) {
+          okTeacher.disabled = false; okTeacher.style.opacity = '1';
+        } else {
+          okTeacher.disabled = true; okTeacher.style.opacity = '0.6';
+        }
+        // Only non-creator can join as student
+        if (canJoinStudent()) {
+          okStudent.disabled = false; okStudent.style.opacity = '1';
+        } else {
+          okStudent.disabled = true; okStudent.style.opacity = '0.6';
+        }
+      }
+      nameInput.oninput = updateJoinButtons;
+
+      // Cancel action
+      cancelBtn.onclick = () => {
+        document.body.removeChild(overlay);
+        resolve(null);
+      };
+      // Join as Teacher
+      okTeacher.onclick = () => {
+        if (!canJoinTeacher()) return;
+        document.body.removeChild(overlay);
+        resolve({
+          classroomType: 'teacher',
+          classroomId: selectedClassroom.classroomId,
+          displayName: nameInput.value
+        });
+      };
+      // Join as Student
+      okStudent.onclick = () => {
+        if (!canJoinStudent()) return;
+        document.body.removeChild(overlay);
+        resolve({
+          classroomType: 'student',
+          classroomId: selectedClassroom.classroomId,
+          displayName: nameInput.value
+        });
+      };
+      // Keyboard: Enter/ESC
+      dialog.onkeydown = (e) => {
+        if (e.key === 'Escape') { cancelBtn.click(); }
+        if (e.key === 'Enter') {
+          if (canJoinTeacher() && document.activeElement === okTeacher) okTeacher.click();
+          else if (canJoinStudent() && document.activeElement === okStudent) okStudent.click();
+        }
+      };
+      // Focus management
+      setTimeout(() => { nameInput.focus(); }, 100);
+      // Add to DOM
+      document.body.appendChild(overlay);
+      // Initial state
+      updateJoinButtons();
+    });
+  }  
 
   /**
    * Show the Create Classroom dialog and collect user input.
@@ -628,13 +1101,14 @@ async handleLeaveClassroom(data, senderId) {
         const data = {
           name: titleInput.value,
           description: descInput.value,
-          icon: iconFile || iconPreview.src,
+          iconUrl: iconFile || iconPreview.src,
           takeControl: controlCheckbox.checked,
           mode: modeSelect.value,
           projectType: radioNew.checked ? 'new' : 'load',
           projectName: selectedProjectName,
           projectGlobal: globalCheckbox.checked,
-          url: urlInput.value
+          url: urlInput.value,
+          createdBy: this.root.userName
         };
         document.body.removeChild(overlay);
         resolve(data);
@@ -858,8 +1332,6 @@ async handleLeaveClassroom(data, senderId) {
       populateDevices();
     });
   }
-
-
 }
 export default ClassroomManager;
 

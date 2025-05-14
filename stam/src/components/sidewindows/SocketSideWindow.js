@@ -776,6 +776,7 @@ class SocketSideWindow extends SideWindow {
       userName: userName
     }).then(() => {
       this.userName = userName;
+      this.root.userName = userName;
       this.url = url;
       this.handleConnectionOpen();
     }).catch(error => {

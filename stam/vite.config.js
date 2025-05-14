@@ -33,6 +33,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/awi-templates/, '')
       },
+      '/awi-classrooms': {
+        target: 'http://192.168.1.66:3333/classrooms', // Replace with your AWI server URL
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/awi-classrooms/, '')
+      }
     }
   }
 });

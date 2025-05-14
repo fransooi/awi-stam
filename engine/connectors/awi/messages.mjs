@@ -61,7 +61,7 @@ class ConnectorMessages extends ConnectorBase
         }
 		return this.connectAnswer;
 	}
-	getMessage( id, variables = null )
+	getMessage( id, variables = {} )
 	{
         var notFound = false;
         if ( id.indexOf( 'awi:' ) < 0 )
@@ -71,7 +71,7 @@ class ConnectorMessages extends ConnectorBase
         if ( start < 0 )
         {
             notFound = true;
-            variables.id = id;
+            variables.id = id.substring( 4 );
             start = this.messages.indexOf( 'awi:message-not-found' );
         }
 
@@ -79,8 +79,8 @@ class ConnectorMessages extends ConnectorBase
         function getIt( start, end )
         {
             var text = self.messages.substring( start, end - 1 );
-            if ( notFound )
-                return self.format( text, { message: id } );
+            //if ( notFound )
+            //    return self.format( text, { id: id } );
             if ( variables )
                 return self.format( text, variables );
             return text;

@@ -203,17 +203,38 @@ class EditorWebSocket extends EditorBase
     {
         return await this.call_classroom('command_joinClassroom', parameters, message);
     }
+    async deleteClassroom( parameters, message )
+    {
+        return await this.call_classroom('command_deleteClassroom', parameters, message);
+    }
     async command_leaveClassroom( parameters, message )
     {
         return await this.call_classroom('command_leaveClassroom', parameters, message);
     }
+    async endClassroom( parameters, message )
+    {
+        return await this.call_classroom('endClassroom', parameters, message);
+    }
+    async command_getClassroomList( parameters, message )
+    {
+        return await this.call_classroom('command_getClassroomList', parameters, message);
+    }
+
     async command_studentConnected( parameters, message )
     {
-        return this.replyError( this.newError( 'awi:command-not-implemented', { user: this.userName } ) );
+        return this.replyError( this.newError( 'awi:command-not-implemented', { user: this.userName } ), message );
     }
     async command_studentDisconnected( parameters, message )
     {
-        return this.replyError( this.newError( 'awi:command-not-implemented', { user: this.userName } ) );
+        return this.replyError( this.newError( 'awi:command-not-implemented', { user: this.userName } ), message );
+    }
+    async command_classroomCreated( parameters, message )
+    {
+        return this.replyError( this.newError( 'awi:command-not-implemented', { user: this.userName } ), message );
+    }
+    async command_classroomDeleted( parameters, message )
+    {
+        return this.replyError( this.newError( 'awi:command-not-implemented', { user: this.userName } ), message );
     }
     async call_classroom(command, parameters, message)
     {
@@ -221,9 +242,9 @@ class EditorWebSocket extends EditorBase
         {
             if ( this.awi.awi.classroomServer[command] )
                 return await this.awi.awi.classroomServer[command]( parameters, message, this );
-            return this.replyError( this.newError( 'awi:socket-classroom', { user: this.userName } ) );
+            return this.replyError( this.newError( 'awi:command-not-implemented', { user: this.userName } ), message );
         }
-        return this.replyError( this.newError( 'awi:socket-classroom', { user: this.userName } ) );
+        return this.replyError( this.newError( 'awi:classroom-server-not-open', { user: this.userName } ) );
     }
 
     // AWI commands

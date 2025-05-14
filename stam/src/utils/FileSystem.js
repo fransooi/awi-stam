@@ -48,7 +48,7 @@ export default class FileSystem extends BaseComponent {
       await super.destroy();
     }
 
-    handleServerCommand(command, parameters) {
+    handleServerCommand(command, parameters={}) {
       if(this.isConnected)
       {
         if ( !parameters.mode )

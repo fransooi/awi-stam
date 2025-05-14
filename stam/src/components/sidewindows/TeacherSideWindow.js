@@ -59,24 +59,19 @@ class TeacherSideWindow extends SideWindow {
     // Remove any previously added custom buttons (for hot reload/dev)
     if (typeof this.clearCustomButtons === 'function') this.clearCustomButtons();
 
-    // Add "Connect" text button
-    // Store reference to the connect/disconnect button
-    this.connectBtn = this.addTextButton({
-      text: this.connected ? 'Disconnect' : 'Connect',
+    // Add Connect/Disconnect icon button
+    const connectIcon = this.connected ? 'fa-unlink' : 'fa-plug';
+    this.connectBtn = this.addIconButton({
+      key: 'connection',
+      iconName: connectIcon,
       hint: this.connected ? 'Disconnect from camera and microphone' : 'Connect to camera and microphone',
-      onClick: () => {
-        if (this.connected) {
-          this.handleDisconnectClick();
-        } else {
-          this.handleConnectClick();
-        }
-      },
-      id: 'teacher-connect-btn'
+      onClick: () => { this.handleConnectClick(); }
     });
 
     // Add setup icon button (Font Awesome)
     this.addIconButton({
-      iconName: 'fa-cog', // use 'fa-cog' for settings icon
+      key: 'setup',
+      iconName: 'fa-cog', 
       hint: 'Setup',
       onClick: () => this.handleSetupClick()
     });
@@ -166,42 +161,36 @@ class TeacherSideWindow extends SideWindow {
       {
         this.connected = false;
         this.stream = null;
+        this.updateIconButton({ key: 'connection', iconName: 'fa-plug', hint: 'Connect camera and microphone' }, () => { this.handleConnectClick(); });
         this.updateContent();
-        alert('Could not access camera/microphone: ' + answer.error);
       }
       else
       {
-        const videoTrack = stream.getVideoTracks()[0];
-        console.log('Teacher video enabled:', videoTrack.enabled, 'readyState:', videoTrack.readyState);
         this.connected = true;
         this.stream = stream;
+        this.updateIconButton({ key: 'connection', iconName: 'fa-unlink', hint: 'Disconnect camera and microphone' }, () => { this.handleDisconnectClick(); });
         this.updateContent();
       }
     } catch (err) {
       this.connected = false;
       this.stream = null;
+      this.updateIconButton({ key: 'connection', iconName: 'fa-plug', hint: 'Connect camera and microphone' }, () => { this.handleConnectClick(); });
       this.updateContent();
-      alert('Could not access camera/microphone: ' + err.message);
     }
   }
 
-  handleDisconnectClick() {
-    // Stop media tracks if active
+  async handleDisconnectClick() {
+    // Send request to ClassroomManager to stop mediasoup connection
+    var answer = await this.sendRequestTo('class:ClassroomManager', CLASSROOMCOMMANDS.TEACHER_DISCONNECT, { stream: this.stream }); 
+    this.connected = false;
     if (this.stream) {
       this.stream.getTracks().forEach(track => track.stop());
       this.stream = null;
     }
-    this.connected = false;
+    this.updateIconButton({ key: 'connection', iconName: 'fa-plug', hint: 'Connect camera and microphone' }, () => { this.handleConnectClick(); });
     this.updateContent();
-    // Update button text and handler
-    if (this.connectBtn) {
-      this.connectBtn.textContent = 'Connect';
-      this.connectBtn.title = 'Connect to camera and microphone';
-      // Remove previous click handlers
-      this.connectBtn.replaceWith(this.connectBtn.cloneNode(true));
-      this.connectBtn = document.getElementById('teacher-connect-btn');
-      this.connectBtn.onclick = () => this.handleConnectClick();
-    }
+    if (answer.error)
+      this.root.messageBar.showErrorMessage(answer.error);
   }
 
   async handleSetupClick() {

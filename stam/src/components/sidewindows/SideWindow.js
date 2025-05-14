@@ -21,7 +21,7 @@ import { MESSAGES } from '../../utils/BaseComponent.js';
 
 class SideWindow extends BaseComponent {
   constructor(id, title, parentId, containerId, initialHeight = 200) {
-    super('SideWindow-' + id, parentId,containerId);
+    super(id + 'SideWindow',parentId,containerId);
     this.id = id;
     this.title = title;
     this.height = initialHeight;
@@ -172,13 +172,13 @@ class SideWindow extends BaseComponent {
   /**
    * Add a custom ICON button to the title bar.
    * @param {Object} param0
+   * @param {string} param0.key - Button key (unique per button)
    * @param {string} param0.iconName - Font Awesome icon name (e.g., 'fa-play')
    * @param {string} param0.hint - Tooltip text
    * @param {function} param0.onClick - Click callback
    */
-  addIconButton({ iconName, hint, onClick }) {
+  addIconButton({ key, iconName, hint, onClick }) {
     if (!this.header || !this.buttons) return;
-    const key = `icon:${iconName}`;
     if (this._customButtons.has(key)) return; // prevent duplicate
 
     const btn = document.createElement('button');
@@ -189,6 +189,16 @@ class SideWindow extends BaseComponent {
 
     this._insertCustomButton(btn);
     this._customButtons.set(key, btn);
+    return btn;
+  }
+  updateIconButton({ key, iconName, hint, onClick }) {
+    if (!this.header || !this.buttons) return;
+    if (!this._customButtons.has(key)) return; // prevent duplicate
+    const btn = this._customButtons.get(key);
+    btn.title = hint || iconName;
+    btn.innerHTML = `<i class="fa ${iconName}"></i>`;
+    if (onClick)
+      btn.addEventListener('click', onClick);
   }
 
   /**

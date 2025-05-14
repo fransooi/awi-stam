@@ -118,7 +118,7 @@ class ConnectorWebSocketServer extends ConnectorBase
 		{
 			this.templatesUrl = '/awi-templates';
 			this.projectsUrl = '/awi-projects';
-			this.runUrl = 'http://217.154.15.90:3333/projects';
+			this.runUrl = 'http://192.168.1.66:3333/projects';
 		}
 		else
 		{

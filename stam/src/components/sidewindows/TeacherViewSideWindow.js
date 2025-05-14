@@ -27,6 +27,7 @@ class TeacherViewSideWindow extends SideWindow {
     this.stream = null;
     this.error = null;
     this.messageMap[CLASSROOMCOMMANDS.TEACHER_CONNECTED] = this.handleTeacherConnected;
+    this.messageMap[CLASSROOMCOMMANDS.TEACHER_VIEW_CONNECT] = this.handleTeacherViewConnect;
   }
 
   async init(options) {
@@ -61,25 +62,31 @@ class TeacherViewSideWindow extends SideWindow {
     this.content.appendChild(this.videoElement);
     return this.container;
   }
+  async handleTeacherViewConnect(data, senderId) {
+    var self = this;
+    setTimeout(function()
+    {
+      self.connectToClassroom(data.classroomId,data.studentHandle);
+    }, 1000);
+  }
   async handleTeacherConnected(data, senderId) {
     var self = this;
     setTimeout(function()
     {
-      self.connectToClassroom(data.classroomId);
+      self.connectToClassroom(data.classroomId,data.studentHandle);
     }, 1000);
   }
-  async connectToClassroom(classroomId) {
+  async connectToClassroom(classroomId,studentHandle) {
     if (!classroomId) {
       this.showError('No classroom ID provided.');
       return;
     }
+    if (!studentHandle) {
+      this.showError('No student handle provided.');
+      return;
+    }
     try {
-      const response1 = await this.sendRequestTo('class:ClassroomManager', CLASSROOMCOMMANDS.JOIN_CLASSROOM, { classroomId });
-      if (response1.error) {
-        this.showError(response1.error);
-        return;
-      }    
-      const response2 = await this.sendRequestTo('class:ClassroomManager', CLASSROOMCOMMANDS.STUDENT_CONNECT, { classroomId, studentHandle: response1.studentHandle });
+      const response2 = await this.sendRequestTo('class:ClassroomManager', CLASSROOMCOMMANDS.STUDENT_CONNECT, { classroomId, studentHandle });
       if (response2.error) {
         this.showError(response2.error);
         return;
@@ -90,7 +97,7 @@ class TeacherViewSideWindow extends SideWindow {
         {
           self.stream = response2.stream;
           self.classroomId = classroomId;
-          self.studentHandle = response1.studentHandle;
+          self.studentHandle = studentHandle;
           self.videoElement.srcObject = self.stream;
           self.videoElement.autoplay = true;
           self.videoElement.playsInline = true;

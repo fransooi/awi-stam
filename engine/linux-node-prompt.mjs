@@ -61,7 +61,31 @@ function getArguments()
 				rootDirectory: '/home/francois/Awi-Data/public',
 				enableHttps: false,
 			} },
-			{ name: 'connectors/network/classroomserver', config: { priority: 98 }, options: {} },
+			{ name: 'connectors/network/classroomserver', config: { priority: 98 }, options: { iceServers: [
+                {
+                    urls: "stun:stun.relay.metered.ca:80",
+                },
+                {
+                    urls: "turn:standard.relay.metered.ca:80",
+                    username: "b05e93cff4c3ef28d6c05744",
+                    credential: "FTqh3rfbgLzkP31y",
+                },
+                {
+                    urls: "turn:standard.relay.metered.ca:80?transport=tcp",
+                    username: "b05e93cff4c3ef28d6c05744",
+                    credential: "FTqh3rfbgLzkP31y",
+                },
+                {
+                    urls: "turn:standard.relay.metered.ca:443",
+                    username: "b05e93cff4c3ef28d6c05744",
+                    credential: "FTqh3rfbgLzkP31y",
+                },
+                {
+                    urls: "turns:standard.relay.metered.ca:443?transport=tcp",
+                    username: "b05e93cff4c3ef28d6c05744",
+                    credential: "FTqh3rfbgLzkP31y",
+                }
+            ] } },
 			{ name: 'connectors/network/mediasoupserver', config: { priority: 98 }, options: {} },
             { name: 'bubbles/awi/*', config: {}, options: {} },
             { name: 'souvenirs/awi/*', config: {}, options: {} },

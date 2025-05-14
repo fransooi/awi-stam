@@ -218,7 +218,20 @@ class ConnectorMediasoupServer extends ConnectorBase
         if (!transport) throw new Error('Transport not found');
         // Close associated producer if exists
         if (room.producers[teacherHandle]) {
-            await room.producers[teacherHandle].close();
+            const teacherProducers = room.producers[teacherHandle];
+            if (typeof teacherProducers === 'object' && teacherProducers !== null) {
+                // Likely a teacher: close all kinds (audio, video, etc)
+                for (const kind in teacherProducers) {
+                    if (teacherProducers[kind] && typeof teacherProducers[kind].close === 'function') {
+                        await teacherProducers[kind].close();
+                    }
+                }
+            } else if (typeof teacherProducers?.close === 'function') {
+                // Defensive: in case a single producer is stored
+                await teacherProducers.close();
+            } else {
+                console.warn('Unexpected producer type for teacherHandle:', teacherProducers);
+            }
             delete room.producers[teacherHandle];
         }
         await transport.close();
