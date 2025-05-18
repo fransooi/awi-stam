@@ -34,6 +34,7 @@ class TeacherSideWindow extends SideWindow {
       speakerOn: true,
       volume: 1.0 // 0.0 - 1.0
     };
+    this._videoResizeObserver = null;
   }
 
   async init(options) {
@@ -45,9 +46,19 @@ class TeacherSideWindow extends SideWindow {
     if (this.stream) {
       this.stream.getTracks().forEach(track => track.stop());
       this.stream = null;
+      await this.sendRequestTo('class:ClassroomManager', CLASSROOMCOMMANDS.TEACHER_LEAVE_CLASSROOM, { classroomId: this.classroomId, fromTeacher: true });
+      this.classroomId = null;
     }
     // Remove video element if present
     if (this.videoElement && this.videoElement.parentNode) {
+      if (this.ResizeObserver) {
+        if (this._videoResizeObserver)
+          this._videoResizeObserver.disconnect();
+        this._videoResizeObserver = null;
+      } else {
+        // Fallback for older browsers
+        window.removeEventListener('resize', this.updateVideoHeight.bind(this));
+      }
       this.videoElement.parentNode.removeChild(this.videoElement);
       this.videoElement = null;
     }
@@ -80,6 +91,14 @@ class TeacherSideWindow extends SideWindow {
     return this.container;
   }
 
+  // Helper to update video height based on aspect ratio
+  updateVideoHeight() {
+    if (this.videoElement.videoWidth && this.videoElement.videoHeight) {
+      const aspect = this.videoElement.videoWidth / this.videoElement.videoHeight;
+      this.videoElement.style.height = `${this.videoElement.offsetWidth / aspect}px`;
+    }
+  }
+  
   updateContent() {
     if (!this.content) return;
     // Remove scrollbars and ensure content fills window
@@ -99,7 +118,6 @@ class TeacherSideWindow extends SideWindow {
       this.videoElement.loop = true;
       this.videoElement.muted = true;
       this.videoElement.play();
-      this.content.appendChild(this.videoElement);
     } else if (this.stream) {
       // Connected: show video
       this.videoElement = document.createElement('video');
@@ -118,24 +136,17 @@ class TeacherSideWindow extends SideWindow {
       if (this.cameraSettings.selectedOutputId && typeof this.videoElement.sinkId !== 'undefined') {
         this.videoElement.setSinkId(this.cameraSettings.selectedOutputId).catch(() => {});
       }
-      // Helper to update video height based on aspect ratio
-      const updateVideoHeight = () => {
-        if (this.videoElement.videoWidth && this.videoElement.videoHeight) {
-          const aspect = this.videoElement.videoWidth / this.videoElement.videoHeight;
-          this.videoElement.style.height = `${this.videoElement.offsetWidth / aspect}px`;
-        }
-      };
-      // Use ResizeObserver for content area resizing
-      if (window.ResizeObserver) {
-        this._videoResizeObserver = new ResizeObserver(updateVideoHeight);
-        this._videoResizeObserver.observe(this.content);
-      } else {
-        // Fallback for older browsers
-        window.addEventListener('resize', updateVideoHeight);
-      }
-      this.videoElement.addEventListener('loadedmetadata', updateVideoHeight);
-      this.content.appendChild(this.videoElement);
     }
+    this.content.appendChild(this.videoElement);
+    // Use ResizeObserver for content area resizing
+    if (window.ResizeObserver) {
+      this._videoResizeObserver = new ResizeObserver(this.updateVideoHeight.bind(this));
+      this._videoResizeObserver.observe(this.content);
+    } else {
+      // Fallback for older browsers
+      window.addEventListener('resize', this.updateVideoHeight.bind(this));
+    }
+    this.videoElement.addEventListener('loadedmetadata', this.updateVideoHeight.bind(this));
   }
 
   async handleConnectClick() {

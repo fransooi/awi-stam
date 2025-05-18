@@ -1,5 +1,91 @@
 /* SideWindows CSS - Styling for the SideBar and SideWindow components */
 
+/* Volume Popup Styles */
+.side-window-volume-popup {
+  background: #232323;
+  border: 1px solid #333;
+  border-radius: 10px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.45);
+  padding: 24px 32px;
+  min-width: 240px;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeInVolumePopup 0.16s;
+}
+@keyframes fadeInVolumePopup {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.side-window-volume-slider {
+  width: 180px;
+  height: 8px;
+  background: transparent;
+  accent-color: #3b82f6;
+  outline: none;
+  border-radius: 6px;
+  margin: 0 auto;
+  display: block;
+}
+
+.side-window-volume-slider::-webkit-slider-runnable-track {
+  height: 8px;
+  background: #444;
+  border-radius: 6px;
+}
+.side-window-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #3b82f6;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(59,130,246,0.12);
+  cursor: pointer;
+  margin-top: -7px;
+  /* Perfect vertical centering */
+  transform: translateY(2px);
+}
+.side-window-volume-slider:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #3b82f6;
+}
+
+.side-window-volume-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #3b82f6;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(59,130,246,0.12);
+  cursor: pointer;
+}
+.side-window-volume-slider::-moz-range-track {
+  height: 8px;
+  background: #444;
+  border-radius: 6px;
+}
+
+.side-window-volume-slider::-ms-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #3b82f6;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(59,130,246,0.12);
+  cursor: pointer;
+}
+.side-window-volume-slider::-ms-fill-lower,
+.side-window-volume-slider::-ms-fill-upper {
+  background: #444;
+  border-radius: 6px;
+}
+
+
 /* SideBar Container */
 .side-bar {
   display: flex;

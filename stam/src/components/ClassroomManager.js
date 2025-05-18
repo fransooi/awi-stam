@@ -206,6 +206,7 @@ class ClassroomManager extends BaseComponent {
       this.teacherClassroomInfo = null;
       this.teacherHandle = null;
       this.teacherName = null;
+      if (!data.fromTeacher)
       await this.sendMessageTo('class:SideBar', MESSAGES.REMOVE_SIDE_WINDOW, { name: 'TeacherSideWindow' });
     }
   }
@@ -225,7 +226,8 @@ class ClassroomManager extends BaseComponent {
       this.studentClassroomInfo = null;
       this.studentHandle = null;
       this.studentName = null;
-      await this.sendMessageTo('class:SideBar', MESSAGES.REMOVE_SIDE_WINDOW, { name: 'TeacherViewSideWindow' });
+      if (!data.fromStudent)
+        await this.sendMessageTo('class:SideBar', MESSAGES.REMOVE_SIDE_WINDOW, { name: 'TeacherViewSideWindow' });
     }
   }
 

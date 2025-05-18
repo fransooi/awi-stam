@@ -284,14 +284,16 @@ class SideBar extends BaseComponent {
    * Remove a SideWindow from display without full render.
    * @param {SideWindow|string} windowOrId - SideWindow instance or componentId
    */
-  removeSideWindowFromDisplay(windowOrId) {
+  async removeSideWindowFromDisplay(windowOrId) {
     // Accept either a window instance or a componentId
     let window = typeof windowOrId === 'string'
       ? this.windows.find(w => w.componentId === windowOrId)
       : windowOrId;
     if (!window || !window.parentContainer) return false;
-    const wrapper = window.parentContainer;
+    // Destroy the window
+    await window.destroy();
     // Remove the wrapper from the DOM
+    const wrapper = window.parentContainer;
     if (wrapper && wrapper.parentNode === this.windowsContainer) {
       // Remove separator if present (it may be the last child in wrapper)
       const sep = wrapper.querySelector('.resize-separator');
@@ -479,9 +481,9 @@ class SideBar extends BaseComponent {
    */
   async handleRemoveSideWindow(data, sender) {
     if (data.id)
-      return this.removeSideWindowFromDisplay(data.id);
+      return await this.removeSideWindowFromDisplay(data.id);
     else if (data.name)
-      return this.removeSideWindowFromDisplay(this.getWindowIdFromComponentName(data.name));
+      return await this.removeSideWindowFromDisplay(this.getWindowIdFromComponentName(data.name));
     return false;
   }
   getWindowIdFromComponentName(componentName){
@@ -505,8 +507,8 @@ class SideBar extends BaseComponent {
    * Handle window closed event
    * @param {string} windowId - ID of the closed window
    */
-  handleWindowClosed(windowId) {
-    this.removeSideWindowFromDisplay(windowId);
+  async handleWindowClosed(windowId) {
+    await this.removeSideWindowFromDisplay(windowId);
   }
   
   /**

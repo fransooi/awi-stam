@@ -487,18 +487,18 @@ class SideWindow extends BaseComponent {
     if (this.enlarged) {
       this.closeEnlargedDialog();
     }
-    
+    /*
     // Remove the window from the DOM
     const wrapper = this.container.closest('.side-window-wrapper');
     if (wrapper) {
       wrapper.remove();
     } else {
       this.container.remove();
-    }
-    
+    }    
     // Dispatch an event to notify that the window has been closed
-    await this.sendMessageTo('sidebar', 'SIDEBAR_WINDOW_CLOSED', { id: this.id });
-    }
+    */
+    await this.parent.handleWindowClosed(this);
+  }
   
   /**
    * Set the height of the window

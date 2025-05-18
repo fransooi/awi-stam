@@ -26,8 +26,12 @@ class TeacherViewSideWindow extends SideWindow {
     this.classroomName = '';
     this.stream = null;
     this.error = null;
+    this.volume = 100;
+    this._volumePopup = null;
+    this._volumePopupVisible = false;
+    this._boundHandleVolumeOutsideClick = this.handleVolumeOutsideClick.bind(this);
     this.messageMap[CLASSROOMCOMMANDS.TEACHER_CONNECTED] = this.handleTeacherConnected;
-    this.messageMap[CLASSROOMCOMMANDS.TEACHER_VIEW_CONNECT] = this.handleTeacherViewConnect;
+    this.messageMap[CLASSROOMCOMMANDS.TEACHER_VIEW_CONNECT] = this.handleTeacherViewConnect;  
   }
 
   async init(options) {
@@ -35,16 +39,33 @@ class TeacherViewSideWindow extends SideWindow {
   }
 
   async destroy() {
+    this.hideVolumePopup();
+
+    // Stop the stream
     if (this.stream) {
       this.stream.getTracks().forEach(track => track.stop());
       this.stream = null;
+      await this.sendRequestTo('class:ClassroomManager', CLASSROOMCOMMANDS.STUDENT_LEAVE_CLASSROOM, { classroomId: this.classroomId, fromStudent: true });
+      this.studentHandle = null;
     }
-    await super.destroy();
+    // Remove video element if present
+    if (this.videoElement && this.videoElement.parentNode) {
+      if (this.ResizeObserver) {
+        if (this._videoResizeObserver)
+          this._videoResizeObserver.disconnect();
+        this._videoResizeObserver = null;
+      } else {
+        // Fallback for older browsers
+        window.removeEventListener('resize', this.updateVideoHeight.bind(this));
+      }
+      this.videoElement.parentNode.removeChild(this.videoElement);
+      this.videoElement = null;
+    }
+   await super.destroy();
   }
 
   async render(containerId) {
     await super.render(containerId);
-    this.renderTitleBar();
     this.content.innerHTML = '';
     this.videoElement = document.createElement('video');
     this.videoElement.className = 'side-window-video';
@@ -60,8 +81,42 @@ class TeacherViewSideWindow extends SideWindow {
     this.videoElement.muted = true;
     this.videoElement.play();
     this.content.appendChild(this.videoElement);
+    // Use ResizeObserver for content area resizing
+    if (window.ResizeObserver) {
+      this._videoResizeObserver = new ResizeObserver(this.updateVideoHeight.bind(this));
+      this._videoResizeObserver.observe(this.content);
+    } else {
+      // Fallback for older browsers
+      window.addEventListener('resize', this.updateVideoHeight.bind(this));
+    }
+    this.videoElement.addEventListener('loadedmetadata', this.updateVideoHeight.bind(this));
+    // Add volume icon button (Font Awesome)
+    var self = this;
+    this.volumeButton = this.addIconButton({
+      key: 'volume',
+      iconName: 'fa-volume-up', 
+      hint: 'Volume',
+      onClick: () => self.handleVolumeClick()
+    });    
     return this.container;
   }
+  handleVolumeClick() {
+    // Volume Popup Slider: Attach click handler only ---
+    if (this._volumePopupVisible) {
+      this.hideVolumePopup();
+    } else {
+      this.showVolumePopup();
+    }
+  }
+  
+  // Helper to update video height based on aspect ratio
+  updateVideoHeight() {
+    if (this.videoElement.videoWidth && this.videoElement.videoHeight) {
+      const aspect = this.videoElement.videoWidth / this.videoElement.videoHeight;
+      this.videoElement.style.height = `${this.videoElement.offsetWidth / aspect}px`;
+    }
+  }
+  
   async handleTeacherViewConnect(data, senderId) {
     var self = this;
     setTimeout(function()
@@ -128,22 +183,6 @@ class TeacherViewSideWindow extends SideWindow {
     return false;
   }
 
-  renderTitleBar() {
-    if (!this.titleBar) return;
-    this.titleBar.innerHTML = '';
-    // Classroom name
-    const title = document.createElement('span');
-    title.textContent = this.classroomName || 'Classroom';
-    title.className = 'side-window-title';
-    this.titleBar.appendChild(title);
-    // Volume icon (popup/slider to be implemented in next step)
-    const volumeIcon = document.createElement('span');
-    volumeIcon.className = 'side-window-volume-icon';
-    volumeIcon.innerHTML = '<i class="fa fa-volume-up"></i>';
-    volumeIcon.style.cursor = 'pointer';
-    // TODO: Implement popup slider
-    this.titleBar.appendChild(volumeIcon);
-  }
 
   showError(msg) {
     this.error = msg;
@@ -162,6 +201,59 @@ class TeacherViewSideWindow extends SideWindow {
   async applyLayout(layoutInfo) {
     await super.applyLayout(layoutInfo);
   }
+
+  showVolumePopup() {
+    // Defensive: Remove any existing popup before creating a new one
+    if (this._volumePopup) {
+      this.hideVolumePopup();
+    }
+    this._volumePopup = document.createElement('div');
+    this._volumePopup.className = 'side-window-volume-popup';
+    this._volumePopup.innerHTML = `
+      <input type="range" min="0" max="100" value="${this.volume}" class="side-window-volume-slider" orient="horizontal">
+    `;
+    // Position popup below the icon
+    const rect = this.volumeButton.getBoundingClientRect();
+    this._volumePopup.style.position = 'fixed';
+    this._volumePopup.style.left = `${rect.left}px`;
+    this._volumePopup.style.top = `${rect.bottom + 8}px`;
+    this._volumePopup.style.zIndex = 2000;
+    document.body.appendChild(this._volumePopup);
+    this._volumePopupVisible = true;
+
+    // Volume change logic
+    const slider = this._volumePopup.querySelector('.side-window-volume-slider');
+    slider.addEventListener('input', (e) => {
+      this.volume = parseInt(e.target.value, 10);
+      if (this.videoElement) {
+        this.videoElement.volume = this.volume / 100;
+      }
+    });
+
+    // Hide popup on outside click
+    setTimeout(() => {
+      document.addEventListener('mousedown', this.handleVolumeOutsideClick.bind(this));
+    }, 0);
+  }
+
+  hideVolumePopup() {
+    if (this._volumePopup) {
+      // Remove the popup from DOM if it exists
+      if (this._volumePopup.parentNode) {
+        this._volumePopup.parentNode.removeChild(this._volumePopup);
+      }
+      this._volumePopup = null;
+      this._volumePopupVisible = false;
+      document.removeEventListener('mousedown', this.handleVolumeOutsideClick.bind(this));
+    }
+  }
+
+  handleVolumeOutsideClick(e) {
+    if (this._volumePopup && !this._volumePopup.contains(e.target)) {
+      this.hideVolumePopup();
+    }
+  }
 }
 
 export default TeacherViewSideWindow;
+
