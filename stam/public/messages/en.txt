@@ -149,3 +149,61 @@ stam:preferences-title                      Preferences
 stam:preferences-language                   Language
 stam:preferences-save                       Save
 stam:preferences-cancel                     Cancel
+stam:theme-copy-of                          Copy of
+stam:theme-name-exists                     A theme with this name already exists
+
+// Theme related messages
+stam:theme-current                         Current Theme
+stam:theme-choose                         Choose Theme
+stam:theme-create                         Create Theme
+stam:theme-edit                           Edit Theme
+stam:theme-name                           Theme Name
+stam:theme-colors                         Colors
+stam:theme-fonts                          Fonts
+stam:theme-background                     Background
+stam:theme-dialog-bg                      Dialog Background
+stam:theme-container-bg                   Container Background
+stam:theme-button-positive                Positive Button
+stam:theme-button-negative                Negative Button
+stam:theme-button-neutral                 Neutral Button
+stam:theme-list-bg                        List Background
+stam:theme-popup-bg                       Popup Background
+stam:theme-text-primary                   Primary Text
+stam:theme-text-secondary                 Secondary Text
+stam:theme-text-positive                  Positive Text
+stam:theme-text-negative                  Negative Text
+stam:theme-text-neutral                   Neutral Text
+stam:theme-popup-text                     Popup Text
+stam:theme-font-menu                      Menu Font
+stam:theme-font-sidewindow                Side Window Font
+stam:theme-font-statusbar                 Status Bar Font
+stam:theme-preview                        Preview
+stam:theme-preview-text                   The quick brown fox jumps over the lazy dog
+stam:theme-preview-title                  Theme Preview
+stam:theme-preview-description            This is a preview of how your theme will look. Changes are applied in real-time.
+stam:theme-preview-button                 Primary Action
+stam:theme-preview-cancel                 Secondary Action
+stam:theme-preview-list                   Sample List
+stam:theme-preview-item1                  First list item
+stam:theme-preview-item2                  Second list item
+stam:theme-preview-item3                  Third list item
+stam:theme-save                           Save Theme
+stam:theme-cancel                         Cancel
+stam:theme-use                            Use
+stam:theme-close                          Close
+stam:theme-choose-font                   Choose Font
+stam:font-picker-title                   Choose a Font
+stam:font-picker-search-placeholder       Search fonts...
+stam:font-picker-categories               Categories
+stam:font-picker-category-all             All Fonts
+stam:font-picker-category-sans            Sans Serif
+stam:font-picker-category-serif           Serif
+stam:font-picker-category-display         Display
+stam:font-picker-category-handwriting     Handwriting
+stam:font-picker-category-monospace       Monospace
+stam:font-picker-preview-text             The quick brown fox jumps over the lazy dog
+stam:font-picker-preview-size             Size
+stam:font-picker-cancel                   Cancel
+stam:font-picker-use                      Use
+stam:font-picker-recent                   Recently Used
+stam:font-picker-loading                  Loading fonts...
