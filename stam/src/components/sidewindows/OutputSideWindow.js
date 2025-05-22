@@ -39,7 +39,8 @@ class OutputSideWindow extends SideWindow {
    * @param {Object} options - Optional configuration options
    */ 
   async init(options = {}) {
-   super.init(options);
+    if (await super.init(options))
+      return;
     try {
         var mode = options.mode;
         if (!mode) 

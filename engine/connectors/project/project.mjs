@@ -1,7 +1,8 @@
 import ConnectorBase from '../../connector.mjs'
 import { SERVERCOMMANDS } from '../../servercommands.mjs';
+export { ConnectorProject as Connector }
 
-export default class ConnectorProject extends ConnectorBase
+class ConnectorProject extends ConnectorBase
 {
 	constructor( awi, config = {} )
 	{
@@ -22,19 +23,19 @@ export default class ConnectorProject extends ConnectorBase
 	async connect( options )
 	{
 	    super.connect( options );
-        this.commandMap = {};
-        for ( var c in SERVERCOMMANDS )
-        {
-            if ( this[ 'command_' + SERVERCOMMANDS[ c ] ] )
-                this.commandMap[ c ] = this[ 'command_' + SERVERCOMMANDS[ c ] ];
-        }
+        if ( options.runUrl )
+            this.runUrl = options.runUrl;
+        if ( options.projectsUrl )
+            this.projectsUrl = options.projectsUrl;
+        if ( options.templatesUrl )
+            this.templatesUrl = options.templatesUrl;
         if ( options.templatesPath )
             this.templatesPath = options.templatesPath;
         if ( options.projectPath )
             this.projectsPath = options.projectPath;
         else
         {
-            var path = await this.awi.callParentConnector( 'httpServer', 'getRootDirectory', {} );
+            var path = await this.awi.callParentConnector( 'http', 'getRootDirectory', {} );
             if ( path )
                 this.projectsPath = path + '/projects';
            else
@@ -43,22 +44,39 @@ export default class ConnectorProject extends ConnectorBase
        return this.setConnected( true );
     }
 
-    async isProjectConnector(args, basket, control)
+    async registerEditor(args, basket, control)
     {
+        this.editor = args.editor;
+        this.userName = this.editor.userName;
+        this.templatesUrl = this.editor.templatesUrl || this.templatesUrl;
+        this.projectsUrl = this.editor.projectsUrl || this.projectsUrl;
+        this.runUrl = this.editor.runUrl || this.runUrl;
+
         var data = {};
         data[ this.token ] = {
+            self: this,
             version: this.version,
-            self: this
-        };
+            commands: {
+                getProjectList: this.command_getProjectList.bind(this),
+                newProject: this.command_newProject.bind(this),
+                openProject: this.command_openProject.bind(this),
+                saveProject: this.command_saveProject.bind(this),
+                renameProject: this.command_renameProject.bind(this),
+                deleteProject: this.command_deleteProject.bind(this),
+                newFile: this.command_newFile.bind(this),
+                loadFile: this.command_loadFile.bind(this),
+                saveFile: this.command_saveFile.bind(this),
+                renameFile: this.command_renameFile.bind(this),
+                deleteFile: this.command_deleteFile.bind(this),
+                moveFile: this.command_moveFile.bind(this),
+                createFolder: this.command_createFolder.bind(this),
+                deleteFolder: this.command_deleteFolder.bind(this),
+                renameFolder: this.command_renameFolder.bind(this),
+                copyFolder: this.command_copyFolder.bind(this),
+                moveFolder: this.command_moveFolder.bind(this),
+            }
+        }
         return this.newAnswer( data );
-    }
-    setEditor( editor, options )
-    {
-        this.editor = editor;
-        this.userName = editor.userName;
-        this.templatesUrl = options.templatesUrl || this.templatesUrl;
-        this.projectsUrl = options.projectsUrl || this.projectsUrl;
-        this.runUrl = options.runUrl || this.runUrl;
     }
     replyError( error, message, editor )
     {
@@ -138,8 +156,8 @@ export default class ConnectorProject extends ConnectorBase
         // Update URL
         if (projectHandle)
         {
-            project.url = this.projectsUrl + '/' + this.userName + '/' + this.token + '/' + projectHandle;
-            project.runUrl = this.runUrl + '/' + this.userName + '/' + this.token + '/' + projectHandle;
+            project.url = this.projectsUrl + '/' + this.userName + '/' + project.type + '/' + projectHandle;
+            project.runUrl = this.runUrl + '/' + this.userName + '/' + project.type + '/' + projectHandle;
         }
         var answer = await this.awi.files.getDirectory( project.path, { recursive: true, filters: '*.*', noStats: true, noPaths: true } );
         if ( answer.isError() )
@@ -221,7 +239,7 @@ export default class ConnectorProject extends ConnectorBase
     ////////////////////////////////////////////////////////////////////////////////////
     async command_getTemplates( parameters, message, editor )
     {
-        var templatesPath = this.templatesPath + '/' + this.token + '/templates';
+        var templatesPath = this.templatesPath + '/' + parameters.mode + '/templates';
         var filter = parameters.filter ? parameters.filter : '*.*';
         var answer = await this.awi.files.getDirectory( templatesPath, { recursive: false, listDirectories: true, filters: filter, noStats: true } );
         if ( answer.isError() )
@@ -238,7 +256,7 @@ export default class ConnectorProject extends ConnectorBase
                 description = answer.data;
             answer = await this.awi.system.exists( folder.path + '/thumbnail.png' );
 			if ( answer.isSuccess() )
-				iconUrl = this.templatesUrl + '/' + this.token + '/templates/' + folder.name + '/thumbnail.png';
+				iconUrl = this.templatesUrl + '/' + parameters.mode + '/templates/' + folder.name + '/thumbnail.png';
 			else
 				iconUrl = this.templatesUrl + '/default-thumbnail.png';
             templates.push( { name: folder.name, description: description, iconUrl: iconUrl } );
@@ -247,7 +265,7 @@ export default class ConnectorProject extends ConnectorBase
     }
     async command_getProjectList( parameters, message, editor )
     {
-        var projectsPath = this.projectsPath + '/' + this.userName + '/' + this.token;
+        var projectsPath = this.projectsPath + '/' + this.userName + '/' + parameters.mode;
         var filter = parameters.filter ? parameters.filter : '*.*';
         var answer = await this.awi.system.exists( projectsPath );
         if ( answer.isError() )
@@ -269,7 +287,7 @@ export default class ConnectorProject extends ConnectorBase
                     description = answer.data;
                 answer = await this.awi.system.exists( folder.path + '/thumbnail.png' );
                 if ( answer.isSuccess() )
-                    iconUrl = this.projectsUrl + '/' + this.userName + '/' + this.token + '/' + folder.name + '/thumbnail.png';
+                    iconUrl = this.projectsUrl + '/' + this.userName + '/' + parameters.mode + '/' + folder.name + '/thumbnail.png';
                 else
                     iconUrl = this.templatesUrl + '/default-thumbnail.png';
                 // Load the project.json file
@@ -280,7 +298,7 @@ export default class ConnectorProject extends ConnectorBase
                 var projectInfo = { 
                     name: project.name, 
                     handle: project.handle,
-                    url: this.projectsUrl + '/' + this.userName + '/' + this.token + '/' + project.handle,
+                    url: this.projectsUrl + '/' + this.userName + '/' + parameters.mode + '/' + project.handle,
                     description: description, 
                     iconUrl: iconUrl,
                     type: project.type,
@@ -303,7 +321,7 @@ export default class ConnectorProject extends ConnectorBase
     {
         // Create the directory
         var projectHandle = this.awi.files.convertToFileName( parameters.name );
-        var projectPath = this.projectsPath + '/' + this.userName + '/' + this.token + '/' + projectHandle;
+        var projectPath = this.projectsPath + '/' + this.userName + '/' + parameters.mode + '/' + projectHandle;
         if ( this.awi.system.exists( projectPath ).isSuccess() )
         {
             if ( !parameters.overwrite )
@@ -322,7 +340,7 @@ export default class ConnectorProject extends ConnectorBase
         // Load the template...
         if ( parameters.template )
         {
-            var templatesPath = this.templatesPath + '/' + this.token + '/templates/' + parameters.template;
+            var templatesPath = this.templatesPath + '/' + parameters.mode + '/templates/' + parameters.template;
             if ( this.awi.system.exists( templatesPath ).isSuccess() ){
                 // Copy all files from template to project
                 answer = await this.awi.files.copyDirectory( templatesPath, projectPath );
@@ -338,10 +356,10 @@ export default class ConnectorProject extends ConnectorBase
             name: parameters.name,
             handle: projectHandle,
             path: projectPath,
-            url: this.projectsUrl + '/' + this.userName + '/' + this.token + '/' + projectHandle,
+            url: this.projectsUrl + '/' + this.userName + '/' + parameters.mode + '/' + projectHandle,
             template: parameters.template,
-            type: this.token,
-            runUrl: this.runUrl + '/' + this.userName + '/' + this.token + '/' + projectHandle,
+            type: parameters.mode,
+            runUrl: this.runUrl + '/' + this.userName + '/' + parameters.mode + '/' + projectHandle,
             files: []
         }
         // Save project configuration
@@ -366,7 +384,7 @@ export default class ConnectorProject extends ConnectorBase
     async command_openProject( parameters, message, editor )
     {
         var projectHandle = parameters.handle || this.awi.files.convertToFileName( parameters.name );
-        var projectPath = this.projectsPath + '/' + this.userName + '/' + this.token + '/' + projectHandle;
+        var projectPath = this.projectsPath + '/' + this.userName + '/' + parameters.mode + '/' + projectHandle;
         if ( !this.awi.system.exists( projectPath ).isSuccess() )
             return this.replyError(this.newError( 'awi:project-not-found', parameters.projectHandle ), message, editor);
         // Load the project.json file
@@ -389,7 +407,7 @@ export default class ConnectorProject extends ConnectorBase
     {
         if ( !parameters.handle || !this.projects[ parameters.handle ] )
             return this.replyError( this.newError( 'awi:project-not-open' ) );
-        var projectPath = this.projectsPath + '/' + this.userName + '/' + this.token + '/' + parameters.handle;
+        var projectPath = this.projectsPath + '/' + this.userName + '/' + parameters.mode + '/' + parameters.handle;
         var answer = await this.awi.files.saveJSON( projectPath + '/.project/project.json', this.projects[ parameters.handle ] );
         if ( answer.isError() )
             return this.replyError(answer, message, editor );
@@ -403,9 +421,9 @@ export default class ConnectorProject extends ConnectorBase
     
         // Create the directory
         var oldProjectHandle = parameters.handle;
-        var oldProjectPath = this.projectsPath + '/' + this.userName + '/' + this.token + '/' + oldProjectHandle;
+        var oldProjectPath = this.projectsPath + '/' + this.userName + '/' + parameters.mode + '/' + oldProjectHandle;
         var newProjectHandle = this.awi.files.convertToFileName( parameters.newName );
-        var newProjectPath = this.projectsPath + '/' + this.userName + '/' + this.token + '/' + newProjectHandle;
+        var newProjectPath = this.projectsPath + '/' + this.userName + '/' + parameters.mode + '/' + newProjectHandle;
         if ( this.awi.system.exists( newProjectPath ).isSuccess() )
             return this.replyError(this.newError( 'awi:project-exists', parameters.newName ), message, editor );
         // Create new project directory
@@ -430,8 +448,8 @@ export default class ConnectorProject extends ConnectorBase
         var newProject = answer.data;
         newProject.name = parameters.newName;
         newProject.handle = newProjectHandle;
-        newProject.url = this.projectsUrl + '/' + this.userName + '/' + this.token + '/' + newProjectHandle;
-        newProject.runUrl = this.runUrl + '/' + this.userName + '/' + this.token + '/' + newProjectHandle;
+        newProject.url = this.projectsUrl + '/' + this.userName + '/' + parameters.mode + '/' + newProjectHandle;
+        newProject.runUrl = this.runUrl + '/' + this.userName + '/' + parameters.mode + '/' + newProjectHandle;
         newProject.files = [];
         answer = await this.updateFileTree( newProject, newProjectHandle );
         if ( answer.isError() )
@@ -453,7 +471,7 @@ export default class ConnectorProject extends ConnectorBase
         if ( !parameters.handle )
             return this.replyError(this.newError( 'awi:project-not-found' ), message, editor );
         // Delete project directory
-        var answer = await this.awi.files.deleteDirectory( this.projectsPath + '/' + this.userName + '/' + this.token + '/' + parameters.handle, { keepRoot: true, recursive: true } );
+        var answer = await this.awi.files.deleteDirectory( this.projectsPath + '/' + this.userName + '/' + parameters.mode + '/' + parameters.handle, { keepRoot: true, recursive: true } );
         if ( answer.isError() )
             return this.replyError(answer, message, editor );
         // Reset project
@@ -634,7 +652,7 @@ export default class ConnectorProject extends ConnectorBase
         var folder = this.findFolder( this.projects[ parameters.handle ], parameters.path );
         if ( !folder )
         {
-            var folderPath = this.projectsPath + '/' + this.userName + '/' + this.token + '/' + parameters.handle + '/' + parameters.path;
+            var folderPath = this.projectsPath + '/' + this.userName + '/' + parameters.mode + '/' + parameters.handle + '/' + parameters.path;
             var answer = await this.awi.system.mkdir( folderPath );
             if ( answer.isError() )
                 return this.replyError(answer, message, editor );
@@ -720,7 +738,7 @@ export default class ConnectorProject extends ConnectorBase
         if ( folder )
         {
             // Copy the folder
-            var newPath = this.projectsPath + '/' + this.userName + '/' + this.token + '/' + parameters.handle + '/' + parameters.newPath;
+            var newPath = this.projectsPath + '/' + this.userName + '/' + parameters.mode + '/' + parameters.handle + '/' + parameters.newPath;
             var answer = await this.awi.files.copyDirectory( folder.path, newPath );
             if ( answer.isError() )
                 return this.replyError(answer, message, editor );

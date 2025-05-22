@@ -89,8 +89,7 @@ class ClassroomManager extends BaseComponent {
       var classroomInfo = await this.showCreateClassroomDialog();
       if (classroomInfo)
       {
-        // Send CREATE_CLASSROOM command to AWI server via FileSystem
-        var response = await this.root.fileSystem.createClassroom({classroomInfo});
+        var response = await this.root.server.createClassroom({classroomInfo});
         if (response.error)
           this.root.messageBar.showErrorMessage(response.error);
       }
@@ -98,7 +97,7 @@ class ClassroomManager extends BaseComponent {
   }
 
   async handleJoinClassroom(data, senderId) {
-    var classroomList = await this.root.fileSystem.getClassroomList();
+    var classroomList = await this.root.server.getClassroomList();
     if (!classroomList.error)
     {
       var response = await this.showJoinClassroomDialog(classroomList,this.root.userName);
@@ -108,8 +107,7 @@ class ClassroomManager extends BaseComponent {
         {
           if (this.teacherClassroomOpen)
             await this.handleTeacherLeaveClassroom();
-          // Send JOIN_CLASSROOM command to AWI server via FileSystem
-          var response = await this.root.fileSystem.joinClassroom({
+          var response = await this.root.server.joinClassroom({
             type: 'teacher', 
             classroomId: response.classroomId, 
             displayName: response.displayName });
@@ -130,8 +128,7 @@ class ClassroomManager extends BaseComponent {
         else{
           if (this.studentClassroomOpen)
             await this.handleStudentLeaveClassroom();
-          // Send JOIN_CLASSROOM command to AWI server via FileSystem
-          var response = await this.root.fileSystem.joinClassroom({
+          var response = await this.root.server.joinClassroom({
             type: 'student', 
             classroomId: response.classroomId, 
             displayName: response.displayName});
@@ -163,18 +160,17 @@ class ClassroomManager extends BaseComponent {
       await this.handleTeacherLeaveClassroom();
     if (this.studentClassroomOpen)
       await this.handleStudentLeaveClassroom();
-    var classroomList = await this.root.fileSystem.getClassroomList();
+    var classroomList = await this.root.server.getClassroomList();
     if (!classroomList.error)
     {
       var teacherClassroomList = classroomList.filter(classroom => classroom.createdBy == this.root.userName);
       var response = await this.showDeleteClassroomDialog(teacherClassroomList);
       if (response)
       {
-        // Send DELETE_CLASSROOM command to AWI server via FileSystem
-        var response = await this.root.fileSystem.deleteClassroom({classroomId: response.classroomId});
+        var response = await this.root.server.deleteClassroom({classroomId: response.classroomId});
         if (!response.error)
         {
-          this.root.messageBar.showSuccessMessage('Classroom deleted successfully');
+          this.root.messageBar.showSuccessMessage(this.root.messages.getMessage('stam:classroom-deleted-successfully'));
         }
         else
         {
@@ -196,7 +192,7 @@ class ClassroomManager extends BaseComponent {
     {
       if (this.teacherConnected)
         await this.handleTeacherDisconnect();
-      await this.root.fileSystem.leaveClassroom({
+      await this.root.server.leaveClassroom({
         classroomId: this.teacherClassroomId,
         teacherHandle: this.teacherHandle,
         type: 'teacher'
@@ -216,7 +212,7 @@ class ClassroomManager extends BaseComponent {
     {
       if (this.studentConnected)
         await this.handleStudentDisconnect();
-      await this.root.fileSystem.leaveClassroom({
+      await this.root.server.leaveClassroom({
         classroomId: this.studentClassroomId,
         studentHandle: this.studentHandle,
         type: 'student'
@@ -242,7 +238,7 @@ class ClassroomManager extends BaseComponent {
       // 1. Create mediasoup Device
       this.mediasoupDevice = new mediasoupClient.Device();
       // 2. Get router RTP capabilities from backend
-      let response = await this.root.fileSystem.connectTeacher({
+      let response = await this.root.server.connectTeacher({
         action: 'getRouterRtpCapabilities',
         classroomId: classroomId,
         teacherHandle: this.teacherHandle
@@ -253,7 +249,7 @@ class ClassroomManager extends BaseComponent {
       // 3. Load Device
       await this.mediasoupDevice.load({ routerRtpCapabilities: rtpCapabilities });
       // 4. Create transport on backend
-      response = await this.root.fileSystem.connectTeacher({
+      response = await this.root.server.connectTeacher({
         action: 'createTransport',
         classroomId: classroomId,
         teacherHandle: this.teacherHandle
@@ -267,7 +263,7 @@ class ClassroomManager extends BaseComponent {
       // 6. Wire up DTLS connect event
       this.sendTransport.on('connect', async ({ dtlsParameters }, callback, errback) => {
         try {
-          const resp = await this.root.fileSystem.connectTeacher({
+          const resp = await this.root.server.connectTeacher({
             action: 'connectTransport',
             classroomId: classroomId,
             teacherHandle: this.teacherHandle,
@@ -282,7 +278,7 @@ class ClassroomManager extends BaseComponent {
       // 7. Wire up produce event
       this.sendTransport.on('produce', async ({ kind, rtpParameters }, callback, errback) => {
         try {
-          const resp = await this.root.fileSystem.connectTeacher({
+          const resp = await this.root.server.connectTeacher({
             action: 'produce',
             classroomId: classroomId,
             teacherHandle: this.teacherHandle,
@@ -313,7 +309,7 @@ class ClassroomManager extends BaseComponent {
   async handleTeacherDisconnect(data, senderId) {
     if (this.teacherConnected)
     {
-      await this.root.fileSystem.disconnectTeacher({
+      await this.root.server.disconnectTeacher({
         classroomId: this.teacherClassroomId,
         teacherHandle: this.teacherHandle
       });
@@ -334,7 +330,7 @@ class ClassroomManager extends BaseComponent {
       // 1. Create mediasoup Device
       const device = new mediasoupClient.Device();
       // 2. Get router RTP capabilities from AWI server
-      let response = await this.root.fileSystem.connectStudent({
+      let response = await this.root.server.connectStudent({
         action: 'getRouterRtpCapabilities',
         classroomId,
         studentHandle: this.studentHandle
@@ -345,7 +341,7 @@ class ClassroomManager extends BaseComponent {
       // 3. Load Device
       await device.load({ routerRtpCapabilities: rtpCapabilities });
       // 4. Create transport on backend
-      response = await this.root.fileSystem.connectStudent({
+      response = await this.root.server.connectStudent({
         action: 'createTransport',
         classroomId,
         studentHandle: this.studentHandle
@@ -365,7 +361,7 @@ class ClassroomManager extends BaseComponent {
       // 6. Wire up DTLS connect event
       recvTransport.on('connect', async ({ dtlsParameters }, callback, errback) => {
         try {
-          const resp = await this.root.fileSystem.connectStudent({
+          const resp = await this.root.server.connectStudent({
             action: 'connectTransport',
             classroomId,
             studentHandle: this.studentHandle,
@@ -378,7 +374,7 @@ class ClassroomManager extends BaseComponent {
         }
       });
       // 7. Get teacher's producer info from server
-      response = await this.root.fileSystem.connectStudent({
+      response = await this.root.server.connectStudent({
         action: 'consume',
         classroomId,
         studentHandle: this.studentHandle,
@@ -419,7 +415,7 @@ class ClassroomManager extends BaseComponent {
   async handleStudentDisconnect(data, senderId) {
     if (this.studentConnected)
     {
-      await this.root.fileSystem.disconnectStudent({
+      await this.root.server.disconnectStudent({
         classroomId: this.studentClassroomId,
         studentHandle: this.studentHandle
       });
@@ -456,7 +452,7 @@ class ClassroomManager extends BaseComponent {
 
       // Title
       const title = document.createElement('h2');
-      title.textContent = 'Delete a Classroom';
+      title.textContent = this.root.messages.getMessage('stam:delete-classroom');
       title.style = 'color:#eee;margin-bottom:12px;';
       dialog.appendChild(title);
 
@@ -492,12 +488,12 @@ class ClassroomManager extends BaseComponent {
         infoCol.style = 'flex:1 1 0;min-width:0;';
         // Title
         const title = document.createElement('div');
-        title.textContent = info.title || info.name || 'Untitled classroom';
+        title.textContent = info.title || info.name || this.root.messages.getMessage('stam:untitled-classroom');
         title.style = 'color:#eee;font-size:1.13em;font-weight:600;line-height:1.1;margin-bottom:2px;word-break:break-word;';
         infoCol.appendChild(title);
         // Description
         const desc = document.createElement('div');
-        desc.textContent = info.description || '';
+        desc.textContent = info.description || this.root.messages.getMessage('stam:classroom-description');
         desc.style = 'color:#bbb;font-size:0.97em;line-height:1.2;white-space:pre-line;word-break:break-word;';
         infoCol.appendChild(desc);
         item.appendChild(infoCol);
@@ -525,11 +521,11 @@ class ClassroomManager extends BaseComponent {
       btnRow.style = 'display:flex;justify-content:flex-end;gap:14px;margin-top:10px;';
       // OK
       const okBtn = document.createElement('button');
-      okBtn.textContent = 'OK';
+      okBtn.textContent = this.root.messages.getMessage('stam:ok');
       okBtn.style = 'min-width:110px;font-size:1.08em;';
       // Cancel
       const cancelBtn = document.createElement('button');
-      cancelBtn.textContent = 'Cancel';
+      cancelBtn.textContent = this.root.messages.getMessage('stam:cancel');
       cancelBtn.style = 'min-width:80px;font-size:1.08em;';
       btnRow.appendChild(cancelBtn);
       btnRow.appendChild(okBtn);
@@ -585,7 +581,7 @@ class ClassroomManager extends BaseComponent {
 
       // Title
       const title = document.createElement('h2');
-      title.textContent = 'Join a Classroom';
+      title.textContent = this.root.messages.getMessage('stam:join-classroom');
       title.style = 'color:#eee;margin-bottom:12px;';
       dialog.appendChild(title);
 
@@ -593,7 +589,7 @@ class ClassroomManager extends BaseComponent {
       const nameRow = document.createElement('div');
       nameRow.style = 'margin-bottom:10px;display:flex;align-items:center;gap:8px;';
       const nameLabel = document.createElement('label');
-      nameLabel.textContent = 'Display name:';
+      nameLabel.textContent = this.root.messages.getMessage('stam:display-name');
       nameLabel.style = 'min-width:110px;color:#eee;';
       nameLabel.htmlFor = 'join-classroom-displayname';
       nameRow.appendChild(nameLabel);
@@ -667,12 +663,12 @@ class ClassroomManager extends BaseComponent {
         infoCol.style = 'flex:1 1 0;min-width:0;padding:16px 18px;display:flex;flex-direction:column;justify-content:center;';
         // Title
         const title = document.createElement('div');
-        title.textContent = info.title || info.name || 'Untitled classroom';
+        title.textContent = info.title || info.name || this.root.messages.getMessage('stam:untitled-classroom');
         title.style = 'color:#eee;font-size:1.22em;font-weight:700;line-height:1.15;margin-bottom:3px;word-break:break-word;letter-spacing:0.01em;';
         infoCol.appendChild(title);
         // Description
         const desc = document.createElement('div');
-        desc.textContent = info.description || '';
+        desc.textContent = info.description || this.root.messages.getMessage('stam:classroom-description');
         desc.style = 'color:#bbb;font-size:1.01em;line-height:1.23;white-space:pre-line;word-break:break-word;margin-bottom:2px;';
         infoCol.appendChild(desc);
         // Creator
@@ -703,11 +699,11 @@ class ClassroomManager extends BaseComponent {
       btnRow.style = 'display:flex;justify-content:flex-end;gap:14px;margin-top:10px;';
       // Join as Teacher
       const okTeacher = document.createElement('button');
-      okTeacher.textContent = 'Join as Teacher';
+      okTeacher.textContent = this.root.messages.getMessage('stam:join-as-teacher');
       okTeacher.style = 'min-width:110px;font-size:1.08em;';
       // Join as Student
       const okStudent = document.createElement('button');
-      okStudent.textContent = 'Join as Student';
+      okStudent.textContent = this.root.messages.getMessage('stam:join-as-student');
       okStudent.style = 'min-width:110px;font-size:1.08em;';
       // Cancel
       const cancelBtn = document.createElement('button');
@@ -813,20 +809,20 @@ class ClassroomManager extends BaseComponent {
 
       // Title
       const title = document.createElement('h2');
-      title.textContent = 'Create Classroom';
+      title.textContent = this.root.messages.getMessage('stam:create-classroom');
       title.style = 'color:#eee;margin-bottom:10px;';
       dialog.appendChild(title);
 
       // --- Classroom Title ---
       const titleLabel = document.createElement('label');
-      titleLabel.textContent = 'Classroom Title:';
+      titleLabel.textContent = this.root.messages.getMessage('stam:classroom-title');
       titleLabel.htmlFor = 'classroom-title-input';
       titleLabel.style = 'color:#eee;';
       dialog.appendChild(titleLabel);
       const titleInput = document.createElement('input');
       titleInput.type = 'text';
       titleInput.id = 'classroom-title-input';
-      titleInput.value = 'New classroom';
+      titleInput.value = this.root.messages.getMessage('stam:classroom-title-placeholder');
       titleInput.style = 'width:100%;margin-bottom:10px;display:block;font-size:1.1em;padding:4px 8px;background:#222;border:1px solid #444;color:#eee;border-radius:3px;';
       dialog.appendChild(titleInput);
 
@@ -840,15 +836,15 @@ class ClassroomManager extends BaseComponent {
       descCol.style = 'flex:2 1 0;min-width:260px;';
       descIconRow.appendChild(descCol);
       const descLabel = document.createElement('label');
-      descLabel.textContent = 'Description:';
+      descLabel.textContent = this.root.messages.getMessage('stam:classroom-description');
       descLabel.htmlFor = 'classroom-desc-input';
       descLabel.style = 'color:#eee;';
       descCol.appendChild(descLabel);
       const descInput = document.createElement('textarea');
       descInput.id = 'classroom-desc-input';
       descInput.rows = 7;
-      descInput.placeholder = 'Enter a description for the classroom';
-      descInput.value = 'Enter a description for the classroom';
+      descInput.placeholder = this.root.messages.getMessage('stam:classroom-description-placeholder');
+      descInput.value = this.root.messages.getMessage('stam:classroom-description-placeholder');
       descInput.style = 'width:100%;height:172px;min-width:260px;flex:2 1 0;display:block;font-size:1em;padding:8px 10px;background:#222;border:1px solid #444;color:#eee;border-radius:3px;resize:both;';
       descCol.appendChild(descInput);
 
@@ -857,12 +853,12 @@ class ClassroomManager extends BaseComponent {
       iconCol.style = 'flex:1 1 0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;min-width:150px;height:172px;';
       descIconRow.appendChild(iconCol);
       const iconLabel = document.createElement('label');
-      iconLabel.textContent = 'Classroom Icon:';
+      iconLabel.textContent = this.root.messages.getMessage('stam:classroom-icon');
       iconLabel.style = 'color:#eee;margin-bottom:6px;';
       iconCol.appendChild(iconLabel);
       const iconPreview = document.createElement('img');
       iconPreview.src = '/classroom.png?v=' + Date.now(); // Force reload, avoid cache
-      iconPreview.alt = 'Classroom Icon';
+      iconPreview.alt = this.root.messages.getMessage('stam:classroom-icon');
       iconPreview.onerror = function(){ this.src='/classroom.png?v=' + Date.now(); }; // Always show default if error
       iconPreview.style = 'width:128px;height:128px;object-fit:contain;border:1px solid #666;border-radius:8px;background:#181818;margin-bottom:8px;';
       iconPreview.draggable = false;
@@ -871,7 +867,7 @@ class ClassroomManager extends BaseComponent {
       let iconChangedByUser = false;
       // Upload button
       const uploadBtn = document.createElement('button');
-      uploadBtn.textContent = 'Choose';
+      uploadBtn.textContent = this.root.messages.getMessage('stam:classroom-icon');
       uploadBtn.style = 'margin:0 auto 0 auto;width:90px;height:36px;padding:6px 0;background:#333;color:#eee;border:1px solid #444;border-radius:4px;cursor:pointer;';
       iconCol.appendChild(uploadBtn);
       // Hidden file input
@@ -915,7 +911,7 @@ class ClassroomManager extends BaseComponent {
 
       // --- Project Title ---
       const projectTitleLabel = document.createElement('label');
-      projectTitleLabel.textContent = 'Classroom Project:';
+      projectTitleLabel.textContent = this.root.messages.getMessage('stam:classroom-project');
       projectTitleLabel.style = 'color:#eee;display:block;margin-top:16px;margin-bottom:4px;margin-top:8px;';
       dialog.appendChild(projectTitleLabel);
       // --- Mode/Project Section ---
@@ -927,7 +923,7 @@ class ClassroomManager extends BaseComponent {
       const modeRow = document.createElement('div');
       modeRow.style = 'display:flex;flex-direction:row;align-items:center;gap:8px;margin-bottom:4px;';
       const modeLabel = document.createElement('label');
-      modeLabel.textContent = 'Mode:';
+      modeLabel.textContent = this.root.messages.getMessage('stam:classroom-mode');
       modeRow.appendChild(modeLabel);
       const modeSelect = document.createElement('select');
       modeSelect.style = 'min-width:120px;font-size:1em;';
@@ -951,7 +947,7 @@ class ClassroomManager extends BaseComponent {
       radioNew.checked = true;
       const radioNewLabel = document.createElement('label');
       radioNewLabel.htmlFor = 'radio-new';
-      radioNewLabel.textContent = ' Create a new project';
+      radioNewLabel.textContent = this.root.messages.getMessage('stam:classroom-radio-new');
       radioNewLabel.style = 'margin-left:6px;';
       radioRow1.appendChild(radioNew);
       radioRow1.appendChild(radioNewLabel);
@@ -965,7 +961,7 @@ class ClassroomManager extends BaseComponent {
       radioLoad.style = 'margin-left:0px;';
       const radioLoadLabel = document.createElement('label');
       radioLoadLabel.htmlFor = 'radio-load';
-      radioLoadLabel.textContent = ' Load an existing project';
+      radioLoadLabel.textContent = this.root.messages.getMessage('stam:classroom-radio-load');
       radioLoadLabel.style = 'margin-left:6px;';
       radioRow2.appendChild(radioLoad);
       radioRow2.appendChild(radioLoadLabel);
@@ -974,7 +970,7 @@ class ClassroomManager extends BaseComponent {
       const projectNameRow = document.createElement('div');
       projectNameRow.style = 'display:flex;flex-direction:row;align-items:center;margin-top:6px;margin-bottom:2px;justify-content:space-between;';
       const projectNameLabel = document.createElement('span');
-      projectNameLabel.textContent = 'Project name:';
+      projectNameLabel.textContent = this.root.messages.getMessage('stam:classroom-project-name');
       projectNameLabel.style = 'font-size:1em;font-weight:bold;margin-right:8px;';
       const projectNameValue = document.createElement('span');
       projectNameValue.textContent = 'None';
@@ -1003,7 +999,7 @@ class ClassroomManager extends BaseComponent {
       controlDiv.appendChild(controlCheckbox);
       const controlLabel = document.createElement('label');
       controlLabel.htmlFor = 'take-control-checkbox';
-      controlLabel.textContent = ' Take control of student editors';
+      controlLabel.textContent = this.root.messages.getMessage('stam:classroom-take-control');
       controlDiv.appendChild(controlLabel);
       projectSection.appendChild(controlDiv);
       // --- Project Global Checkbox (inside project area) ---
@@ -1016,7 +1012,7 @@ class ClassroomManager extends BaseComponent {
       globalDiv.appendChild(globalCheckbox);
       const globalLabel = document.createElement('label');
       globalLabel.htmlFor = 'project-global-checkbox';
-      globalLabel.textContent = ' Project global to all students';
+      globalLabel.textContent = this.root.messages.getMessage('stam:classroom-project-global');
       globalDiv.appendChild(globalLabel);
       projectSection.appendChild(globalDiv);
       // Choose button logic
@@ -1058,7 +1054,7 @@ class ClassroomManager extends BaseComponent {
       const urlDiv = document.createElement('div');
       urlDiv.style = 'margin-bottom:12px;display:flex;align-items:center;gap:8px;';
       const urlLabel = document.createElement('label');
-      urlLabel.textContent = 'Classroom URL:';
+      urlLabel.textContent = this.root.messages.getMessage('stam:classroom-url');
       urlDiv.appendChild(urlLabel);
       const urlInput = document.createElement('input');
       urlInput.type = 'text';
@@ -1068,12 +1064,12 @@ class ClassroomManager extends BaseComponent {
       urlDiv.appendChild(urlInput);
       // Copy button
       const copyBtn = document.createElement('button');
-      copyBtn.textContent = 'Copy';
+      copyBtn.textContent = this.root.messages.getMessage('stam:classroom-copy-url');
       copyBtn.style = 'margin-left:4px;padding:4px 10px;font-size:0.95em;background:#333;color:#eee;border:1px solid #444;border-radius:4px;cursor:pointer;';
       copyBtn.onclick = () => {
         navigator.clipboard.writeText(urlInput.value).then(() => {
           const oldText = copyBtn.textContent;
-          copyBtn.textContent = 'Copied!';
+          copyBtn.textContent = this.root.messages.getMessage('stam:classroom-copied');
           setTimeout(() => { copyBtn.textContent = oldText; }, 1000);
         });
       };
@@ -1084,10 +1080,10 @@ class ClassroomManager extends BaseComponent {
       const btnRow = document.createElement('div');
       btnRow.style = 'display:flex;justify-content:flex-end;gap:16px;margin-top:10px;';
       const okBtn = document.createElement('button');
-      okBtn.textContent = 'OK';
+      okBtn.textContent = this.root.messages.getMessage('stam:ok');
       okBtn.style = 'min-width:80px;font-size:1.1em;';
       const cancelBtn = document.createElement('button');
-      cancelBtn.textContent = 'Cancel';
+      cancelBtn.textContent = this.root.messages.getMessage('stam:cancel');
       cancelBtn.style = 'min-width:80px;font-size:1.1em;';
       btnRow.appendChild(cancelBtn);
       btnRow.appendChild(okBtn);
@@ -1106,7 +1102,7 @@ class ClassroomManager extends BaseComponent {
           iconUrl: iconFile || iconPreview.src,
           takeControl: controlCheckbox.checked,
           mode: modeSelect.value,
-          projectType: radioNew.checked ? 'new' : 'load',
+          projectType: radioNew.checked ? this.root.messages.getMessage('stam:classroom-radio-new') : this.root.messages.getMessage('stam:classroom-radio-load'),
           projectName: selectedProjectName,
           projectGlobal: globalCheckbox.checked,
           url: urlInput.value,
@@ -1177,7 +1173,7 @@ class ClassroomManager extends BaseComponent {
       // Camera select
       const cameraGroup = document.createElement('div');
       const cameraLabel = document.createElement('label');
-      cameraLabel.textContent = 'Camera:';
+      cameraLabel.textContent = this.root.messages.getMessage('stam:classroom-camera');
       cameraLabel.htmlFor = 'settings-camera';
       const cameraSelect = document.createElement('select');
       cameraSelect.id = 'settings-camera';
@@ -1189,7 +1185,7 @@ class ClassroomManager extends BaseComponent {
       // Microphone select
       const micGroup = document.createElement('div');
       const micLabel = document.createElement('label');
-      micLabel.textContent = 'Microphone:';
+      micLabel.textContent = this.root.messages.getMessage('stam:classroom-microphone');
       micLabel.htmlFor = 'settings-mic';
       const micSelect = document.createElement('select');
       micSelect.id = 'settings-mic';
@@ -1201,7 +1197,7 @@ class ClassroomManager extends BaseComponent {
       // Output select
       const outputGroup = document.createElement('div');
       const outputLabel = document.createElement('label');
-      outputLabel.textContent = 'Audio Output:';
+      outputLabel.textContent = this.root.messages.getMessage('stam:classroom-audio-output');
       outputLabel.htmlFor = 'settings-output';
       const outputSelect = document.createElement('select');
       outputSelect.id = 'settings-output';
@@ -1249,7 +1245,7 @@ class ClassroomManager extends BaseComponent {
       // Cancel button
       const cancelBtn = document.createElement('button');
       cancelBtn.type = 'button';
-      cancelBtn.textContent = 'Cancel';
+      cancelBtn.textContent = this.root.messages.getMessage('stam:cancel');
       cancelBtn.onclick = () => {
         document.body.removeChild(overlay);
         resolve(null);
@@ -1257,7 +1253,7 @@ class ClassroomManager extends BaseComponent {
       // OK button
       const okBtn = document.createElement('button');
       okBtn.type = 'button';
-      okBtn.textContent = 'OK';
+      okBtn.textContent = this.root.messages.getMessage('stam:ok');
       okBtn.style.backgroundColor = '#3b82f6';
       okBtn.style.color = '#fff';
       okBtn.onclick = () => {
@@ -1288,7 +1284,7 @@ class ClassroomManager extends BaseComponent {
           devices.filter(d => d.kind === 'videoinput').forEach(d => {
             const opt = document.createElement('option');
             opt.value = d.deviceId;
-            opt.textContent = d.label || 'Camera ' + (cameraSelect.length + 1);
+            opt.textContent = d.label || this.root.messages.getMessage('stam:classroom-camera') + ' ' + (cameraSelect.length + 1);
             if (opt.value === presetCameraId) {
               opt.selected = true;
               foundCamera = true;
@@ -1302,7 +1298,7 @@ class ClassroomManager extends BaseComponent {
           devices.filter(d => d.kind === 'audioinput').forEach(d => {
             const opt = document.createElement('option');
             opt.value = d.deviceId;
-            opt.textContent = d.label || 'Microphone ' + (micSelect.length + 1);
+            opt.textContent = d.label || this.root.messages.getMessage('stam:classroom-microphone') + ' ' + (micSelect.length + 1);
             if (opt.value === presetMicId) {
               opt.selected = true;
               foundMic = true;
@@ -1316,7 +1312,7 @@ class ClassroomManager extends BaseComponent {
           devices.filter(d => d.kind === 'audiooutput').forEach(d => {
             const opt = document.createElement('option');
             opt.value = d.deviceId;
-            opt.textContent = d.label || 'Speaker ' + (outputSelect.length + 1);
+            opt.textContent = d.label || this.root.messages.getMessage('stam:classroom-audio-output') + ' ' + (outputSelect.length + 1);
             if (opt.value === presetOutputId) {
               opt.selected = true;
               foundOutput = true;

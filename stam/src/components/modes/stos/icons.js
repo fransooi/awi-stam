@@ -35,7 +35,8 @@ class STOSIcons extends BaseComponent{
     };    
   }
   async init(options) {
-    super.init(options);
+    if (await super.init(options))
+      return;
     document.addEventListener('keydown', this.handleKeyDown.bind(this));
     document.addEventListener('keyup', this.handleKeyUp.bind(this));
   }

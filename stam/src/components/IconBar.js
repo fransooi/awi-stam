@@ -44,7 +44,8 @@ class IconBar extends BaseComponent {
   }
 
   async init(options) {
-    super.init(options);   
+    if (await super.init(options))
+      return;
     await this.setMode(options.mode);
   }
 

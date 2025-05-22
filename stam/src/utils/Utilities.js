@@ -238,4 +238,21 @@ export default class Utilities {
     const parts = path.split('/');
     return parts[parts.length - 1];
   }
+
+  // Read a file from the public directory with HTTP
+  async readFile(path, type = 'text') {
+    try {
+      const response = await fetch(path);
+      if (!response.ok) {
+        return { error: 'stam:file-not-found' };
+      }
+      if ( type === 'text' )
+        return await response.text();
+      else if ( type === 'json' )
+        return await response.json();
+      return await response.arrayBuffer();
+    } catch (error) {
+      return { error: 'stam:file-not-found' };
+    }
+  }
 }

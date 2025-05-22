@@ -150,18 +150,18 @@ class SocketSideWindow extends SideWindow {
     // Create connection indicator button
     this.connectionIndicator = document.createElement('span');
     this.connectionIndicator.className = 'socket-indicator connection-indicator disconnected';
-    this.connectionIndicator.title = 'Connection Status: Disconnected';
+    this.connectionIndicator.title = this.root.messages.getMessage('stam:connection-status-disconnected');
     this.connectionIndicator.addEventListener('click', () => this.toggleConnection());
     
     // Create send indicator button
     this.sendIndicator = document.createElement('span');
     this.sendIndicator.className = 'socket-indicator send-indicator';
-    this.sendIndicator.title = 'Send Indicator';
+    this.sendIndicator.title = this.root.messages.getMessage('stam:send-indicator');
     
     // Create receive indicator button
     this.receiveIndicator = document.createElement('span');
     this.receiveIndicator.className = 'socket-indicator receive-indicator';
-    this.receiveIndicator.title = 'Receive Indicator';
+    this.receiveIndicator.title = this.root.messages.getMessage('stam:receive-indicator');
     
     // Add indicators to container
     indicatorContainer.appendChild(this.connectionIndicator);
@@ -588,7 +588,7 @@ class SocketSideWindow extends SideWindow {
         else if (data.command)
           content = data.command;
         if (data.error)
-          content += '- ERROR: ' + data.error;
+          content += '\n' + this.root.messages.getMessage('stam:error') + ': ' + data.error;
       }
     }
     if (text)
@@ -650,13 +650,13 @@ class SocketSideWindow extends SideWindow {
     
     if (this.isConnected) {
       this.connectionIndicator.className = 'socket-indicator connection-indicator connected';
-      this.connectionIndicator.title = 'Connection Status: Connected (Click to Disconnect)';
+      this.connectionIndicator.title = this.root.messages.getMessage('stam:connection-status-connected');
     } else if (this.isConnecting) {
       this.connectionIndicator.className = 'socket-indicator connection-indicator connecting';
-      this.connectionIndicator.title = 'Connection Status: Connecting...';
+      this.connectionIndicator.title = this.root.messages.getMessage('stam:connection-status-connecting');
     } else {
       this.connectionIndicator.className = 'socket-indicator connection-indicator disconnected';
-      this.connectionIndicator.title = 'Connection Status: Disconnected (Click to Connect)';
+      this.connectionIndicator.title = this.root.messages.getMessage('stam:connection-status-disconnected');
     }
   }
   
@@ -1118,7 +1118,7 @@ class SocketSideWindow extends SideWindow {
       
       // Create dialog title
       const title = document.createElement('h2');
-      title.textContent = 'Create New Account';
+      title.textContent = this.root.messages.getMessage('stam:create-account-dialog-title');
       title.style.margin = '0 0 20px 0';
       title.style.fontSize = '18px';
       title.style.fontWeight = 'bold';
@@ -1214,7 +1214,7 @@ class SocketSideWindow extends SideWindow {
       
       const countryInput = document.createElement('input');
       countryInput.type = 'text';
-      countryInput.placeholder = 'Enter your country (optional)';
+      countryInput.placeholder = this.root.messages.getMessage('stam:country-placeholder');
       countryInput.style.padding = '8px';
       countryInput.style.backgroundColor = '#3d3d3d';
       countryInput.style.color = '#e0e0e0';
@@ -1232,7 +1232,7 @@ class SocketSideWindow extends SideWindow {
       languageGroup.style.gap = '5px';
       
       const languageLabel = document.createElement('label');
-      languageLabel.textContent = 'Preferred Language';
+      languageLabel.textContent = this.root.messages.getMessage('stam:preferred-language');
       languageLabel.style.fontSize = '14px';
       languageGroup.appendChild(languageLabel);
       
@@ -1264,7 +1264,7 @@ class SocketSideWindow extends SideWindow {
       
       const cancelButton = document.createElement('button');
       cancelButton.type = 'button';
-      cancelButton.textContent = 'Cancel';
+      cancelButton.textContent = this.root.messages.getMessage('stam:cancel');
       cancelButton.style.padding = '8px 15px';
       cancelButton.style.backgroundColor = '#555';
       cancelButton.style.color = '#fff';
@@ -1280,7 +1280,7 @@ class SocketSideWindow extends SideWindow {
       
       const createButton = document.createElement('button');
       createButton.type = 'button';
-      createButton.textContent = 'Create AWI Account';
+      createButton.textContent = this.root.messages.getMessage('stam:create-account');
       createButton.style.padding = '8px 15px';
       createButton.style.backgroundColor = '#4CAF50';
       createButton.style.color = '#fff';
@@ -1297,22 +1297,22 @@ class SocketSideWindow extends SideWindow {
         // Check required fields
         if (!firstNameInput.value.trim()) {
           isValid = false;
-          errorMessage = 'First name is required';
+          errorMessage = this.root.messages.getMessage('stam:first-name-required');
         } else if (!lastNameInput.value.trim()) {
           isValid = false;
-          errorMessage = 'Last name is required';
+          errorMessage = this.root.messages.getMessage('stam:last-name-required');
         } else if (!passwordInput.value) {
           isValid = false;
-          errorMessage = 'Password is required';
+          errorMessage = this.root.messages.getMessage('stam:password-required');
         } else if (passwordInput.value !== confirmPasswordInput.value) {
           isValid = false;
-          errorMessage = 'Passwords do not match';
+          errorMessage = this.root.messages.getMessage('stam:passwords-do-not-match');
         } else if (!emailInput.value.trim()) {
           isValid = false;
-          errorMessage = 'Email is required';
+          errorMessage = this.root.messages.getMessage('stam:email-required');
         } else if (!emailInput.value.includes('@') || !emailInput.value.includes('.')) {
           isValid = false;
-          errorMessage = 'Please enter a valid email address';
+          errorMessage = this.root.messages.getMessage('stam:email-invalid');
         }
         
         if (!isValid) {
@@ -1390,7 +1390,7 @@ class SocketSideWindow extends SideWindow {
       
       // Create dialog title
       const title = document.createElement('h2');
-      title.textContent = 'Connection Settings';
+      title.textContent = this.root.messages.getMessage('stam:connection-settings');
       title.style.margin = '0 0 20px 0';
       title.style.fontSize = '18px';
       title.style.fontWeight = 'bold';
@@ -1411,7 +1411,7 @@ class SocketSideWindow extends SideWindow {
       userNameGroup.style.gap = '5px';
       
       const userNameLabel = document.createElement('label');
-      userNameLabel.textContent = 'Username:';
+      userNameLabel.textContent = this.root.messages.getMessage('stam:username');
       userNameLabel.style.fontSize = '14px';
       userNameGroup.appendChild(userNameLabel);
       
@@ -1437,7 +1437,7 @@ class SocketSideWindow extends SideWindow {
       urlGroup.style.gap = '5px';
       
       const urlLabel = document.createElement('label');
-      urlLabel.textContent = 'Server URL:';
+      urlLabel.textContent = this.root.messages.getMessage('stam:server-url');
       urlLabel.style.fontSize = '14px';
       urlGroup.appendChild(urlLabel);
       
@@ -1468,7 +1468,7 @@ class SocketSideWindow extends SideWindow {
       
       const checkboxLabel = document.createElement('label');
       checkboxLabel.htmlFor = 'awi-account-checkbox';
-      checkboxLabel.textContent = this.accountInfo ? 'Login AWI account' : 'Create AWI account';
+      checkboxLabel.textContent = this.accountInfo ? this.root.messages.getMessage('stam:login-awi-account') : this.root.messages.getMessage('stam:create-awi-account');
       checkboxLabel.style.fontSize = '14px';
       checkboxLabel.style.cursor = 'pointer';
       
@@ -1485,7 +1485,7 @@ class SocketSideWindow extends SideWindow {
       
       const cancelButton = document.createElement('button');
       cancelButton.type = 'button';
-      cancelButton.textContent = 'Cancel';
+      cancelButton.textContent = this.root.messages.getMessage('stam:cancel');
       cancelButton.style.padding = '8px 15px';
       cancelButton.style.backgroundColor = '#555';
       cancelButton.style.color = '#e0e0e0';
@@ -1501,7 +1501,7 @@ class SocketSideWindow extends SideWindow {
       
       const connectButton = document.createElement('button');
       connectButton.type = 'button';
-      connectButton.textContent = 'Connect';
+      connectButton.textContent = this.root.messages.getMessage('stam:connect');
       connectButton.style.padding = '8px 15px';
       connectButton.style.backgroundColor = '#4CAF50';
       connectButton.style.color = '#fff';

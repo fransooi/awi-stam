@@ -42,6 +42,22 @@ class ConnectorChat extends ConnectorBase
 		super.connect( options );
 		return this.setConnected( true );
 	}
+    async registerEditor(args, basket, control)
+    {
+        this.editor = args.editor;
+        this.userName = this.editor.userName;
+
+        var data = {};
+        data[ this.token ] = {
+            self: this,
+            version: this.version,
+            commands: {
+                send: this.send.bind(this),
+            }
+        }
+        return this.newAnswer( data );
+    }
+
 	async send( args, basket, control )
 	{
 		if ( !this.configuration )

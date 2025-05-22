@@ -29,7 +29,7 @@ class ConnectorClassroomServer extends ConnectorBase
         config.iceServers = config.iceServers || [];
         super( awi, config );
         this.name = 'Classroom Server';
-        this.token = 'classroomServer';
+        this.token = 'classroom';
         this.className = 'ConnectorClassroomServer';
         this.group = 'network';
         this.version = '0.5';
@@ -53,12 +53,41 @@ class ConnectorClassroomServer extends ConnectorBase
         super.quit(options);
     }
 
-    getMediasoupServer() {
-        return this.awi.mediasoupServer;
+    async registerEditor(args, basket, control)
+    {
+        this.editor = args.editor;
+        this.userName = this.editor.userName;
+
+        var data = {};
+        data[ this.token ] = {
+            self: this,
+            version: this.version,
+            commands: {
+                connectTeacher: this.command_connectTeacher.bind(this),
+                disconnectTeacher: this.command_disconnectTeacher.bind(this),
+                connectStudent: this.command_connectStudent.bind(this),
+                disconnectStudent: this.command_disconnectStudent.bind(this),
+                createClassroom: this.command_createClassroom.bind(this),
+                endClassroom: this.command_endClassroom.bind(this),
+                deleteClassroom: this.command_deleteClassroom.bind(this),
+                joinClassroom: this.command_joinClassroom.bind(this),
+                leaveClassroom: this.command_leaveClassroom.bind(this),
+                getClassroomList: this.command_getClassroomList.bind(this),
+                studentConnected: this.command_error.bind(this),
+                studentDisconnected: this.command_error.bind(this),
+                teacherConnected: this.command_error.bind(this),
+                teacherDisconnected: this.command_error.bind(this),
+            }
+        }
+        return this.newAnswer( data );
+    }
+
+    getMediasoup() {
+        return this.awi.mediasoup;
     }
     getIceServers() {
         return this.config.iceServers;
-        }
+    }
     async saveClassrooms() {
         var path = this.awi.configuration.getConfigurationPath() + '/classrooms.json';
         var classroomList = {};
@@ -92,6 +121,10 @@ class ConnectorClassroomServer extends ConnectorBase
         }
     }
     
+    async command_error(parameters, message, editor) {
+        return this.replyError(this.newError('awi:command-not-implemented', { user: this.userName }), message, editor);
+    }
+
     async command_createClassroom(parameters, message, editor) {
         // Check that a classroom with the same title does not already exist
         for (let classroomId in this.classrooms) {
@@ -221,12 +254,12 @@ class ConnectorClassroomServer extends ConnectorBase
     }
 
     async mediasoupInit(classroomId) {
-        const mediasoupServer = this.getMediasoupServer();
-        if (!mediasoupServer) {
+        const mediasoup = this.getMediasoup();
+        if (!mediasoup) {
             return this.newError('awi:mediasoup-not-initialized');
         }
         try {
-            await mediasoupServer.createClassroomMediasoupRoom(classroomId);
+            await mediasoup.createClassroomMediasoupRoom(classroomId);
             return this.newAnswer({ classroomId });
         } catch (err) {
             return this.newError('awi:mediasoup-error');
@@ -249,10 +282,10 @@ class ConnectorClassroomServer extends ConnectorBase
             return this.replyError(answer, message, editor);
         }
         const action = parameters.action.toLowerCase();
-        const mediasoupServer = this.getMediasoupServer();
+        const mediasoup = this.getMediasoup();
         switch (action) {
             case 'getrouterrtpcapabilities': {
-                const room = await mediasoupServer.getClassroomMediasoupRoom(classroomId);
+                const room = await mediasoup.getClassroomMediasoupRoom(classroomId);
                 if (!room) {
                     return this.replyError(this.newError('awi:classroom-not-found', { classroomId }), message, editor);
                 }
@@ -260,20 +293,20 @@ class ConnectorClassroomServer extends ConnectorBase
                 break;
             }
             case 'createtransport': {
-                const transportParams = await mediasoupServer.createTeacherTransport(classroomId, teacherHandle, parameters.mediasoupOptions || {});
+                const transportParams = await mediasoup.createTeacherTransport(classroomId, teacherHandle, parameters.mediasoupOptions || {});
                 classroom.transportParams = transportParams;
                 classroom.teacherState = 'transportCreated';
                 answer = this.replySuccess(this.newAnswer({ classroomId, teacherHandle, transportParams, iceServers: this.getIceServers() }), message, editor);
                 break;
             }
             case 'connecttransport': {
-                await mediasoupServer.connectTeacherTransport(classroomId, teacherHandle, parameters.dtlsParameters);
+                await mediasoup.connectTeacherTransport(classroomId, teacherHandle, parameters.dtlsParameters);
                 classroom.teacherState = 'transportConnected';
                 answer = this.replySuccess(this.newAnswer({ classroomId, teacherHandle, status: 'transport-connected' }), message, editor);
                 break;
             }
             case 'produce': {
-                const producerId = await mediasoupServer.createTeacherProducer(classroomId, teacherHandle, parameters.kind, parameters.rtpParameters);
+                const producerId = await mediasoup.createTeacherProducer(classroomId, teacherHandle, parameters.kind, parameters.rtpParameters);
                 classroom.teacherState = 'active';
                 answer = this.replySuccess(this.newAnswer({ classroomId, teacherHandle, producerId, teacherName: classroom.teacherName }), message, editor);
                 break;
@@ -288,7 +321,7 @@ class ConnectorClassroomServer extends ConnectorBase
 
     async command_connectStudent(parameters, message, editor) {
         const classroomId = parameters.classroomId;
-        const mediasoupServer = this.getMediasoupServer();
+        const mediasoup = this.getMediasoup();
         var classroom = this.classrooms[classroomId];
         if (!classroom) {
             return this.replyError(this.newError('awi:classroom-not-found', { classroomId }), message, editor);
@@ -304,25 +337,25 @@ class ConnectorClassroomServer extends ConnectorBase
         const action = parameters.action.toLowerCase();
         switch (action) {
             case 'getrouterrtpcapabilities': {
-                const room = await mediasoupServer.getClassroomMediasoupRoom(classroomId);
+                const room = await mediasoup.getClassroomMediasoupRoom(classroomId);
                 answer = this.replySuccess(this.newAnswer({ rtpCapabilities: room.router.rtpCapabilities, iceServers: this.getIceServers() }), message, editor);
                 break;
             }
             case 'createtransport': {
-                const transportParams = await mediasoupServer.createStudentTransport(classroomId, studentHandle, parameters.mediasoupOptions || {});
+                const transportParams = await mediasoup.createStudentTransport(classroomId, studentHandle, parameters.mediasoupOptions || {});
                 classroom.students[studentHandle].transportParams = transportParams;
                 classroom.students[studentHandle].state = 'transportCreated';
                 answer = this.replySuccess(this.newAnswer({ classroomId, studentHandle, transportParams, iceServers: this.getIceServers() }), message, editor);
                 break;
             }
             case 'connecttransport': {
-                await mediasoupServer.connectStudentTransport(classroomId, studentHandle, parameters.dtlsParameters);
+                await mediasoup.connectStudentTransport(classroomId, studentHandle, parameters.dtlsParameters);
                 classroom.students[studentHandle].state = 'transportConnected';
                 answer = this.replySuccess(this.newAnswer({ classroomId, studentHandle, status: 'transport-connected' }), message, editor);
                 break;
             }
             case 'produce': {
-                const producerId = await mediasoupServer.createStudentProducer(classroomId, studentHandle, parameters.kind, parameters.rtpParameters);
+                const producerId = await mediasoup.createStudentProducer(classroomId, studentHandle, parameters.kind, parameters.rtpParameters);
                 classroom.students[studentHandle].state = 'active';
                 answer = this.replySuccess(this.newAnswer({ classroomId, studentHandle, producerId, studentName: classroom.students[studentHandle].studentName }), message, editor);
                 break;
@@ -336,7 +369,7 @@ class ConnectorClassroomServer extends ConnectorBase
                 if (parameters.kind) {
                     // If kind is specified, just try that one
                     try {
-                        consumerParams[parameters.kind] = await mediasoupServer.createStudentConsumer(classroomId, studentHandle, teacherHandle, parameters.kind, parameters.rtpCapabilities);
+                        consumerParams[parameters.kind] = await mediasoup.createStudentConsumer(classroomId, studentHandle, teacherHandle, parameters.kind, parameters.rtpCapabilities);
                     } catch (err) {
                         errors[parameters.kind] = err.message;
                     }
@@ -344,7 +377,7 @@ class ConnectorClassroomServer extends ConnectorBase
                     // Try both audio and video
                     for (const kind of kinds) {
                         try {
-                            consumerParams[kind] = await mediasoupServer.createStudentConsumer(classroomId, studentHandle, teacherHandle, kind, parameters.rtpCapabilities);
+                            consumerParams[kind] = await mediasoup.createStudentConsumer(classroomId, studentHandle, teacherHandle, kind, parameters.rtpCapabilities);
                         } catch (err) {
                             errors[kind] = err.message;
                         }
@@ -366,7 +399,7 @@ class ConnectorClassroomServer extends ConnectorBase
     }
     async command_disconnectStudent(parameters, message, editor) {
         const classroomId = parameters.classroomId;
-        const mediasoupServer = this.getMediasoupServer();
+        const mediasoup = this.getMediasoup();
         var classroom = this.classrooms[classroomId];
         if (!classroom) {
             return this.replyError(this.newError('awi:classroom-not-found', { classroomId }), message, editor);
@@ -379,7 +412,7 @@ class ConnectorClassroomServer extends ConnectorBase
         // Disconnect student resources if initialized
         try {
             if (student.state === 'transportCreated' || student.state === 'transportConnected' || student.state === 'active') {
-                await mediasoupServer.disconnectStudentTransport(classroomId, parameters.studentHandle);
+                await mediasoup.disconnectStudentTransport(classroomId, parameters.studentHandle);
             }
             student.state = 'idle';
             student.transportParams = null;
@@ -393,7 +426,7 @@ class ConnectorClassroomServer extends ConnectorBase
     async command_disconnectTeacher( parameters, message, editor )
     {
         const classroomId = parameters.classroomId;
-        const mediasoupServer = this.getMediasoupServer();
+        const mediasoup = this.getMediasoup();
         var classroom = this.classrooms[classroomId];
         if (!classroom) {
             return this.replyError(this.newError('awi:classroom-not-found', { classroomId }), message, editor);
@@ -405,7 +438,7 @@ class ConnectorClassroomServer extends ConnectorBase
         // Disconnect teacher resources if initialized
         try {
             if (classroom.teacherState === 'transportCreated' || classroom.teacherState === 'transportConnected' || classroom.teacherState === 'active') {
-                await mediasoupServer.disconnectTeacherTransport(classroomId, classroom.teacherHandle);
+                await mediasoup.disconnectTeacherTransport(classroomId, classroom.teacherHandle);
             }
             classroom.teacherState = 'idle';
             classroom.transportParams = null;
@@ -424,7 +457,7 @@ class ConnectorClassroomServer extends ConnectorBase
     
     async command_endClassroom(parameters, message, editor) {
         const classroomId = parameters.classroomId;
-        const mediasoupServer = this.getMediasoupServer();
+        const mediasoup = this.getMediasoup();
         var classroom = this.classrooms[classroomId];
         if (!classroom) {
             return this.replyError(this.newError('awi:classroom-not-found', { classroomId }), message, editor);
@@ -444,7 +477,7 @@ class ConnectorClassroomServer extends ConnectorBase
                 }
             }
             // Now end the mediasoup classroom
-            await mediasoupServer.endClassroom(classroomId);
+            await mediasoup.endClassroom(classroomId);
             return this.replySuccess(this.newAnswer({ classroomId }), message, editor);
         } catch (err) {
             return this.replyError(this.newError('awi:mediasoup-error', { error: err.message }), message, editor);

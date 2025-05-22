@@ -48,7 +48,8 @@ class Editor extends BaseComponent {
   }
   
   async init(options) {
-    super.init(options);
+    if (await super.init(options))
+      return;
     this.currentMode = options?.mode || 'javascript';
     
     // Create the editor instance but don't render it yet

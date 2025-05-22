@@ -115,7 +115,11 @@ export default class BaseComponent {
    * @param {Object} options - Optional configuration options
    */
   async init(options = {}) {
-    this.options = options; 
+    if (!this.options){
+      this.options = options; 
+      return false;
+    }
+    return true;
   }
   
   /**

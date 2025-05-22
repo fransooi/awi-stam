@@ -46,7 +46,7 @@ class EditPlaylistDialog {
     // Create dialog header
     const dialogHeader = document.createElement('div');
     dialogHeader.className = 'playlist-dialog-header';
-    dialogHeader.textContent = this.playlist ? `Edit Playlist: ${this.playlist.name}` : 'Create New Playlist';
+    dialogHeader.textContent = this.playlist ? this.root.messages.getMessage('stam:edit-playlist') + `: ${this.playlist.name}` : this.root.messages.getMessage('stam:create-new-playlist');
     
     // Create close button
     const closeButton = document.createElement('button');
@@ -61,13 +61,13 @@ class EditPlaylistDialog {
     
     // Create name input
     const nameLabel = document.createElement('label');
-    nameLabel.textContent = 'Playlist Name:';
+    nameLabel.textContent = this.root.messages.getMessage('stam:playlist-name-label');
     nameLabel.htmlFor = 'playlist-edit-name';
     
     const nameInput = document.createElement('input');
     nameInput.type = 'text';
     nameInput.id = 'playlist-edit-name';
-    nameInput.placeholder = 'My Playlist';
+    nameInput.placeholder = this.root.messages.getMessage('stam:playlist-name-placeholder');
     nameInput.value = this.playlist ? this.playlist.name : '';
     
     // Create clips section
@@ -76,7 +76,7 @@ class EditPlaylistDialog {
     
     const clipsLabel = document.createElement('div');
     clipsLabel.className = 'playlist-clips-label';
-    clipsLabel.textContent = 'Clips:';
+    clipsLabel.textContent = this.root.messages.getMessage('stam:clips-label');
     
     // Create clips container
     const clipsContainer = document.createElement('div');
@@ -89,7 +89,7 @@ class EditPlaylistDialog {
     const addClipButton = document.createElement('button');
     addClipButton.type = 'button';
     addClipButton.className = 'playlist-add-clip-button';
-    addClipButton.innerHTML = '<i class="fas fa-plus"></i> Add Clip';
+    addClipButton.innerHTML = '<i class="fas fa-plus"></i> ' + this.root.messages.getMessage('stam:add-clip-button');
     addClipButton.addEventListener('click', () => this.addClipItem(clipsContainer));
     
     clipsSection.appendChild(clipsLabel);
@@ -102,12 +102,12 @@ class EditPlaylistDialog {
     
     const cancelButton = document.createElement('button');
     cancelButton.type = 'button';
-    cancelButton.textContent = 'Cancel';
+    cancelButton.textContent = this.root.messages.getMessage('stam:cancel');
     cancelButton.addEventListener('click', () => this.close());
     
     const saveButton = document.createElement('button');
     saveButton.type = 'button';
-    saveButton.textContent = this.playlist ? 'Save' : 'Create';
+    saveButton.textContent = this.playlist ? this.root.messages.getMessage('stam:save') : this.root.messages.getMessage('stam:create');
     saveButton.addEventListener('click', () => this.savePlaylist());
     
     buttonContainer.appendChild(cancelButton);
@@ -150,7 +150,7 @@ class EditPlaylistDialog {
     if (this.clipItems.length === 0) {
       const emptyMessage = document.createElement('div');
       emptyMessage.className = 'playlist-empty-message';
-      emptyMessage.textContent = 'No clips in this playlist. Click "Add Clip" to add one.';
+      emptyMessage.textContent = this.root.messages.getMessage('stam:no-clips-in-this-playlist');
       container.appendChild(emptyMessage);
       return;
     }
@@ -166,15 +166,15 @@ class EditPlaylistDialog {
       
       const youtubeOption = document.createElement('option');
       youtubeOption.value = 'youtube';
-      youtubeOption.textContent = 'YouTube';
+      youtubeOption.textContent = this.root.messages.getMessage('stam:youtube');
       
       const spotifyOption = document.createElement('option');
       spotifyOption.value = 'spotify';
-      spotifyOption.textContent = 'Spotify';
+      spotifyOption.textContent = this.root.messages.getMessage('stam:spotify');
       
       const browserOption = document.createElement('option');
       browserOption.value = 'browser';
-      browserOption.textContent = 'Browser';
+      browserOption.textContent = this.root.messages.getMessage('stam:browser');
       
       typeSelect.appendChild(youtubeOption);
       typeSelect.appendChild(spotifyOption);
@@ -192,7 +192,7 @@ class EditPlaylistDialog {
       const urlInput = document.createElement('input');
       urlInput.type = 'text';
       urlInput.className = 'playlist-clip-url';
-      urlInput.placeholder = 'Enter URL';
+      urlInput.placeholder = this.root.messages.getMessage('stam:enter-url');
       urlInput.value = clip.url || '';
       
       // Add input event
@@ -205,7 +205,7 @@ class EditPlaylistDialog {
       moveUpButton.type = 'button';
       moveUpButton.className = 'playlist-clip-move';
       moveUpButton.innerHTML = '<i class="fas fa-arrow-up"></i>';
-      moveUpButton.title = 'Move Up';
+      moveUpButton.title = this.root.messages.getMessage('stam:move-up');
       moveUpButton.disabled = index === 0;
       moveUpButton.addEventListener('click', () => {
         if (index > 0) {
@@ -224,7 +224,7 @@ class EditPlaylistDialog {
       moveDownButton.type = 'button';
       moveDownButton.className = 'playlist-clip-move';
       moveDownButton.innerHTML = '<i class="fas fa-arrow-down"></i>';
-      moveDownButton.title = 'Move Down';
+      moveDownButton.title = this.root.messages.getMessage('stam:move-down');
       moveDownButton.disabled = index === this.clipItems.length - 1;
       moveDownButton.addEventListener('click', () => {
         if (index < this.clipItems.length - 1) {
@@ -243,7 +243,7 @@ class EditPlaylistDialog {
       removeButton.type = 'button';
       removeButton.className = 'playlist-clip-remove';
       removeButton.innerHTML = '<i class="fas fa-trash-alt"></i>';
-      removeButton.title = 'Remove Clip';
+      removeButton.title = this.root.messages.getMessage('stam:remove-clip');
       removeButton.addEventListener('click', () => {
         // Remove clip from items
         this.clipItems.splice(index, 1);
@@ -288,7 +288,7 @@ class EditPlaylistDialog {
   savePlaylist() {
     const nameInput = document.getElementById('playlist-edit-name');
     if (!nameInput || !nameInput.value.trim()) {
-      alert('Please enter a playlist name.');
+      alert(this.root.messages.getMessage('stam:playlist-name-required'));
       return;
     }
     
@@ -296,7 +296,7 @@ class EditPlaylistDialog {
     const validClips = this.clipItems.filter(clip => clip.url && clip.url.trim() !== '');
     
     if (validClips.length === 0) {
-      alert('Please add at least one clip with a valid URL to the playlist.');
+      alert(this.root.messages.getMessage('stam:playlist-must-contain-at-least-one-clip'));
       return;
     }
     

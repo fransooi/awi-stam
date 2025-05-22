@@ -60,7 +60,8 @@ class AMOS13Icons extends BaseComponent{
   }
   
   async init(options) {
-    super.init(options);
+    if (await super.init(options))
+      return;
     // Add event listeners for shift key
     document.addEventListener('keydown', this.handleKeyDown.bind(this));
     document.addEventListener('keyup', this.handleKeyUp.bind(this));
@@ -136,7 +137,7 @@ class AMOS13Icons extends BaseComponent{
     // Create information list area
     const infoArea = document.createElement('div');
     infoArea.className = 'amos-info-area';
-    infoArea.textContent = 'AMOS 1.3 - Ready';
+    infoArea.textContent = this.root.messages.getMessage('stam:amos-1.3-ready');
     
     // Add all sections to the main container
     this.amosIconBar.appendChild(topSection);

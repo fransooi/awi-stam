@@ -348,7 +348,7 @@ class SideWindow extends BaseComponent {
       const toggleButton = this.container.querySelector('.side-window-toggle');
       if (toggleButton) {
         toggleButton.innerHTML = '▲';
-        toggleButton.title = 'Minimize';
+        toggleButton.title = this.root.messages.getMessage('stam:minimize');
       }
       
       // Update content height to match new container size
@@ -447,7 +447,7 @@ class SideWindow extends BaseComponent {
     const enlargeButton = this.container.querySelector('.side-window-enlarge');
     if (enlargeButton) {
       enlargeButton.innerHTML = '⤓';
-      enlargeButton.title = 'Restore';
+      enlargeButton.title = this.root.messages.getMessage('stam:restore');
     }
   }
 
@@ -470,7 +470,7 @@ class SideWindow extends BaseComponent {
     const enlargeButton = this.container.querySelector('.side-window-enlarge');
     if (enlargeButton) {
       enlargeButton.innerHTML = '⤢';
-      enlargeButton.title = 'Enlarge';
+      enlargeButton.title = this.root.messages.getMessage('stam:enlarge');
     }
     
     // Update content height to match container size

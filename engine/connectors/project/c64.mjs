@@ -18,11 +18,11 @@
 * @short C64 connector.
 *
 */
-import ConnectorProject from './project.mjs'
+import ConnectorBase from '../../connector.mjs'
 import { SERVERCOMMANDS } from '../../servercommands.mjs';
 export { ConnectorC64 as Connector }
 
-class ConnectorC64 extends ConnectorProject
+class ConnectorC64 extends ConnectorBase
 {
 	constructor( awi, config = {} )
 	{
@@ -32,12 +32,6 @@ class ConnectorC64 extends ConnectorProject
 		this.className = 'ConnectorC64';
         this.group = 'project';    
 		this.version = '0.5';
-
-        this.commandMap = {};
-        for ( var c in SERVERCOMMANDS ){
-            if ( this[ 'command_' + SERVERCOMMANDS[ c ] ] )
-                this.commandMap[ c ] = this[ 'command_' + SERVERCOMMANDS[ c ] ];
-        }
 	}
 	async connect( options )
 	{

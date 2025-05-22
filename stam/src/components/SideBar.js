@@ -36,8 +36,9 @@ class SideBar extends BaseComponent {
   }
 
   async init(options) {
-    super.init(options);   
-
+    if (await super.init(options))
+      return;
+    
     // Add global event listeners for mouse move and mouse up
     document.addEventListener('mousemove', this.handleMouseMove.bind(this));
     document.addEventListener('mouseup', this.handleMouseUp.bind(this));
@@ -211,7 +212,7 @@ class SideBar extends BaseComponent {
       cornerSeparator.style.zIndex = '1001';
       cornerSeparator.style.borderBottomLeftRadius = '5px';
       cornerSeparator.style.opacity = '0.8';
-      cornerSeparator.title = 'Resize width';
+      cornerSeparator.title = this.root.messages.getMessage('stam:resize-width');
 
       let startX = 0;
       let startWidth = 0;

@@ -1,0 +1,151 @@
+stam:message-not-found                    Message not found (~{id}~)
+stam:delete-classroom                     Delete a Classroom
+stam:untitled-classroom                   Untitled classroom
+stam:classroom-description                Description
+stam:join-as-teacher                      Join as Teacher
+stam:join-as-student                      Join as Student
+stam:ok                                   OK
+stam:cancel                               Cancel
+stam:close                                Close
+stam:delete                               Delete
+stam:yes                                  Yes
+stam:no                                   No
+stam:create-classroom                     Create Classroom
+stam:classroom-mode                       Mode
+stam:classroom-icon                       Icon
+stam:classroom-take-control               Take control of student editors
+stam:classroom-project-global             Project global to all students
+stam:classroom-project-name               Project name
+stam:classroom-radio-load                 Load
+stam:classroom-radio-new                  New
+stam:classroom-title-placeholder          New classroom  
+stam:classroom-description-placeholder    Enter a description for the classroom
+stam:classroom-icon-placeholder           Choose an icon for the classroom
+stam:classroom-url                        Classroom URL
+stam:classroom-copy-url                   Copy
+stam:classroom-copied                     Copied!
+stam:classroom-camera                     Camera
+stam:classroom-microphone                 Microphone
+stam:classroom-audio-output               Audio Output
+stam:new-project                          New Project
+stam:project-name                         Project name
+stam:overwrite-existing-project           Overwrite existing project
+stam:select-template-for-new-project      Select a template for your new project
+stam:no-templates-available               No templates available
+stam:create                               Create
+stam:please-select-a-template             Please select a template
+stam:open-project                         Open Project
+stam:select-project-to-open               Select a project to open
+stam:no-projects-available                No projects available
+stam:open                                 Open
+stam:please-select-a-project              Please select a project
+stam:open-file                            Open File
+stam:filter                               Filter
+stam:no-files-available                   No files available
+stam:save-file                            Save File
+stam:filename                             Filename
+stam:location                             Location
+stam:no-directories-available             No directories available
+stam:selected                             Selected
+stam:save                                 Save
+stam:project                              Project
+stam:project-dialog-box                   Project dialog box
+stam:menu-file                            File
+stam:menu-new-project                     New Project
+stam:menu-open-project                    Open Project
+stam:menu-save-project                    Save Project
+stam:menu-save-project-as                 Save Project As
+stam:menu-close-project                   Close Project
+stam:menu-new-file                        New File
+stam:menu-open-file                       Open File
+stam:menu-save-file                       Save File
+stam:menu-save-file-as                    Save File As
+stam:menu-close-file                      Close File
+stam:menu-edit                            Edit
+stam:menu-undo                            Undo
+stam:menu-redo                            Redo
+stam:menu-cut                             Cut
+stam:menu-copy                            Copy
+stam:menu-paste                           Paste
+stam:menu-find                            Find
+stam:menu-replace                         Replace
+stam:menu-preferences                     Preferences
+stam:menu-run                             Run
+stam:menu-run-run                         Run
+stam:menu-run-debug                       Debug
+stam:menu-run-stop                        Stop
+stam:menu-run-build                       Build
+stam:menu-classroom                       Classroom
+stam:menu-create-classroom                Create Classroom
+stam:menu-join-classroom                  Join Classroom
+stam:menu-leave-classroom                 Leave Classroom
+stam:menu-help                            Help
+stam:menu-help-documentation              Documentation
+stam:menu-help-about                      About
+stam:menu-help-debug                      Debug
+stam:menu-help-debug-debug1               Debug1
+stam:menu-help-debug-debug2               Debug2
+stam:menu-log-out                         Log Out
+stam:menu-log-in                          Log In
+stam:classroom-icon                       Icon
+stam:classroom-choose                    Choose
+stam:preferences                          Preferences
+stam:preferences-dialog-box               Preferences dialog box
+stam:resize-width                        Resize width
+stam:amos-1.3-ready                       AMOS 1.3 - Ready
+stam:minimize                             Minimize
+stam:restore                              Restore
+stam:enlarge                              Enlarge
+stam:connection-status-disconnected       Connection Status: Disconnected (Click to Connect)
+stam:connection-status-connected          Connection Status: Connected
+stam:connection-status-connecting         Connection Status: Connecting
+stam:send-indicator                        Send Indicator
+stam:receive-indicator                     Receive Indicator
+stam:error                                 Error
+stam:create-account-dialog-title          Create New Account
+stam:country-placeholder                   Enter your country (optional)
+stam:preferred-language                   Preferred Language
+stam:create-account                       Create AWI Account
+stam:first-name-required                   First name is required
+stam:last-name-required                    Last name is required
+stam:password-required                     Password is required
+stam:passwords-do-not-match                Passwords do not match
+stam:email-required                        Email is required
+stam:email-invalid                        Please enter a valid email address
+stam:connection-settings                  Connection Settings
+stam:username                             Username
+stam:server-url                           Server URL
+stam:login-awi-account                     Login AWI account
+stam:create-awi-account                    Create AWI account
+stam:connect                               Connect
+stam:change-clip-type-or-select-playlist  Change clip type or select playlist
+stam:edit-playlists                        Edit Playlists
+stam:edit-url                               Edit URL
+stam:previous-clip                          Previous clip
+stam:next-clip                              Next clip
+stam:pause-playlist                         Pause playlist
+stam:playlist-not-found                     Playlist not found
+stam:playlist-name-placeholder              Playlist name
+stam:playlist-name-label                    Playlist name
+stam:clips-label                             Clips:
+stam:add-clip-button                        Add Clip
+stam:edit-playlist                          Edit Playlist
+stam:create-new-playlist                     Create New Playlist
+stam:no-clips-in-this-playlist               No clips in this playlist. Click "Add Clip" to add one.
+stam:youtube                                YouTube
+stam:spotify                                Spotify
+stam:browser                                Browser
+stam:enter-url                              Enter URL
+stam:move-up                                Move Up
+stam:move-down                              Move Down
+stam:remove-clip                            Remove Clip
+stam:playlist-name-required                 Please enter a playlist name
+stam:playlist-must-contain-at-least-one-clip Please add at least one clip with a valid URL to the playlist.
+stam:delete-playlist                        Delete Playlist
+stam:no-playlists-available                  No playlists available. Click the + button to create one.
+stam:confirm-delete-playlist                 Are you sure you want to delete "${name}"?
+stam:classroom-deleted-successfully         Classroom deleted successfully
+stam:preferences-title                      Preferences
+stam:preferences-language                   Language
+stam:preferences-save                       Save
+stam:preferences-cancel                     Cancel

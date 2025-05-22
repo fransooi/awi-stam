@@ -38,7 +38,7 @@ class ConnectorHttpServer extends ConnectorBase
     {
         super( awi, config );
 		this.name = 'HTTP Server';
-		this.token = 'httpServer';
+		this.token = 'http';
 		this.className = 'ConnectorHttpServer';
 		this.group = 'network';
 		this.version = '0.5';
@@ -50,7 +50,6 @@ class ConnectorHttpServer extends ConnectorBase
 		this.httpsServer = null;
 		this.watcher = null;        
     }
-    
     async connect( options )
     {
         super.connect( options );

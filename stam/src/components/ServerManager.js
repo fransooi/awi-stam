@@ -10,11 +10,11 @@
 * license file located at the root of this project.
 *
 * ----------------------------------------------------------------------------
-* @file FileSystem.js
+* @file ServerManager.js
 * @author FL (Francois Lionet)
 * @version 0.5
 *
-* @short Remote file system access
+* @short Server manager
 * @description
 * This class provides utility functions that can be used across the application.
 * It provides remote file system access through the socket connection to the server.  
@@ -22,11 +22,11 @@
 */
 import { SERVERCOMMANDS } from '../../../engine/servercommands.mjs';
 import { SOCKETMESSAGES } from '../components/sidewindows/SocketSideWindow.js';
-import BaseComponent from './BaseComponent.js';
+import BaseComponent from '../utils/BaseComponent.js';
 
-export default class FileSystem extends BaseComponent {
+export default class ServerManager extends BaseComponent {
     constructor(parentId,containerId) {
-      super('FileSystem',parentId,containerId);
+      super('ServerManager',parentId,containerId);
       this.messageMap[SOCKETMESSAGES.CONNECTED] = this.handleConnected;
       this.messageMap[SOCKETMESSAGES.DISCONNECTED] = this.handleDisconnected;
       this.isConnected = false;
@@ -34,8 +34,11 @@ export default class FileSystem extends BaseComponent {
       var source = '';
       for(var c in SERVERCOMMANDS)
       {
-        this.messageMap[SERVERCOMMANDS[c]] = this.handleServerCommand;
-        source = source + '\nthis["' + SERVERCOMMANDS[c] + '"] = function(parameters) {\n \
+        var command = SERVERCOMMANDS[c];
+        var pos = SERVERCOMMANDS[c].indexOf( ':' );
+        if ( pos >= 0 )
+            command = SERVERCOMMANDS[c].substring( pos + 1 );
+        source = source + '\nthis["' + command + '"] = function(parameters) {\n \
         return this.handleServerCommand("' + SERVERCOMMANDS[c] + '", parameters);\n \
         }.bind(this)\n';
       }
@@ -70,12 +73,5 @@ export default class FileSystem extends BaseComponent {
     handleDisconnected(parameters, senderId) {
       this.handle = '';
       this.isConnected = false;
-    }
-    
-    // Object not rendered
-    //////////////////////////////////////////////////////////////////////////////
-    async render(containerId)
-    {
-      return null;
     }
   }

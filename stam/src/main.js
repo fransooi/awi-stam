@@ -21,23 +21,23 @@ import './style.css'
 import './components/sidewindows/sidewindows.css'
 
 // Import components
-import MenuBar from './components/MenuBar.js';
-import StatusBar from './components/StatusBar.js';
-import Editor from './components/Editor.js';
-import IconBar, { ICONACTIONS } from './components/IconBar.js';
-import SideBar from './components/SideBar.js';  
-import RightBar from './components/RightBar.js';
-import BaseComponent from './utils/BaseComponent.js';
 import { MESSAGES } from './utils/BaseComponent.js';
 import { SOCKETMESSAGES } from './components/sidewindows/SocketSideWindow.js';
 import { MENUCOMMANDS } from './components/MenuBar.js';
-import { CLASSROOMCOMMANDS } from './components/ClassroomManager.js';
-import PreferenceDialog from './components/PreferenceDialog.js';
 import messageBus from './utils/MessageBus.mjs';
 import Utilities from './utils/Utilities.js';
-import FileSystem from './utils/FileSystem.js';
+import PreferenceManager from './components/PreferenceManager.js';
+import ServerManager from './components/ServerManager.js';
 import ProjectManager from './components/ProjectManager.js';
 import ClassroomManager from './components/ClassroomManager.js';
+import MessageManager from './components/MessageManager.js';
+import MenuBar from './components/MenuBar.js';
+import StatusBar from './components/StatusBar.js';
+import Editor from './components/Editor.js';
+import IconBar from './components/IconBar.js';
+import SideBar from './components/SideBar.js';  
+import RightBar from './components/RightBar.js';
+import BaseComponent from './utils/BaseComponent.js';
 
 // Main application class
 class StamApp extends BaseComponent {
@@ -54,7 +54,7 @@ class StamApp extends BaseComponent {
     // Initialize mode
     this.possibleModes = [
       { value: 'javascript', text: 'Javascript' },
-      { value: 'phaser', text: 'Phaser Game' },
+      { value: 'phaser', text: 'Phaser' },
       { value: 'stos', text: 'STOS Basic' },
       { value: 'amos1_3', text: 'AMOS 1.3' },
       { value: 'amosPro', text: 'AMOS Pro' },
@@ -63,11 +63,13 @@ class StamApp extends BaseComponent {
     this.currentMode = 'phaser'; 
     this.webSocketUrl = 'ws://192.168.1.66:1033';  //'ws://localhost:1033'; 
     
-    // Initialize utilities
+    // Initialize managers
     this.utilities = new Utilities();
-    this.fileSystem = new FileSystem(this.componentId);
+    this.messages = new MessageManager(this.componentId);
+    this.server = new ServerManager(this.componentId);
     this.project = new ProjectManager(this.componentId);
     this.classroom = new ClassroomManager(this.componentId);
+    this.preferences = new PreferenceManager(this.componentId);
     
     // Initialize all components with the correct mode from the start
     this.sideBar = new SideBar(this.componentId,'info-area');
@@ -76,9 +78,6 @@ class StamApp extends BaseComponent {
     this.statusBar = new StatusBar(this.componentId,'status-line');
     this.iconBar = new IconBar(this.componentId,'icon-area');
     this.editor = new Editor(this.componentId,'editor-area');
-    
-    // Initialize preference dialog
-    this.preferenceDialog = new PreferenceDialog(this.componentId);
 
     // Get extra parameters of the URL
     this.debug = false;
@@ -96,9 +95,17 @@ class StamApp extends BaseComponent {
   }
   
   async init(options = {}) {
-    super.init(options);
+    if (!super.init(options))
+      return;
 
-    const layoutData=this. utilities.loadStorage('stam-layout');  
+    // Initialize managers first
+    await this.messages.init({});
+    await this.server.init({});
+    await this.project.init({});
+    await this.classroom.init({});
+    await this.preferences.init({});
+
+    const layoutData=this.utilities.loadStorage('stam-layout');  
     let layout;    
     if (layoutData) {
       // Parse the layout JSON

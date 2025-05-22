@@ -18,11 +18,11 @@
 * @short Amos 1.3 connector.
 *
 */
-import ConnectorProject from './project.mjs'
+import ConnectorBase from '../../connector.mjs'
 import { SERVERCOMMANDS } from '../../servercommands.mjs';
 export { ConnectorAmos1_3 as Connector }
 
-class ConnectorAmos1_3 extends ConnectorProject
+class ConnectorAmos1_3 extends ConnectorBase
 {
 	constructor( awi, config = {} )
 	{
@@ -32,12 +32,6 @@ class ConnectorAmos1_3 extends ConnectorProject
 		this.className = 'ConnectorAmos1_3';
         this.group = 'project';    
 		this.version = '0.5';
-
-        this.commandMap = {};
-        for ( var c in SERVERCOMMANDS ){
-            if ( this[ 'command_' + SERVERCOMMANDS[ c ] ] )
-                this.commandMap[ c ] = this[ 'command_' + SERVERCOMMANDS[ c ] ];
-        }
 	}
 	async connect( options )
 	{

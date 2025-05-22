@@ -48,7 +48,8 @@ class EditorSource extends BaseComponent {
   }
   
   async init(options) {
-    super.init(options);
+    if (await super.init(options))
+      return;
     this.currentMode = options?.mode || 'javascript';
   }
 
@@ -904,7 +905,7 @@ class EditorSource extends BaseComponent {
       
       // Save button
       const saveButton = document.createElement('button');
-      saveButton.textContent = 'Yes';
+      saveButton.textContent = this.root.messages.getMessage('stam:yes');
       saveButton.style.padding = '8px 16px';
       saveButton.style.backgroundColor = '#4a6da7';
       saveButton.style.color = '#fff';
@@ -918,7 +919,7 @@ class EditorSource extends BaseComponent {
       
       // Discard button
       const discardButton = document.createElement('button');
-      discardButton.textContent = 'No';
+      discardButton.textContent = this.root.messages.getMessage('stam:no');
       discardButton.style.padding = '8px 16px';
       discardButton.style.backgroundColor = '#a74a4a';
       discardButton.style.color = '#fff';
@@ -932,7 +933,7 @@ class EditorSource extends BaseComponent {
       
       // Cancel button
       const cancelButton = document.createElement('button');
-      cancelButton.textContent = 'Cancel';
+      cancelButton.textContent = this.root.messages.getMessage('stam:cancel');
       cancelButton.style.padding = '8px 16px';
       cancelButton.style.backgroundColor = '#3a3a3a';
       cancelButton.style.color = '#ddd';

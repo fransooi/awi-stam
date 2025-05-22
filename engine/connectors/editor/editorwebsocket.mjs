@@ -45,24 +45,22 @@ class EditorWebSocket extends EditorBase
         
         // Find all languages available in this server
         this.languageMode='';
-        this.projectConnectors=[];
+        this.connectors=[];
         this.lastMode = '';
 	}
     async connect(options, message)
     {
+        super.connect( options );
         this.templatesUrl = options.templatesUrl;
         this.projectsUrl = options.projectsUrl;
-        var answer = await this.awi.callConnectors( [ 'isProjectConnector', 'project', { } ] );
-        if ( answer.isSuccess() )
-        {
-            this.projectConnectors=answer.data;
-            for( var l in this.projectConnectors )
-                this.projectConnectors[ l ].self.setEditor( this, options );
+        var answer = await this.awi.callConnectors( [ 'registerEditor', '*', { editor: this } ] );
+        if ( answer.isSuccess() ){
+            this.connectors=answer.data;
+            this.reply( { handle: this.handle, user: this.userName }, message );
+            this.waitForInput();
+            return true;
         }
-        this.reply( { handle: this.handle, user: this.userName }, message );
-        this.waitForInput();
-        //this.command_prompt( { prompt: this.userName }, message );
-        return true;
+        return false;
     }
     addDataToReply( name, data )
     {
@@ -163,10 +161,20 @@ class EditorWebSocket extends EditorBase
             else
             {
                 this.awi.awi.editor.print( text, { user: 'awi' } );
-                if ( message.parameters.mode && this.projectConnectors[ message.parameters.mode ] )
-                    return this.projectConnectors[ message.parameters.mode ].self.command( message, this );
-                return this.replyError( this.newError( 'awi:mode-not-found', { value: parameters.mode } ), message );
+                var column = message.command.indexOf( ':' );
+                if ( column > 0 )
+                {
+                    var connector = message.command.substring( 0, column );
+                    if ( this.connectors[ connector ] )
+                    {
+                        var command = message.command.substring( column + 1 );
+                        if ( this.connectors[ connector ].commands[ command ] )
+                            return this.connectors[ connector ].commands[ command ]( message.parameters, message, this );
+                        return this.replyError( this.newError( 'awi:command-not-found', { value: parameters.command } ), message );
+                    }
+                }
             }
+            return this.replyError( this.newError( 'awi:command-not-found', { value: parameters.command } ), message );
         } 
         catch( e ) 
         { 
@@ -176,75 +184,6 @@ class EditorWebSocket extends EditorBase
         var text = this.awi.messages.getMessage( errorParameters.error, { command: message.command } );
         this.awi.awi.editor.print( text, { user: 'awi' } );
         this.reply( errorParameters );
-    }
-
-    // Classroom commands
-    async command_connectTeacher(parameters, message) 
-    {
-        return await this.call_classroom('command_connectTeacher', parameters, message);
-    }
-    async command_disconnectTeacher( parameters, message )
-    {
-        return await this.call_classroom('command_disconnectTeacher', parameters, message);
-    }
-    async command_connectStudent( parameters, message )
-    {
-        return await this.call_classroom('command_connectStudent', parameters, message);
-    }
-    async command_disconnectStudent( parameters, message )
-    {
-        return await this.call_classroom('command_disconnectStudent', parameters, message);
-    }
-    async command_createClassroom( parameters, message )
-    {
-        return await this.call_classroom('command_createClassroom', parameters, message);
-    }
-    async command_joinClassroom( parameters, message )
-    {
-        return await this.call_classroom('command_joinClassroom', parameters, message);
-    }
-    async deleteClassroom( parameters, message )
-    {
-        return await this.call_classroom('command_deleteClassroom', parameters, message);
-    }
-    async command_leaveClassroom( parameters, message )
-    {
-        return await this.call_classroom('command_leaveClassroom', parameters, message);
-    }
-    async endClassroom( parameters, message )
-    {
-        return await this.call_classroom('endClassroom', parameters, message);
-    }
-    async command_getClassroomList( parameters, message )
-    {
-        return await this.call_classroom('command_getClassroomList', parameters, message);
-    }
-
-    async command_studentConnected( parameters, message )
-    {
-        return this.replyError( this.newError( 'awi:command-not-implemented', { user: this.userName } ), message );
-    }
-    async command_studentDisconnected( parameters, message )
-    {
-        return this.replyError( this.newError( 'awi:command-not-implemented', { user: this.userName } ), message );
-    }
-    async command_classroomCreated( parameters, message )
-    {
-        return this.replyError( this.newError( 'awi:command-not-implemented', { user: this.userName } ), message );
-    }
-    async command_classroomDeleted( parameters, message )
-    {
-        return this.replyError( this.newError( 'awi:command-not-implemented', { user: this.userName } ), message );
-    }
-    async call_classroom(command, parameters, message)
-    {
-        if ( this.awi.awi.classroomServer )
-        {
-            if ( this.awi.awi.classroomServer[command] )
-                return await this.awi.awi.classroomServer[command]( parameters, message, this );
-            return this.replyError( this.newError( 'awi:command-not-implemented', { user: this.userName } ), message );
-        }
-        return this.replyError( this.newError( 'awi:classroom-server-not-open', { user: this.userName } ) );
     }
 
     // AWI commands

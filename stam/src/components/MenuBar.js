@@ -69,18 +69,18 @@ class MenuBar extends BaseComponent {
     super('MenuBar', parentId, containerId);
     
     this.activeMenu = null;
-    // Initialize menu structure from the updated getDefaultMenuStructure function
-    this.menuStructure = this.getDefaultMenuStructure();
-    this.menuItems = {}; // Store references to menu title elements
-    this.activePopupMenu = null; // Reference to the active popup menu
+    this.menuStructure = [];
+    this.menuItems = {}; 
+    this.activePopupMenu = null; 
     this.messageMap[MESSAGES.MODE_CHANGE] = this.handleModeChange;
     this.messageMap[SOCKETMESSAGES.CONNECTED] = this.handleConnected;
     this.messageMap[SOCKETMESSAGES.DISCONNECTED] = this.handleDisconnected;
-
   }
 
   async init(options={}) {
-    super.init(options);   
+    if (await super.init(options))
+      return;
+    this.menuStructure = this.getDefaultMenuStructure();
     if(options.mode) {
       this.setMode(options.mode);
     }
@@ -224,7 +224,7 @@ class MenuBar extends BaseComponent {
     const loginButton = document.createElement('button');
     loginButton.id = 'login-button';
     loginButton.className = 'login-button';
-    loginButton.title = 'Log In';
+    loginButton.title = this.root.messages.getMessage('stam:menu-log-in');
     
     // Apply styles to match the menu bar height and appearance
     loginButton.style.backgroundColor = 'transparent';
@@ -248,7 +248,7 @@ class MenuBar extends BaseComponent {
     
     // Add text
     const text = document.createElement('span');
-    text.textContent = 'Log In';
+    text.textContent = this.root.messages.getMessage('stam:menu-log-in');
     loginButton.appendChild(text);
     
     // Add hover and active effects using the shared method
@@ -264,48 +264,48 @@ class MenuBar extends BaseComponent {
   
   getDefaultMenuStructure() {
     return [
-      { name: 'File', items: [
-        { name: 'New Project', command: MENUCOMMANDS.NEW_PROJECT },
-        { name: 'Open Project', command: MENUCOMMANDS.OPEN_PROJECT },
-        { name: 'Save Project', command: MENUCOMMANDS.SAVE_PROJECT },
-        { name: 'Save Project As', command: MENUCOMMANDS.SAVE_AS_PROJECT },
-        { name: 'Close Project', command: MENUCOMMANDS.CLOSE_PROJECT },
+      { name: this.root.messages.getMessage('stam:menu-file'), items: [
+        { name: this.root.messages.getMessage('stam:menu-new-project'), command: MENUCOMMANDS.NEW_PROJECT },
+        { name: this.root.messages.getMessage('stam:menu-open-project'), command: MENUCOMMANDS.OPEN_PROJECT },
+        { name: this.root.messages.getMessage('stam:menu-save-project'), command: MENUCOMMANDS.SAVE_PROJECT },
+        { name: this.root.messages.getMessage('stam:menu-save-project-as'), command: MENUCOMMANDS.SAVE_AS_PROJECT },
+        { name: this.root.messages.getMessage('stam:menu-close-project'), command: MENUCOMMANDS.CLOSE_PROJECT },
         '-',
-        { name: 'New File', command: MENUCOMMANDS.NEW_FILE },
-        { name: 'Open File', command: MENUCOMMANDS.OPEN_FILE },
-        { name: 'Save File', command: MENUCOMMANDS.SAVE_FILE },
-        { name: 'Save As File', command: MENUCOMMANDS.SAVE_AS_FILE },
-        { name: 'Close File', command: MENUCOMMANDS.CLOSE_FILE }
+        { name: this.root.messages.getMessage('stam:menu-new-file'), command: MENUCOMMANDS.NEW_FILE },
+        { name: this.root.messages.getMessage('stam:menu-open-file'), command: MENUCOMMANDS.OPEN_FILE },
+        { name: this.root.messages.getMessage('stam:menu-save-file'), command: MENUCOMMANDS.SAVE_FILE },
+        { name: this.root.messages.getMessage('stam:menu-save-file-as'), command: MENUCOMMANDS.SAVE_AS_FILE },
+        { name: this.root.messages.getMessage('stam:menu-close-file'), command: MENUCOMMANDS.CLOSE_FILE }
       ] },
-      { name: 'Edit', items: [
-        { name: 'Undo', command: MENUCOMMANDS.UNDO },
-        { name: 'Redo', command: MENUCOMMANDS.REDO },
+      { name: this.root.messages.getMessage('stam:menu-edit'), items: [
+        { name: this.root.messages.getMessage('stam:menu-undo'), command: MENUCOMMANDS.UNDO },
+        { name: this.root.messages.getMessage('stam:menu-redo'), command: MENUCOMMANDS.REDO },
         '-',
-        { name: 'Cut', command: MENUCOMMANDS.CUT },
-        { name: 'Copy', command: MENUCOMMANDS.COPY },
-        { name: 'Paste', command: MENUCOMMANDS.PASTE },
-        { name: 'Find', command: MENUCOMMANDS.FIND },
-        { name: 'Replace', command: MENUCOMMANDS.REPLACE },
+        { name: this.root.messages.getMessage('stam:menu-cut'), command: MENUCOMMANDS.CUT },
+        { name: this.root.messages.getMessage('stam:menu-copy'), command: MENUCOMMANDS.COPY },
+        { name: this.root.messages.getMessage('stam:menu-paste'), command: MENUCOMMANDS.PASTE },
+        { name: this.root.messages.getMessage('stam:menu-find'), command: MENUCOMMANDS.FIND },
+        { name: this.root.messages.getMessage('stam:menu-replace'), command: MENUCOMMANDS.REPLACE },
         '-',
-        { name: 'Preferences', command: MENUCOMMANDS.PREFERENCES }
+        { name: this.root.messages.getMessage('stam:menu-preferences'), command: MENUCOMMANDS.PREFERENCES }
       ] },
-      { name: 'Classroom', items: [
-        { name: 'Create Classroom', command: CLASSROOMCOMMANDS.CREATE_CLASSROOM },
-        { name: 'Join Classroom', command: CLASSROOMCOMMANDS.JOIN_CLASSROOM },
-        { name: 'Leave Classroom', command: CLASSROOMCOMMANDS.LEAVE_CLASSROOM }
+      { name: this.root.messages.getMessage('stam:menu-classroom'), items: [
+        { name: this.root.messages.getMessage('stam:menu-create-classroom'), command: CLASSROOMCOMMANDS.CREATE_CLASSROOM },
+        { name: this.root.messages.getMessage('stam:menu-join-classroom'), command: CLASSROOMCOMMANDS.JOIN_CLASSROOM },
+        { name: this.root.messages.getMessage('stam:menu-leave-classroom'), command: CLASSROOMCOMMANDS.LEAVE_CLASSROOM }
       ] },
-      { name: 'Run', items: [
-        { name: 'Run', command: MENUCOMMANDS.RUN },
-        { name: 'Debug', command: MENUCOMMANDS.DEBUG },
-        { name: 'Stop', command: MENUCOMMANDS.STOP },
-        { name: 'Build', command: MENUCOMMANDS.BUILD }
+      { name: this.root.messages.getMessage('stam:menu-run'), items: [
+        { name: this.root.messages.getMessage('stam:menu-run-run'), command: MENUCOMMANDS.RUN },
+        { name: this.root.messages.getMessage('stam:menu-run-debug'), command: MENUCOMMANDS.DEBUG },
+        { name: this.root.messages.getMessage('stam:menu-run-stop'), command: MENUCOMMANDS.STOP },
+        { name: this.root.messages.getMessage('stam:menu-run-build'), command: MENUCOMMANDS.BUILD }
       ] },
-      { name: 'Help', items: [
-        { name: 'Documentation', command: MENUCOMMANDS.DOCUMENTATION },
-        { name: 'About', command: MENUCOMMANDS.ABOUT },
-        { name: 'Debug', items: [
-          { name: 'Debug1', command: MENUCOMMANDS.DEBUG1 },
-          { name: 'Debug2', command: MENUCOMMANDS.DEBUG2 }
+      { name: this.root.messages.getMessage('stam:menu-help'), items: [
+        { name: this.root.messages.getMessage('stam:menu-help-documentation'), command: MENUCOMMANDS.DOCUMENTATION },
+        { name: this.root.messages.getMessage('stam:menu-help-about'), command: MENUCOMMANDS.ABOUT },
+        { name: this.root.messages.getMessage('stam:menu-help-debug'), items: [
+          { name: this.root.messages.getMessage('stam:menu-help-debug-debug1'), command: MENUCOMMANDS.DEBUG1 },
+          { name: this.root.messages.getMessage('stam:menu-help-debug-debug2'), command: MENUCOMMANDS.DEBUG2 }
         ] }
       ] }
     ];
@@ -423,10 +423,10 @@ class MenuBar extends BaseComponent {
     const loginButton = document.getElementById('login-button');
     if (loginButton) {
       // Update button title
-      loginButton.title = 'Log Out';
+      loginButton.title = this.root.messages.getMessage('stam:menu-log-out');
       
       // Update icon
-      const icon = loginButton.querySelector('i');
+      const icon = loginButton.querySelector('i');  
       if (icon) {
         icon.className = 'fas fa-sign-out-alt';
       }
@@ -434,7 +434,7 @@ class MenuBar extends BaseComponent {
       // Update text
       const text = loginButton.querySelector('span');
       if (text) {
-        text.textContent = 'Log Out';
+        text.textContent = this.root.messages.getMessage('stam:menu-log-out');
       }
       
       // Update click handler
@@ -461,7 +461,7 @@ class MenuBar extends BaseComponent {
     const loginButton = document.getElementById('login-button');
     if (loginButton) {
       // Update button title
-      loginButton.title = 'Log In';
+      loginButton.title = this.root.messages.getMessage('stam:menu-log-in');
       
       // Update icon
       const icon = loginButton.querySelector('i');
@@ -472,7 +472,7 @@ class MenuBar extends BaseComponent {
       // Update text
       const text = loginButton.querySelector('span');
       if (text) {
-        text.textContent = 'Log In';
+        text.textContent = this.root.messages.getMessage('stam:menu-log-in');
       }
       
       // Update click handler

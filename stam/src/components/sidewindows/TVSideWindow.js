@@ -131,7 +131,7 @@ class TVSideWindow extends SideWindow {
       selectorButton.textContent = this.isPlayingPlaylist && this.currentPlaylist 
         ? this.currentPlaylist.name 
         : this.getClipTypeById(this.currentClipType).name;
-      selectorButton.title = 'Change clip type or select playlist';
+      selectorButton.title = this.root.messages.getMessage('stam:change-clip-type-or-select-playlist');
       
       // Create dropdown
       const dropdown = document.createElement('div');
@@ -181,7 +181,7 @@ class TVSideWindow extends SideWindow {
       // Add "Edit Playlists" option
       const editPlaylistsOption = document.createElement('div');
       editPlaylistsOption.className = 'clip-selector-option';
-      editPlaylistsOption.textContent = 'Edit Playlists';
+      editPlaylistsOption.textContent = this.root.messages.getMessage('stam:edit-playlists');
       editPlaylistsOption.addEventListener('click', () => {
         this.showPlaylistEditorDialog();
         dropdown.style.display = 'none';
@@ -269,7 +269,7 @@ class TVSideWindow extends SideWindow {
     // Add "Edit Playlists" option
     const editPlaylistsOption = document.createElement('div');
     editPlaylistsOption.className = 'clip-selector-option';
-    editPlaylistsOption.textContent = 'Edit Playlists';
+    editPlaylistsOption.textContent = this.root.messages.getMessage('stam:edit-playlists');
     editPlaylistsOption.addEventListener('click', () => {
       this.showPlaylistEditorDialog();
       dropdown.style.display = 'none';
@@ -289,7 +289,7 @@ class TVSideWindow extends SideWindow {
       const editButton = document.createElement('button');
       editButton.className = 'side-window-edit';
       editButton.innerHTML = '✏️';
-      editButton.title = 'Edit URL';
+      editButton.title = this.root.messages.getMessage('stam:edit-url');
       editButton.addEventListener('click', () => this.showUrlModal());
       
       // Insert the edit button after the clip selector
@@ -319,21 +319,21 @@ class TVSideWindow extends SideWindow {
     const prevButton = document.createElement('button');
     prevButton.className = 'playlist-control-button';
     prevButton.innerHTML = '⏮';
-    prevButton.title = 'Previous clip';
+    prevButton.title = this.root.messages.getMessage('stam:previous-clip');
     prevButton.addEventListener('click', () => this.playPreviousClip());
     
     // Create play/pause button
     const playPauseButton = document.createElement('button');
     playPauseButton.className = 'playlist-control-button';
     playPauseButton.innerHTML = '⏸';
-    playPauseButton.title = 'Pause playlist';
+    playPauseButton.title = this.root.messages.getMessage('stam:pause-playlist');
     // Implement play/pause functionality later
     
     // Create next button
     const nextButton = document.createElement('button');
     nextButton.className = 'playlist-control-button';
     nextButton.innerHTML = '⏭';
-    nextButton.title = 'Next clip';
+    nextButton.title = this.root.messages.getMessage('stam:next-clip');
     nextButton.addEventListener('click', () => this.playNextClip());
     
     // Create info text
@@ -423,7 +423,7 @@ class TVSideWindow extends SideWindow {
   startPlaylist(playlistId) {
     const playlist = this.playlistManager.getPlaylistById(playlistId);
     if (!playlist) {
-      console.error('Playlist not found:', playlistId);
+      console.error(this.root.messages.getMessage('stam:playlist-not-found'), playlistId);
       return;
     }
     

@@ -41,7 +41,7 @@ class PlaylistEditorDialog {
     // Create dialog header
     const dialogHeader = document.createElement('div');
     dialogHeader.className = 'playlist-dialog-header';
-    dialogHeader.textContent = 'Edit Playlists';
+    dialogHeader.textContent = this.root.messages.getMessage('stam:edit-playlists');
     
     // Create close button
     const closeButton = document.createElement('button');
@@ -62,13 +62,13 @@ class PlaylistEditorDialog {
     const newButton = document.createElement('button');
     newButton.className = 'playlist-action-button';
     newButton.innerHTML = '<i class="fas fa-plus"></i>';
-    newButton.title = 'New Playlist';
+    newButton.title = this.root.messages.getMessage('stam:new-playlist');
     newButton.addEventListener('click', () => this.createNewPlaylist());
     
     const editButton = document.createElement('button');
     editButton.className = 'playlist-action-button';
     editButton.innerHTML = '<i class="fas fa-edit"></i>';
-    editButton.title = 'Edit Playlist';
+    editButton.title = this.root.messages.getMessage('stam:edit-playlist');
     editButton.disabled = true;
     editButton.addEventListener('click', () => {
       if (this.selectedPlaylistId) {
@@ -79,7 +79,7 @@ class PlaylistEditorDialog {
     const deleteButton = document.createElement('button');
     deleteButton.className = 'playlist-action-button';
     deleteButton.innerHTML = '<i class="fas fa-trash-alt"></i>';
-    deleteButton.title = 'Delete Playlist';
+    deleteButton.title = this.root.messages.getMessage('stam:delete-playlist');
     deleteButton.disabled = true;
     deleteButton.addEventListener('click', () => {
       if (this.selectedPlaylistId) {
@@ -99,7 +99,7 @@ class PlaylistEditorDialog {
     if (this.playlists.length === 0) {
       const emptyMessage = document.createElement('div');
       emptyMessage.className = 'playlist-empty-message';
-      emptyMessage.textContent = 'No playlists available. Click the + button to create one.';
+      emptyMessage.textContent = this.root.messages.getMessage('stam:no-playlists-available');
       playlistList.appendChild(emptyMessage);
     } else {
       this.playlists.forEach(playlist => {
@@ -152,7 +152,7 @@ class PlaylistEditorDialog {
     buttonContainer.className = 'playlist-dialog-buttons';
     
     const cancelButton = document.createElement('button');
-    cancelButton.textContent = 'Close';
+    cancelButton.textContent = this.root.messages.getMessage('stam:close');
     cancelButton.addEventListener('click', () => this.close());
     
     buttonContainer.appendChild(cancelButton);
@@ -243,7 +243,7 @@ class PlaylistEditorDialog {
     
     const confirmMessage = document.createElement('div');
     confirmMessage.className = 'playlist-confirm-message';
-    confirmMessage.textContent = `Are you sure you want to delete "${playlist.name}"?`;
+    confirmMessage.textContent = this.root.messages.getMessage('stam:confirm-delete-playlist', { name: playlist.name });
     
     const confirmButtons = document.createElement('div');
     confirmButtons.className = 'playlist-confirm-buttons';
@@ -254,12 +254,12 @@ class PlaylistEditorDialog {
     };
     
     const cancelButton = document.createElement('button');
-    cancelButton.textContent = 'Cancel';
+    cancelButton.textContent = this.root.messages.getMessage('stam:cancel');
     cancelButton.type = 'button';
     cancelButton.addEventListener('click', closeConfirmDialog);
     
     const deleteButton = document.createElement('button');
-    deleteButton.textContent = 'Delete';
+    deleteButton.textContent = this.root.messages.getMessage('stam:delete');
     deleteButton.type = 'button';
     deleteButton.className = 'playlist-delete-button';
     deleteButton.addEventListener('click', () => {

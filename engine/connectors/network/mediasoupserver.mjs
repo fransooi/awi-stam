@@ -29,7 +29,7 @@ class ConnectorMediasoupServer extends ConnectorBase
     constructor( awi, config = {} ) {
         super( awi, config );
         this.name = 'Mediasoup Server';
-        this.token = 'mediasoupServer';
+        this.token = 'mediasoup';
         this.className = 'ConnectorMediasoupServer';
         this.group = 'network';
         this.version = '0.5';

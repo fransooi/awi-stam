@@ -56,7 +56,8 @@ class AMOSProIcons extends BaseComponent {
   }
   
   async init(options) {
-    await super.init(options);
+    if (await super.init(options))
+      return;
     // Create a ResizeObserver to monitor container size changes
     this.resizeObserver = new ResizeObserver(entries => {
       this.handleResize();

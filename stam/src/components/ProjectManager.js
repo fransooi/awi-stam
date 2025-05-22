@@ -183,7 +183,7 @@ class ProjectManager extends BaseComponent {
   async handleGetTemplate(data, senderId) {
     if ( !await this.sendRequestTo( 'class:SocketSideWindow', SOCKETMESSAGES.ENSURE_CONNECTED, {}))
       return null;
-    var templates = await this.root.fileSystem.getTemplates({ mode: this.root.currentMode })
+    var templates = await this.root.server.getTemplates({ mode: this.root.currentMode })
     if ( templates )
       return await this.showNewProjectDialog(templates);
     return null;
@@ -191,7 +191,7 @@ class ProjectManager extends BaseComponent {
   async handleGetProjectList(data, senderId) {
     if ( !await this.sendRequestTo( 'class:SocketSideWindow', SOCKETMESSAGES.ENSURE_CONNECTED, {}))
       return null;
-    var projects = await this.root.fileSystem.getProjectList({ mode: this.root.currentMode });
+    var projects = await this.root.server.getProjectList({ mode: this.root.currentMode });
     if (projects)
       return await this.showOpenProjectDialog(projects);
     return null;
@@ -207,7 +207,7 @@ class ProjectManager extends BaseComponent {
       data.name = data.name ? data.name : 'New Project';
       data.template = data.template ? data.template : 'default';
       data.overwrite = data.overwrite ? data.overwrite : true;
-      self.root.fileSystem.newProject(data)
+      self.root.server.newProject(data)
       .then((project) => {
         self.projectName = project.name;
         self.project = project;
@@ -221,7 +221,7 @@ class ProjectManager extends BaseComponent {
     }
     if (!data.name || !data.template)
     {
-      this.root.fileSystem.getTemplates({ mode: this.root.currentMode })
+      this.root.server.getTemplates({ mode: this.root.currentMode })
       .then((templates) => {
         if ( templates )
         {
@@ -249,7 +249,7 @@ class ProjectManager extends BaseComponent {
       return;
     if ( data.name )
     {
-      this.root.fileSystem.openProject(data)
+      this.root.server.openProject(data)
       .then((project) => {
         if (!project.error)
         {
@@ -274,7 +274,7 @@ class ProjectManager extends BaseComponent {
       return;
     }
 
-    this.root.fileSystem.getProjectList({ mode: this.root.currentMode })
+    this.root.server.getProjectList({ mode: this.root.currentMode })
     .then((projects) => {
       if ( projects )
       {
@@ -294,7 +294,7 @@ class ProjectManager extends BaseComponent {
 
     data.mode = this.root.currentMode;
     data.handle = this.project.handle;
-    var file = await this.root.fileSystem.loadFile(data)
+    var file = await this.root.server.loadFile(data)
     if ( file )
     {
       this.setFileContent(file);
@@ -329,7 +329,7 @@ class ProjectManager extends BaseComponent {
     // Load the file from the server
     data.mode = this.root.currentMode;
     data.handle = this.project.handle;
-    this.root.fileSystem.loadFile(data)
+    this.root.server.loadFile(data)
     .then((file) => {
       if (file && !file.error)
       {
@@ -408,7 +408,7 @@ class ProjectManager extends BaseComponent {
       mode: this.root.currentMode,
       handle: this.project.handle
     };
-    var answer = await this.root.fileSystem.saveFile(newData);
+    var answer = await this.root.server.saveFile(newData);
     if (answer && !answer.error){
       var file = this.findFile(data.path);
       file.content = data.content;
@@ -457,7 +457,7 @@ class ProjectManager extends BaseComponent {
       header.style.paddingBottom = '10px';
       
       const title = document.createElement('h2');
-      title.textContent = 'Create New Project';
+      title.textContent = this.root.messages.getMessage('stam:new-project');
       title.style.margin = '0';
       title.style.color = '#eee';
       title.style.fontSize = '18px';
@@ -474,14 +474,14 @@ class ProjectManager extends BaseComponent {
       projectNameContainer.style.marginBottom = '20px';
       
       const projectNameLabel = document.createElement('label');
-      projectNameLabel.textContent = 'Project Name:';
+      projectNameLabel.textContent = this.root.messages.getMessage('stam:project-name');
       projectNameLabel.style.display = 'block';
       projectNameLabel.style.color = '#ddd';
       projectNameLabel.style.marginBottom = '5px';
       
       const projectNameInput = document.createElement('input');
       projectNameInput.type = 'text';
-      projectNameInput.value = 'New Project';
+      projectNameInput.value = this.root.messages.getMessage('stam:new-project');
       projectNameInput.style.width = '100%';
       projectNameInput.style.padding = '8px';
       projectNameInput.style.backgroundColor = '#3a3a3a';
@@ -509,7 +509,7 @@ class ProjectManager extends BaseComponent {
       
       const overwriteLabel = document.createElement('label');
       overwriteLabel.htmlFor = 'overwrite-checkbox';
-      overwriteLabel.textContent = 'Overwrite existing project';
+      overwriteLabel.textContent = this.root.messages.getMessage('stam:overwrite-existing-project');
       overwriteLabel.style.color = '#ddd';
       overwriteLabel.style.cursor = 'pointer';
       
@@ -524,7 +524,7 @@ class ProjectManager extends BaseComponent {
       
       // Instructions text
       const instructions = document.createElement('p');
-      instructions.textContent = 'Select a template for your new project:';
+      instructions.textContent = this.root.messages.getMessage('stam:select-template-for-new-project');
       instructions.style.color = '#ddd';
       instructions.style.marginBottom = '15px';
       templateSection.appendChild(instructions);
@@ -613,7 +613,7 @@ class ProjectManager extends BaseComponent {
         });
       } else {
         const noTemplates = document.createElement('p');
-        noTemplates.textContent = 'No templates available.';
+        noTemplates.textContent = this.root.messages.getMessage('stam:no-templates-available');
         noTemplates.style.color = '#ddd';
         templateContainer.appendChild(noTemplates);
       }
@@ -630,7 +630,7 @@ class ProjectManager extends BaseComponent {
       footer.style.marginTop = '20px';
       
       const cancelButton = document.createElement('button');
-      cancelButton.textContent = 'Cancel';
+      cancelButton.textContent = this.root.messages.getMessage('stam:cancel');
       cancelButton.style.padding = '8px 16px';
       cancelButton.style.backgroundColor = '#3a3a3a';
       cancelButton.style.color = '#ddd';
@@ -643,7 +643,7 @@ class ProjectManager extends BaseComponent {
       });
       
       const createButton = document.createElement('button');
-      createButton.textContent = 'Create';
+      createButton.textContent = this.root.messages.getMessage('stam:create');
       createButton.style.padding = '8px 16px';
       createButton.style.backgroundColor = '#4a4a4a';
       createButton.style.color = '#fff';
@@ -660,7 +660,7 @@ class ProjectManager extends BaseComponent {
             overwrite: overwriteCheckbox.checked
           });
         } else {
-          alert('Please select a template');
+          alert(this.root.messages.getMessage('stam:please-select-a-template'));
         }
       });
       
@@ -703,7 +703,7 @@ class ProjectManager extends BaseComponent {
       header.style.paddingBottom = '10px';
       
       const title = document.createElement('h2');
-      title.textContent = 'Open Project';
+      title.textContent = this.root.messages.getMessage('stam:open-project');
       title.style.margin = '0';
       title.style.color = '#eee';
       title.style.fontSize = '18px';
@@ -722,7 +722,7 @@ class ProjectManager extends BaseComponent {
       
       // Instructions text
       const instructions = document.createElement('p');
-      instructions.textContent = 'Select a project to open:';
+      instructions.textContent = this.root.messages.getMessage('stam:select-project-to-open');
       instructions.style.color = '#ddd';
       instructions.style.marginBottom = '15px';
       projectSection.appendChild(instructions);
@@ -811,7 +811,7 @@ class ProjectManager extends BaseComponent {
         });
       } else {
         const noProjects = document.createElement('p');
-        noProjects.textContent = 'No projects available.';
+        noProjects.textContent = this.root.messages.getMessage('stam:no-projects-available');
         noProjects.style.color = '#ddd';
         projectContainer.appendChild(noProjects);
       }
@@ -828,7 +828,7 @@ class ProjectManager extends BaseComponent {
       footer.style.marginTop = '20px';
       
       const cancelButton = document.createElement('button');
-      cancelButton.textContent = 'Cancel';
+      cancelButton.textContent = this.root.messages.getMessage('stam:cancel');
       cancelButton.style.padding = '8px 16px';
       cancelButton.style.backgroundColor = '#3a3a3a';
       cancelButton.style.color = '#ddd';
@@ -841,7 +841,7 @@ class ProjectManager extends BaseComponent {
       });
       
       const openButton = document.createElement('button');
-      openButton.textContent = 'Open';
+      openButton.textContent = this.root.messages.getMessage('stam:open');
       openButton.style.padding = '8px 16px';
       openButton.style.backgroundColor = '#4a4a4a';
       openButton.style.color = '#fff';
@@ -853,7 +853,7 @@ class ProjectManager extends BaseComponent {
           document.body.removeChild(dialog);
           resolve(selectedProject);
         } else {
-          alert('Please select a project');
+          alert(this.root.messages.getMessage('stam:please-select-a-project'));
         }
       });
       
@@ -903,7 +903,7 @@ class ProjectManager extends BaseComponent {
       header.style.paddingBottom = '10px';
       
       const title = document.createElement('h2');
-      title.textContent = 'Open File';
+      title.textContent = this.root.messages.getMessage('stam:open-file');
       title.style.margin = '0';
       title.style.color = '#eee';
       title.style.fontSize = '18px';
@@ -917,7 +917,7 @@ class ProjectManager extends BaseComponent {
         filterInfo.style.fontSize = '14px';
         filterInfo.style.color = '#aaa';
         filterInfo.style.marginBottom = '10px';
-        filterInfo.textContent = `Filter: ${extensions.join(', ')}`;
+        filterInfo.textContent = this.root.messages.getMessage('stam:filter') + `: ${extensions.join(', ')}`;
         dialog.appendChild(filterInfo);
       }
       
@@ -1064,7 +1064,7 @@ class ProjectManager extends BaseComponent {
         buildFileTree(this.project.files, treeContainer);
       } else {
         const noFiles = document.createElement('div');
-        noFiles.textContent = 'No files available';
+        noFiles.textContent = this.root.messages.getMessage('stam:no-files-available');
         noFiles.style.padding = '10px';
         noFiles.style.color = '#aaa';
         treeContainer.appendChild(noFiles);
@@ -1081,7 +1081,7 @@ class ProjectManager extends BaseComponent {
       footer.style.marginTop = 'auto';
       
       const cancelButton = document.createElement('button');
-      cancelButton.textContent = 'Cancel';
+      cancelButton.textContent = this.root.messages.getMessage('stam:cancel');
       cancelButton.style.padding = '8px 16px';
       cancelButton.style.backgroundColor = '#3a3a3a';
       cancelButton.style.color = '#ddd';
@@ -1090,7 +1090,7 @@ class ProjectManager extends BaseComponent {
       cancelButton.style.cursor = 'pointer';
       
       const openButton = document.createElement('button');
-      openButton.textContent = 'Open';
+      openButton.textContent = this.root.messages.getMessage('stam:open');
       openButton.style.padding = '8px 16px';
       openButton.style.backgroundColor = '#4a6da7';
       openButton.style.color = '#fff';
@@ -1182,7 +1182,7 @@ class ProjectManager extends BaseComponent {
       header.style.paddingBottom = '10px';
       
       const title = document.createElement('h2');
-      title.textContent = title || 'Save File';
+      title.textContent = title || this.root.messages.getMessage('stam:save-file');
       title.style.margin = '0';
       title.style.color = '#eee';
       title.style.fontSize = '18px';
@@ -1195,7 +1195,7 @@ class ProjectManager extends BaseComponent {
       filenameSection.style.marginBottom = '15px';
       
       const filenameLabel = document.createElement('label');
-      filenameLabel.textContent = 'Filename:';
+      filenameLabel.textContent = this.root.messages.getMessage('stam:filename') + ':';
       filenameLabel.style.display = 'block';
       filenameLabel.style.marginBottom = '5px';
       filenameLabel.style.color = '#ddd';
@@ -1220,7 +1220,7 @@ class ProjectManager extends BaseComponent {
       locationSection.style.marginBottom = '15px';
       
       const locationLabel = document.createElement('label');
-      locationLabel.textContent = 'Location:';
+      locationLabel.textContent = this.root.messages.getMessage('stam:location') + ':';
       locationLabel.style.display = 'block';
       locationLabel.style.marginBottom = '5px';
       locationLabel.style.color = '#ddd';
@@ -1395,7 +1395,7 @@ class ProjectManager extends BaseComponent {
         buildDirectoryTree(this.project.files, treeContainer);
       } else {
         const noDirectories = document.createElement('div');
-        noDirectories.textContent = 'No directories available';
+        noDirectories.textContent = this.root.messages.getMessage('stam:no-directories-available');
         noDirectories.style.padding = '10px';
         noDirectories.style.color = '#aaa';
         treeContainer.appendChild(noDirectories);
@@ -1408,13 +1408,13 @@ class ProjectManager extends BaseComponent {
       selectedPathDisplay.style.marginTop = '10px';
       selectedPathDisplay.style.fontSize = '14px';
       selectedPathDisplay.style.color = '#aaa';
-      selectedPathDisplay.textContent = `Selected: ${selectedDirectory || 'Root'}`;
+      selectedPathDisplay.textContent = this.root.messages.getMessage('stam:selected') + `: ${selectedDirectory || 'Root'}`;
       
       locationSection.appendChild(selectedPathDisplay);
       
       // Update the selected path display when a directory is selected
       const updateSelectedPath = () => {
-        selectedPathDisplay.textContent = `Selected: ${selectedDirectory || 'Root'}`;
+        selectedPathDisplay.textContent = this.root.messages.getMessage('stam:selected') + `: ${selectedDirectory || 'Root'}`;
       };
       
       // Create dialog footer with buttons
@@ -1426,7 +1426,7 @@ class ProjectManager extends BaseComponent {
       footer.style.marginTop = 'auto';
       
       const cancelButton = document.createElement('button');
-      cancelButton.textContent = 'Cancel';
+      cancelButton.textContent = this.root.messages.getMessage('stam:cancel');
       cancelButton.style.padding = '8px 16px';
       cancelButton.style.backgroundColor = '#3a3a3a';
       cancelButton.style.color = '#ddd';
@@ -1435,7 +1435,7 @@ class ProjectManager extends BaseComponent {
       cancelButton.style.cursor = 'pointer';
       
       const saveButton = document.createElement('button');
-      saveButton.textContent = 'Save';
+      saveButton.textContent = this.root.messages.getMessage('stam:save');
       saveButton.style.padding = '8px 16px';
       saveButton.style.backgroundColor = '#4a6da7';
       saveButton.style.color = '#fff';
@@ -1520,10 +1520,8 @@ class ProjectManager extends BaseComponent {
   /////////////////////////////////////////////////////////////////////////
   // Project Dialog Box
   /////////////////////////////////////////////////////////////////////////
-  async render(containerId)
+  async showProjectDialog()
   {
-    await super.render(containerId);
-
     // Create the dialog element
     this.element = document.createElement('div');
     this.element.id = 'project-dialog';
@@ -1549,7 +1547,7 @@ class ProjectManager extends BaseComponent {
     header.style.paddingBottom = '10px';
     
     const title = document.createElement('h2');
-    title.textContent = 'Project';
+    title.textContent = this.root.messages.getMessage('stam:project');
     title.style.margin = '0';
     title.style.color = '#eee';
     title.style.fontSize = '18px';
@@ -1563,7 +1561,7 @@ class ProjectManager extends BaseComponent {
     content.style.marginBottom = '20px';
     
     const message = document.createElement('p');
-    message.textContent = 'Project dialog box';
+    message.textContent = this.root.messages.getMessage('stam:project-dialog-box');
     message.style.color = '#ddd';
     
     content.appendChild(message);
@@ -1577,7 +1575,7 @@ class ProjectManager extends BaseComponent {
     footer.style.gap = '10px';
     
     const okButton = document.createElement('button');
-    okButton.textContent = 'OK';
+    okButton.textContent = this.root.messages.getMessage('stam:ok');
     okButton.style.padding = '8px 16px';
     okButton.style.backgroundColor = '#4a4a4a';
     okButton.style.color = '#fff';
@@ -1587,7 +1585,7 @@ class ProjectManager extends BaseComponent {
     okButton.onclick = () => this.handleOkClick();
     
     const cancelButton = document.createElement('button');
-    cancelButton.textContent = 'Cancel';
+    cancelButton.textContent = this.root.messages.getMessage('stam:cancel');
     cancelButton.style.padding = '8px 16px';
     cancelButton.style.backgroundColor = '#3a3a3a';
     cancelButton.style.color = '#ddd';
