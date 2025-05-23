@@ -57,6 +57,9 @@ class ProjectSideWindow extends SideWindow {
    */
   async render(containerId) {
     await super.render(containerId);
+    
+    // Override the default black background with the theme's container background
+    this.content.style.backgroundColor = 'var(--container-background, #252526)';
    
     // Create project tree container
     this.treeElement = document.createElement('div');

@@ -124,8 +124,10 @@
   position: relative;
   transition: height 0.1s ease-out;
   box-sizing: border-box;
-  height: 97%; /* Fill the wrapper */
+  height: 100%;
   width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 /* Bottom window styling */
@@ -148,7 +150,7 @@
   display: flex;
   justify-content: space-between; /* Push title left and controls right */
   align-items: center;
-  padding: 6px 10px;
+  padding: 2px 8px; /* Reduced vertical padding from 6px to 2px, horizontal from 10px to 8px */
   background-color: var(--side-title-background, #333333);
   color: var(--side-title-text, #ffffff);
   font-weight: 500;
@@ -158,6 +160,8 @@
   z-index: 5;
   transition: background-color 0.2s ease;
   font-family: var(--font-side-window, 'Inter', system-ui, sans-serif);
+  height: 24px; /* Set a fixed height for consistency */
+  box-sizing: border-box; /* Ensure padding is included in height */
 }
 
 .side-window-header:hover {
@@ -176,8 +180,10 @@
 
 .side-window-title {
   font-weight: bold;
-  font-size: 14px;
+  font-size: 13px; /* Slightly smaller font */
   color: var(--side-title-text, #ffffff);
+  line-height: 1.2; /* Tighter line height */
+  margin: 0; /* Remove any default margins */
 }
 
 .side-window-controls {
@@ -194,11 +200,13 @@
   border: none;
   cursor: pointer;
   font-size: 12px;
-  width: 18px;
-  height: 18px;
+  width: 16px; /* Slightly smaller buttons */
+  height: 16px; /* Slightly smaller buttons */
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0; /* Remove any default padding */
+  margin: 0 1px; /* Minimal margin between buttons */
   border-radius: 3px;
   color: var(--side-title-text, #ffffff);
   transition: background-color 0.2s ease;
@@ -313,9 +321,23 @@
 .side-window-content {
   flex: 1;
   overflow: auto;
-  padding: 8px;
-  background-color: #1a1a1a;
-  color: #FFFFFF;
+  padding: 10px;
+  box-sizing: border-box;
+  background-color: #000000;
+  border: none;
+  outline: none;
+  resize: none;
+  color: #ffffff;
+  font-family: var(--font-monospace, monospace);
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  tab-size: 4;
+  -moz-tab-size: 4;
+  margin: 0;
+  min-height: 0; /* Allows the content to shrink below its default minimum size */
 }
 
 /* Resize Separator */

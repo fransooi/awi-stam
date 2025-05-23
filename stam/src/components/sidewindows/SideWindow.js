@@ -168,6 +168,9 @@ class SideWindow extends BaseComponent {
     this.container.className = 'side-window';
     this.container.style.borderTop = '1px solid var(--side-border, #444444)';
     this.container.style.borderBottom = '1px solid var(--side-border, #444444)';
+    this.container.style.display = 'flex';
+    this.container.style.flexDirection = 'column';
+    this.container.style.height = '100%';
     
     // Create the header with theme support
     this.header = document.createElement('div');
@@ -175,6 +178,7 @@ class SideWindow extends BaseComponent {
     this.header.style.backgroundColor = 'var(--side-title-background, #333333)';
     this.header.style.color = 'var(--side-title-text, #ffffff)';
     this.header.style.borderBottom = '1px solid var(--side-border, #444444)';
+    this.header.style.flexShrink = '0'; // Prevent header from shrinking
     
     // Setup drag handling for the title bar
     this.setupDragHandling();
@@ -221,6 +225,10 @@ class SideWindow extends BaseComponent {
     // Create the content area
     this.content = document.createElement('div');
     this.content.className = 'side-window-content';
+    this.content.style.backgroundColor = '#000000'; // Default black background
+    this.content.style.flexGrow = '1';
+    this.content.style.overflow = 'auto'; // Ensure content is scrollable
+    this.content.style.minHeight = '0'; // Allow content to shrink below its default minimum size
     
     // Add header and content to the container
     this.container.appendChild(this.header);
