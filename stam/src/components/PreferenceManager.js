@@ -46,7 +46,10 @@ const DEFAULT_THEME = {
     'side-border': '#444444',
     'side-resize': '#555555',
     'side-title-background-hover': '#3d3d3d',
-    'border-color': '#444'
+    'border-color': '#444',
+    'slider-background': '#444',
+    'slider-track': '#666',
+    'slider-thumb': '#888',
   },
   fonts: {
     'menu': 'Inter, system-ui, sans-serif',
@@ -80,7 +83,10 @@ const THEMES = {
       'side-border': '#cccccc',
       'side-resize': '#999999',
       'side-title-background-hover': '#d0d0d0',
-      'border-color': '#ddd'
+      'border-color': '#ddd',
+      'slider-background': '#444',
+      'slider-track': '#666',
+      'slider-thumb': '#888',
     },
     fonts: {
       'menu': 'Inter, system-ui, sans-serif',

@@ -1,5 +1,38 @@
 /* SideWindows CSS - Styling for the SideBar and SideWindow components */
 
+/* Scrollbar Styling */
+.side-window-content::-webkit-scrollbar,
+.side-window-enlarged-content::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.side-window-content::-webkit-scrollbar-track,
+.side-window-enlarged-content::-webkit-scrollbar-track {
+  background: var(--slider-background, #444);
+  border-radius: 5px;
+}
+
+.side-window-content::-webkit-scrollbar-thumb,
+.side-window-enlarged-content::-webkit-scrollbar-thumb {
+  background: var(--slider-thumb, #888);
+  border-radius: 5px;
+  border: 2px solid var(--slider-background, #444);
+}
+
+.side-window-content::-webkit-scrollbar-thumb:hover,
+.side-window-enlarged-content::-webkit-scrollbar-thumb:hover {
+  background: var(--slider-track, #666);
+}
+
+/* Firefox scrollbar styling */
+.side-window-content,
+.side-window-enlarged-content {
+  scrollbar-width: thin;
+  scrollbar-color: var(--slider-thumb, #888) var(--slider-background, #444);
+}
+
+
 /* Volume Popup Styles */
 .side-window-volume-popup {
   background: var(--popup-background, #232323);
