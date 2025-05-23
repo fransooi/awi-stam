@@ -69,96 +69,143 @@ class SideWindow extends BaseComponent {
    * @returns {boolean} True if this is the top window
    */
   isTopWindow() {
-    if (!this.container || !this.container.parentElement) return false;
-    const siblings = Array.from(this.container.parentElement.children);
-    return siblings.indexOf(this.container) === 0;
+    if (!this.container) return false;
+    
+    // Find the sidebar container that holds all windows
+    const sidebar = this.container.closest('.side-windows-container');
+    if (!sidebar) return false;
+    
+    // Get all side windows in the sidebar
+    const sideWindows = Array.from(sidebar.querySelectorAll('.side-window'));
+    if (sideWindows.length === 0) return false;
+    
+    // Find the first visible window
+    for (const win of sideWindows) {
+      const style = window.getComputedStyle(win);
+      if (style.display !== 'none' && style.visibility !== 'hidden') {
+        // Found the first visible window, check if it's this one
+        return win === this.container;
+      }
+    }
+    
+    return false;
   }
 
   /**
    * Set up drag handling for the window
    */
   setupDragHandling() {
-    let startY, startHeight, startPrevHeight, prevWindow;
-    const container = this.container;
+    console.log('Setting up drag handling for window:', this.id);
     
-    // Get the previous window if it exists
+    if (!this.header) {
+      console.error('Header element not found for window:', this.id);
+      return;
+    }
+    
+    // Store references
+    const container = this.container;
+    let startY, startHeight, prevWindow, startPrevHeight;
+    
+    // Get the previous visible window if it exists
     const getPrevWindow = () => {
-      if (!container || !container.parentElement) return null;
-      const siblings = Array.from(container.parentElement.children);
-      const index = siblings.indexOf(container);
-      return index > 0 ? siblings[index - 1] : null;
+      if (!container) return null;
+      
+      // Find the sidebar container that holds all windows
+      const sidebar = container.closest('.side-windows-container');
+      if (!sidebar) return null;
+      
+      // Get all visible side windows in the sidebar
+      const sideWindows = Array.from(sidebar.querySelectorAll('.side-window'));
+      const currentIndex = sideWindows.indexOf(container);
+      
+      if (currentIndex <= 0) return null; // No previous window if this is the first one
+      
+      // Find the previous visible window
+      for (let i = currentIndex - 1; i >= 0; i--) {
+        const win = sideWindows[i];
+        const style = window.getComputedStyle(win);
+        if (style.display !== 'none' && style.visibility !== 'hidden') {
+          return win;
+        }
+      }
+      
+      return null; // No visible previous window found
     };
     
-    const onDragStart = (e) => {
-      if (this.isTopWindow()) return; // Don't allow resizing from the top window
+    // Handle mousedown on header
+    const handleMouseDown = (e) => {
+      if (this.isTopWindow()||e.target.closest('button') )
+        return;
       
       e.preventDefault();
       e.stopPropagation();
       
+      // Store initial positions
       startY = e.clientY;
       startHeight = container.offsetHeight;
-      
-      // Get the previous window and its height
       prevWindow = getPrevWindow();
-      if (prevWindow) {
-        startPrevHeight = prevWindow.offsetHeight;
-      }
+      startPrevHeight = prevWindow ? prevWindow.offsetHeight : 0;
       
-      document.addEventListener('mousemove', onDrag);
-      document.addEventListener('mouseup', onDragEnd);
+      // Add global event listeners
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp, { once: true });
       
-      // Add a class to indicate dragging
+      // Update styles
       document.body.style.cursor = 'row-resize';
       document.body.style.userSelect = 'none';
+      document.body.style.webkitUserSelect = 'none';
       container.classList.add('resizing');
     };
     
-    const onDrag = (e) => {
-      if (this.isTopWindow()) return;
+    // Handle mousemove for dragging
+    const handleMouseMove = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       
-      const dy = startY - e.clientY;
+      const dy = e.clientY - startY;
       const newHeight = startHeight + dy;
       const newPrevHeight = startPrevHeight - dy;
       
-      // Apply minimum height constraints (adjust as needed)
+      // Apply constraints
       const minHeight = 100;
       const maxPrevHeight = prevWindow ? prevWindow.scrollHeight - 20 : 0;
       
-      if (newHeight >= minHeight && newPrevHeight >= minHeight && newPrevHeight <= maxPrevHeight) {
+      if (newHeight >= minHeight && (!prevWindow || (newPrevHeight >= minHeight && newPrevHeight <= maxPrevHeight))) {
         container.style.height = `${newHeight}px`;
         if (prevWindow) {
           prevWindow.style.height = `${newPrevHeight}px`;
         }
       }
-      
-      // Prevent text selection during drag
-      e.preventDefault();
-      e.stopPropagation();
     };
     
-    const onDragEnd = () => {
-      document.removeEventListener('mousemove', onDrag);
-      document.removeEventListener('mouseup', onDragEnd);
+    // Handle mouseup to end dragging
+    const handleMouseUp = () => {
+      // Remove event listeners
+      document.removeEventListener('mousemove', handleMouseMove);
       
       // Reset styles
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
+      document.body.style.webkitUserSelect = '';
       container.classList.remove('resizing');
       
-      // Save the new heights
+      // Save the new height
       this.height = container.offsetHeight;
       
-      // Dispatch a resize event if needed
+      // Dispatch resize event
       window.dispatchEvent(new Event('resize'));
     };
     
-    // Add event listener to the header for resizing
-    this.header.addEventListener('mousedown', (e) => {
-      // Only start drag if not clicking on a button
-      if (!e.target.closest('button')) {
-        onDragStart(e);
-      }
+    // Add mousedown event to header
+    this.header.addEventListener('mousedown', handleMouseDown);
+    
+    // Prevent text selection during drag
+    this.header.addEventListener('selectstart', (e) => {
+      e.preventDefault();
+      return false;
     });
+    
+    console.log('Drag handling setup complete for window:', this.id);
   }
 
   async render() {
@@ -179,9 +226,6 @@ class SideWindow extends BaseComponent {
     this.header.style.color = 'var(--side-title-text, #ffffff)';
     this.header.style.borderBottom = '1px solid var(--side-border, #444444)';
     this.header.style.flexShrink = '0'; // Prevent header from shrinking
-    
-    // Setup drag handling for the title bar
-    this.setupDragHandling();
     
     // Create the title
     const titleElement = document.createElement('div');
@@ -233,6 +277,9 @@ class SideWindow extends BaseComponent {
     // Add header and content to the container
     this.container.appendChild(this.header);
     this.container.appendChild(this.content);
+    
+    // Setup drag handling after all elements are created
+    this.setupDragHandling();
     
     // Set initial height
     if (this.minimized) {

@@ -187,6 +187,9 @@
   background-color: var(--side-title-background, #333333);
   color: var(--side-title-text, #ffffff);
   font-weight: 500;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   user-select: none;
   cursor: ns-resize;
   position: relative;
@@ -195,6 +198,21 @@
   font-family: var(--font-side-window, 'Inter', system-ui, sans-serif);
   height: 24px; /* Set a fixed height for consistency */
   box-sizing: border-box; /* Ensure padding is included in height */
+  touch-action: none; /* Prevent touch events from interfering with dragging */
+}
+
+/* Prevent text selection during drag */
+.side-window-header * {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  cursor: inherit;
+}
+
+/* Reset cursor for buttons */
+.side-window-header button {
+  cursor: pointer;
 }
 
 .side-window-header:hover {
