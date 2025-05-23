@@ -64,15 +64,120 @@ class SideWindow extends BaseComponent {
    * @param {HTMLElement} parentContainer - The parent container to append this window to
    * @returns {HTMLElement} The created window element
    */
+  /**
+   * Check if this is the top window in the sidebar
+   * @returns {boolean} True if this is the top window
+   */
+  isTopWindow() {
+    if (!this.container || !this.container.parentElement) return false;
+    const siblings = Array.from(this.container.parentElement.children);
+    return siblings.indexOf(this.container) === 0;
+  }
+
+  /**
+   * Set up drag handling for the window
+   */
+  setupDragHandling() {
+    let startY, startHeight, startPrevHeight, prevWindow;
+    const container = this.container;
+    
+    // Get the previous window if it exists
+    const getPrevWindow = () => {
+      if (!container || !container.parentElement) return null;
+      const siblings = Array.from(container.parentElement.children);
+      const index = siblings.indexOf(container);
+      return index > 0 ? siblings[index - 1] : null;
+    };
+    
+    const onDragStart = (e) => {
+      if (this.isTopWindow()) return; // Don't allow resizing from the top window
+      
+      e.preventDefault();
+      e.stopPropagation();
+      
+      startY = e.clientY;
+      startHeight = container.offsetHeight;
+      
+      // Get the previous window and its height
+      prevWindow = getPrevWindow();
+      if (prevWindow) {
+        startPrevHeight = prevWindow.offsetHeight;
+      }
+      
+      document.addEventListener('mousemove', onDrag);
+      document.addEventListener('mouseup', onDragEnd);
+      
+      // Add a class to indicate dragging
+      document.body.style.cursor = 'row-resize';
+      document.body.style.userSelect = 'none';
+      container.classList.add('resizing');
+    };
+    
+    const onDrag = (e) => {
+      if (this.isTopWindow()) return;
+      
+      const dy = startY - e.clientY;
+      const newHeight = startHeight + dy;
+      const newPrevHeight = startPrevHeight - dy;
+      
+      // Apply minimum height constraints (adjust as needed)
+      const minHeight = 100;
+      const maxPrevHeight = prevWindow ? prevWindow.scrollHeight - 20 : 0;
+      
+      if (newHeight >= minHeight && newPrevHeight >= minHeight && newPrevHeight <= maxPrevHeight) {
+        container.style.height = `${newHeight}px`;
+        if (prevWindow) {
+          prevWindow.style.height = `${newPrevHeight}px`;
+        }
+      }
+      
+      // Prevent text selection during drag
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    
+    const onDragEnd = () => {
+      document.removeEventListener('mousemove', onDrag);
+      document.removeEventListener('mouseup', onDragEnd);
+      
+      // Reset styles
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      container.classList.remove('resizing');
+      
+      // Save the new heights
+      this.height = container.offsetHeight;
+      
+      // Dispatch a resize event if needed
+      window.dispatchEvent(new Event('resize'));
+    };
+    
+    // Add event listener to the header for resizing
+    this.header.addEventListener('mousedown', (e) => {
+      // Only start drag if not clicking on a button
+      if (!e.target.closest('button')) {
+        onDragStart(e);
+      }
+    });
+  }
+
   async render() {
     // Create the container element
     this.container = document.createElement('div');
     this.container.id = `side-window-${this.id}`;
     this.container.className = 'side-window';
+    this.container.style.borderTop = '1px solid var(--side-border, #444444)';
+    this.container.style.borderBottom = '1px solid var(--side-border, #444444)';
     
-    // Create the header
+    // Create the header with theme support
     this.header = document.createElement('div');
     this.header.className = 'side-window-header';
+    this.header.style.backgroundColor = 'var(--side-title-background, #333333)';
+    this.header.style.color = 'var(--side-title-text, #ffffff)';
+    this.header.style.borderBottom = '1px solid var(--side-border, #444444)';
+    
+    // Setup drag handling for the title bar
+    this.setupDragHandling();
     
     // Create the title
     const titleElement = document.createElement('div');
@@ -128,7 +233,7 @@ class SideWindow extends BaseComponent {
     } else {
       this.updateContentHeight();
     }
-    this.parentContainer.appendChild(this.container);
+      this.parentContainer.appendChild(this.container);
     this.layoutContainer = this.container;
 
     // Prevent default context menu on the entire side window

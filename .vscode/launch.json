@@ -14,7 +14,7 @@
         },
         {
             "name": "STAM",
-            "type": "msedge",
+            "type": "chrome",
             "request": "launch",
             "url": "http://localhost:5173?debug=1",
             "webRoot": "${workspaceFolder}/stam/src",

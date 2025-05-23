@@ -25,55 +25,67 @@ import { MENUCOMMANDS } from './MenuBar.js';
 
 // Default theme definition
 const DEFAULT_THEME = {
-  name: 'Default Dark',
+  name: 'Dark',
   colors: {
-    background: '#1e1e1e',
-    dialogBackground: '#2d2d2d',
-    containerBackground: '#252526',
-    buttonPositive: '#1a73e8',
-    buttonNegative: '#dc3545',
-    buttonNeutral: '#6c757d',
-    listBackground: '#3a3a3a',
-    popupBackground: '#333333',
-    textPrimary: '#e0e0e0',
-    textSecondary: '#b0b0b0',
-    textPositive: '#ffffff',
-    textNegative: '#ffffff',
-    textNeutral: '#ffffff',
-    popupText: '#ffffff'
+    'background': '#1e1e1e',
+    'dialog-background': '#2d2d2d',
+    'container-background': '#252526',
+    'button-positive': '#1a73e8',
+    'button-negative': '#dc3545',
+    'button-neutral': '#6c757d',
+    'list-background': '#3a3a3a',
+    'popup-background': '#333333',
+    'text-primary': '#e0e0e0',
+    'text-secondary': '#b0b0b0',
+    'text-positive': '#ffffff',
+    'text-negative': '#ffffff',
+    'text-neutral': '#ffffff',
+    'popup-text': '#ffffff',
+    'side-title-background': '#333333',
+    'side-title-text': '#ffffff',
+    'side-border': '#444444',
+    'side-resize': '#555555',
+    'side-title-background-hover': '#3d3d3d',
+    'border-color': '#444'
   },
   fonts: {
-    menu: 'Inter, system-ui, sans-serif',
-    sideWindow: 'Inter, system-ui, sans-serif',
-    statusBar: 'Consolas, monospace'
+    'menu': 'Inter, system-ui, sans-serif',
+    'side-window': 'Inter, system-ui, sans-serif',
+    'status-bar': 'Consolas, monospace'
   }
 };
 
 // Available themes
 const THEMES = {
   'default-dark': { ...DEFAULT_THEME },
-  'light-theme': {
-    name: 'Light Theme',
+  'default-light': {
+    name: 'Light',
     colors: {
-      background: '#f5f5f5',
-      dialogBackground: '#ffffff',
-      containerBackground: '#f0f0f0',
-      buttonPositive: '#1a73e8',
-      buttonNegative: '#dc3545',
-      buttonNeutral: '#6c757d',
-      listBackground: '#ffffff',
-      popupBackground: '#ffffff',
-      textPrimary: '#333333',
-      textSecondary: '#666666',
-      textPositive: '#ffffff',
-      textNegative: '#ffffff',
-      textNeutral: '#ffffff',
-      popupText: '#333333'
+      'background': '#f5f5f5',
+      'dialog-background': '#ffffff',
+      'container-background': '#f0f0f0',
+      'button-positive': '#1a73e8',
+      'button-negative': '#dc3545',
+      'button-neutral': '#6c757d',
+      'list-background': '#ffffff',
+      'popup-background': '#ffffff',
+      'text-primary': '#000000',
+      'text-secondary': '#666666',
+      'text-positive': '#ffffff',
+      'text-negative': '#ffffff',
+      'text-neutral': '#ffffff',
+      'popup-text': '#333333',
+      'side-title-background': '#e0e0e0',
+      'side-title-text': '#000000',
+      'side-border': '#cccccc',
+      'side-resize': '#999999',
+      'side-title-background-hover': '#d0d0d0',
+      'border-color': '#ddd'
     },
     fonts: {
-      menu: 'Inter, system-ui, sans-serif',
-      sideWindow: 'Inter, system-ui, sans-serif',
-      statusBar: 'Consolas, monospace'
+      'menu': 'Inter, system-ui, sans-serif',
+      'side-window': 'Inter, system-ui, sans-serif',
+      'status-bar': 'Consolas, monospace'
     }
   }
 };
@@ -96,6 +108,46 @@ class PreferenceManager extends BaseComponent {
    */
   getCurrentTheme() {
     return this.themes[this.currentThemeId] || { ...DEFAULT_THEME };
+  }
+
+  /**
+   * Apply the current theme to the document
+   */
+  applyTheme() {
+    const theme = this.getCurrentTheme();
+    
+    // Remove any existing theme styles
+    const existingStyles = document.querySelectorAll('style[id^="theme-styles"]');
+    existingStyles.forEach(style => style.remove());
+    
+    // Create new style element
+    const style = document.createElement('style');
+    style.id = 'theme-styles';
+    
+    // Build CSS with kebab-case variable names
+    let css = ':root {\n';
+    
+    // Add color variables
+    Object.entries(theme.colors).forEach(([key, value]) => {
+      css += `  --${key}: ${value};\n`;
+    });
+    
+    // Add font variables
+    Object.entries(theme.fonts).forEach(([key, value]) => {
+      css += `  --font-${key}: ${value};\n`;
+    });
+    
+    css += '}';
+    
+    // Apply the styles
+    style.textContent = css;
+    document.head.appendChild(style);
+    
+    // Force a reflow to ensure styles are applied
+    document.documentElement.getBoundingClientRect();
+    
+    // Save theme preference
+    localStorage.setItem('stam-theme', this.currentThemeId);
   }
 
   /**
@@ -281,7 +333,12 @@ class PreferenceManager extends BaseComponent {
               textNegative: this.root.messages.getMessage('stam:theme-text-negative'),
               textNeutral: this.root.messages.getMessage('stam:theme-text-neutral'),
               popupText: this.root.messages.getMessage('stam:theme-popup-text')
-            }).map(([key, label]) => `
+            }).concat([
+              ['sidetitleBackground', 'Side Window Title Background'],
+              ['sidetitleText', 'Side Window Title Text'],
+              ['sideBorder', 'Side Window Border'],
+              ['sideResize', 'Side Window Resize Handle']
+            ]).map(([key, label]) => `
               <div class="form-group" style="display: flex; align-items: center; margin-bottom: 10px;">
                 <label style="flex: 1; margin-right: 10px; color: var(--text-primary, #e0e0e0);" for="color-${key}">${label}</label>
                 <input type="color" id="color-${key}" value="${theme.colors[key] || '#000000'}" 
@@ -408,6 +465,10 @@ class PreferenceManager extends BaseComponent {
         '--text-negative': theme.colors.textNegative || '#ffffff',
         '--text-neutral': theme.colors.textNeutral || '#ffffff',
         '--popup-text': theme.colors.popupText || '#ffffff',
+        '--sidetitle-background': theme.colors.sidetitleBackground || '#333333',
+        '--sidetitle-text': theme.colors.sidetitleText || '#ffffff',
+        '--side-border': theme.colors.sideBorder || '#444444',
+        '--side-resize': theme.colors.sideResize || '#555555',
         '--border-color': '#444',
         'font-family': theme.fonts.menu || 'Inter, system-ui, sans-serif'
       };
@@ -565,6 +626,15 @@ class PreferenceManager extends BaseComponent {
   async init(options = {}) {
     if (await super.init(options))
       return;
+    
+    // Load saved theme if exists
+    const savedThemeId = localStorage.getItem('stam-theme');
+    if (savedThemeId && this.themes[savedThemeId]) {
+      this.currentThemeId = savedThemeId;
+    }
+    
+    // Apply the theme
+    this.applyTheme();
     return true;
   }
   
@@ -573,6 +643,10 @@ class PreferenceManager extends BaseComponent {
     return true;
   }
   
+  async handleShowPreferences(currentPrefs = {}) {
+    await this.showPreferencesDialog(currentPrefs);    
+  }
+
   /**
    * Get all available themes
    * @returns {Array} Array of theme objects
@@ -991,7 +1065,7 @@ class PreferenceManager extends BaseComponent {
     });
   }
   
-  async handleShowPreferences(currentPrefs = {}) {
+  async showPreferencesDialog(currentPrefs = {}) {
     // Request available languages from the root component
     const availableLangs = await this.sendRequestTo(this.root.messages.componentId, 'GET_AVAILABLE_LANGUAGES');
     
@@ -1095,6 +1169,10 @@ class PreferenceManager extends BaseComponent {
     // Handle save
     dialog.querySelector('#pref-save').addEventListener('click', () => {
       const language = dialog.querySelector('#language-select').value;
+      
+      // Apply the selected theme
+      this.applyTheme();
+      
       closeDialog({
         language,
         theme: this.currentThemeId

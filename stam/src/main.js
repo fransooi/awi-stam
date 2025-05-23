@@ -99,11 +99,11 @@ class StamApp extends BaseComponent {
       return;
 
     // Initialize managers first
+    await this.preferences.init({});
     await this.messages.init({});
     await this.server.init({});
     await this.project.init({});
     await this.classroom.init({});
-    await this.preferences.init({});
 
     const layoutData=this.utilities.loadStorage('stam-layout');  
     let layout;    

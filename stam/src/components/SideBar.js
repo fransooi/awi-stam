@@ -78,7 +78,7 @@ class SideBar extends BaseComponent {
     this.parentContainer.innerHTML = ''; 
     this.separators = [];
     this.windowRegistry.clear();
-    
+
     // Insert sidebar CSS
     if (!document.getElementById('sidebar-css')) {
       const link = document.createElement('link');
@@ -87,7 +87,7 @@ class SideBar extends BaseComponent {
       link.type = 'text/css';
       link.href = '/css/sidebar.css';
       document.head.appendChild(link);
-    }
+      }
     
     // Create a wrapper for all windows
     this.windowsContainer = document.createElement('div');
@@ -98,147 +98,37 @@ class SideBar extends BaseComponent {
     this.windowsContainer.style.overflow = 'hidden';
     this.parentContainer.appendChild(this.windowsContainer);
     this.layoutContainer = this.windowsContainer;
-
+    
     // Render each window
     this.windows.forEach((window, index) => {
       // Create a window wrapper
-      const windowWrapper = document.createElement('div');
-      windowWrapper.className = 'side-window-wrapper';
-      windowWrapper.style.position = 'relative';
-      windowWrapper.style.width = '100%';
-      
+        const windowWrapper = document.createElement('div');
+        windowWrapper.className = 'side-window-wrapper';
+        windowWrapper.style.position = 'relative';
+        windowWrapper.style.width = '100%';
+        
       // Set flex properties based on minimized state
-      if (window.isMinimized && window.isMinimized()) {
-        windowWrapper.style.height = `${window.headerHeight}px`;
-        windowWrapper.style.minHeight = `${window.headerHeight}px`;
-        windowWrapper.style.flex = '0 0 auto';
-      } else {
-        windowWrapper.style.height = `${window.height}px`;
-        windowWrapper.style.minHeight = `${window.headerHeight}px`;
+        if (window.isMinimized && window.isMinimized()) {
+          windowWrapper.style.height = `${window.headerHeight}px`;
+          windowWrapper.style.minHeight = `${window.headerHeight}px`;
+          windowWrapper.style.flex = '0 0 auto';
+        } else {
+            windowWrapper.style.height = `${window.height}px`;
+            windowWrapper.style.minHeight = `${window.headerHeight}px`;
         windowWrapper.style.flex = '1 1 auto';
-      }
-      
+        }
+        
       // Register the window element for lookup
       this.windowRegistry.set(windowWrapper.querySelector('.side-window'), window);
-      
-      // Add a resize separator after each window except the last one
-      if (index < this.windows.length - 1) {
-        const separator = this.createSeparator(index);
-        windowWrapper.appendChild(separator);
-        this.separators.push(separator);
-      }
-      
+        
+      // No resize separators needed - using window controls for resizing
+          
       // Add the window wrapper to the container
-      this.windowsContainer.appendChild(windowWrapper);
+            this.windowsContainer.appendChild(windowWrapper);
       window.parentContainer=windowWrapper;
     });
-
-    // Add a persistent resize handle at the bottom of the sidebar (after the last window)
-    if (this.windows.length > 0) {
-      const bottomSeparator = document.createElement('div');
-      bottomSeparator.className = 'resize-separator resize-separator-bottom';
-      bottomSeparator.style.height = '8px';
-      bottomSeparator.style.cursor = 'ns-resize';
-      bottomSeparator.style.position = 'relative';
-      bottomSeparator.style.width = '100%';
-
-      let startY = 0;
-      let startHeight = 0;
-      const sidebar = this.parentContainer;
-      bottomSeparator.addEventListener('mousedown', (e) => {
-        startY = e.clientY;
-        startHeight = sidebar.offsetHeight;
-        document.body.style.userSelect = 'none';
-
-        const onMouseMove = (event) => {
-          const deltaY = event.clientY - startY;
-          const newHeight = Math.max(100, startHeight + deltaY);
-          sidebar.style.height = `${newHeight}px`;
-        };
-        const onMouseUp = () => {
-          document.removeEventListener('mousemove', onMouseMove);
-          document.removeEventListener('mouseup', onMouseUp);
-          document.body.style.userSelect = '';
-        };
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
-        e.preventDefault();
-      });
-      this.windowsContainer.appendChild(bottomSeparator);
-
-      // Add a bottom right corner resize handle for the left bar
-      if (this.resizeEdge === 'right') {
-        const bottomRightHandle = document.createElement('div');
-        bottomRightHandle.className = 'resize-separator resize-separator-bottomright';
-        bottomRightHandle.title = 'Resize width';
-        let startX = 0;
-        let startWidth = 0;
-        const sidebar = this.parentContainer;
-        bottomRightHandle.addEventListener('mousedown', (e) => {
-          startX = e.clientX;
-          startWidth = sidebar.offsetWidth;
-          document.body.style.userSelect = 'none';
-
-          const onMouseMove = (event) => {
-            const deltaX = event.clientX - startX;
-            const newWidth = Math.max(120, startWidth + deltaX);
-            sidebar.style.width = `${newWidth}px`;
-          };
-          const onMouseUp = () => {
-            document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', onMouseUp);
-            document.body.style.userSelect = '';
-          };
-          document.addEventListener('mousemove', onMouseMove);
-          document.addEventListener('mouseup', onMouseUp);
-          e.preventDefault();
-        });
-        sidebar.style.position = 'relative';
-        sidebar.appendChild(bottomRightHandle);
-      }
-    }
-
-    // Add a horizontal (width) resize handle at the bottom left if this is a RightBar
-    if (this.resizeEdge === 'left' && this.windows.length > 0) {
-      const cornerSeparator = document.createElement('div');
-      cornerSeparator.className = 'resize-separator resize-separator-corner';
-      cornerSeparator.style.width = '14px';
-      cornerSeparator.style.height = '14px';
-      cornerSeparator.style.position = 'absolute';
-      cornerSeparator.style.left = '0';
-      cornerSeparator.style.bottom = '0';
-
-      cornerSeparator.style.cursor = 'col-resize';
-      cornerSeparator.style.zIndex = '1001';
-      cornerSeparator.style.borderBottomLeftRadius = '5px';
-      cornerSeparator.style.opacity = '0.8';
-      cornerSeparator.title = this.root.messages.getMessage('stam:resize-width');
-
-      let startX = 0;
-      let startWidth = 0;
-      const sidebar = this.parentContainer;
-      cornerSeparator.addEventListener('mousedown', (e) => {
-        startX = e.clientX;
-        startWidth = sidebar.offsetWidth;
-        document.body.style.userSelect = 'none';
-
-        const onMouseMove = (event) => {
-          const deltaX = startX - event.clientX;
-          const newWidth = Math.max(120, startWidth + deltaX);
-          sidebar.style.width = `${newWidth}px`;
-        };
-        const onMouseUp = () => {
-          document.removeEventListener('mousemove', onMouseMove);
-          document.removeEventListener('mouseup', onMouseUp);
-          document.body.style.userSelect = '';
-        };
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
-        e.preventDefault();
-      });
-      sidebar.style.position = 'relative';
-      sidebar.appendChild(cornerSeparator);
-    }
+          
+    // No resize handles needed - using window controls for resizing
     
     // Patch the SideWindow.getWindowObjectFromElement method to use our registry
     this.patchSideWindowGetWindowObjectMethod();

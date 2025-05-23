@@ -226,16 +226,20 @@ class MenuBar extends BaseComponent {
     loginButton.className = 'login-button';
     loginButton.title = this.root.messages.getMessage('stam:menu-log-in');
     
-    // Apply styles to match the menu bar height and appearance
-    loginButton.style.backgroundColor = 'transparent';
-    loginButton.style.color = '#e0e0e0';
-    loginButton.style.border = '1px solid #555';
+    // Apply styles to match the menu bar height and appearance using theme variables
+    loginButton.style.backgroundColor = 'var(--button-positive, #1a73e8)';
+    loginButton.style.color = 'var(--text-positive, #ffffff)';
+    loginButton.style.border = '1px solid var(--button-positive, #1a73e8)';
     loginButton.style.borderRadius = '4px';
-    loginButton.style.padding = '6px 12px';
-    loginButton.style.margin = '0 10px 0 0';
+    loginButton.style.padding = '4px 12px';
+    loginButton.style.margin = '0 4px';
+    loginButton.style.fontSize = '12px';
+    loginButton.style.fontWeight = '500';
     loginButton.style.cursor = 'pointer';
+    loginButton.style.transition = 'all 0.2s ease';
     loginButton.style.display = 'flex';
     loginButton.style.alignItems = 'center';
+    loginButton.style.height = '24px';
     loginButton.style.justifyContent = 'center';
     loginButton.style.transition = 'all 0.2s ease';
     loginButton.style.height = 'calc(100% - 10px)';
@@ -422,29 +426,31 @@ class MenuBar extends BaseComponent {
     // Update login button to show "Log Out" state
     const loginButton = document.getElementById('login-button');
     if (loginButton) {
-      // Update button title
-      loginButton.title = this.root.messages.getMessage('stam:menu-log-out');
+      // Clone the button to remove all event listeners
+      const newLoginButton = loginButton.cloneNode(true);
+      loginButton.parentNode.replaceChild(newLoginButton, loginButton);
+      
+      // Update button title and text
+      newLoginButton.title = this.root.messages.getMessage('stam:menu-log-out');
       
       // Update icon
-      const icon = loginButton.querySelector('i');  
+      const icon = newLoginButton.querySelector('i');  
       if (icon) {
         icon.className = 'fas fa-sign-out-alt';
       }
       
       // Update text
-      const text = loginButton.querySelector('span');
+      const text = newLoginButton.querySelector('span');
       if (text) {
         text.textContent = this.root.messages.getMessage('stam:menu-log-out');
       }
       
       // Update click handler
-      loginButton.replaceWith(loginButton.cloneNode(true));
-      const newLoginButton = document.getElementById('login-button');
       newLoginButton.addEventListener('click', () => {
         this.broadcast(MENUCOMMANDS.LOGOUT);
       });
       
-      // Add the same hover effects
+      // Update button colors for logout state
       this.addLoginButtonEffects(newLoginButton);
     }
     return true;
@@ -460,29 +466,31 @@ class MenuBar extends BaseComponent {
     // Update login button to show "Log In" state
     const loginButton = document.getElementById('login-button');
     if (loginButton) {
-      // Update button title
-      loginButton.title = this.root.messages.getMessage('stam:menu-log-in');
+      // Clone the button to remove all event listeners
+      const newLoginButton = loginButton.cloneNode(true);
+      loginButton.parentNode.replaceChild(newLoginButton, loginButton);
+      
+      // Update button title and text
+      newLoginButton.title = this.root.messages.getMessage('stam:menu-log-in');
       
       // Update icon
-      const icon = loginButton.querySelector('i');
+      const icon = newLoginButton.querySelector('i');
       if (icon) {
         icon.className = 'fas fa-sign-in-alt';
       }
       
       // Update text
-      const text = loginButton.querySelector('span');
+      const text = newLoginButton.querySelector('span');
       if (text) {
         text.textContent = this.root.messages.getMessage('stam:menu-log-in');
       }
       
       // Update click handler
-      loginButton.replaceWith(loginButton.cloneNode(true));
-      const newLoginButton = document.getElementById('login-button');
       newLoginButton.addEventListener('click', () => {
         this.broadcast(MENUCOMMANDS.LOGIN);
       });
       
-      // Add the same hover effects
+      // Update button colors for login state
       this.addLoginButtonEffects(newLoginButton);
     }
     return true;
@@ -493,23 +501,38 @@ class MenuBar extends BaseComponent {
    * @param {HTMLElement} button - The login button element
    */
   addLoginButtonEffects(button) {
+    const isLoginButton = button.textContent.includes(this.root.messages.getMessage('stam:menu-log-in'));
+  
+    // Set initial colors based on button state
+    if (isLoginButton) {
+      button.style.backgroundColor = 'var(--button-positive, #1a73e8)';
+      button.style.borderColor = 'var(--button-positive, #1a73e8)';
+      button.style.color = 'var(--text-positive, #ffffff)';
+    } else {
+      button.style.backgroundColor = 'var(--button-negative, #dc3545)';
+      button.style.borderColor = 'var(--button-negative, #dc3545)';
+      button.style.color = 'var(--text-negative, #ffffff)';
+    }
+  
     // Add hover and active effects
     button.addEventListener('mouseover', () => {
-      button.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-      button.style.borderColor = '#888';
+      button.style.opacity = '0.9';
+      button.style.transform = 'translateY(-1px)';
     });
-    
+  
     button.addEventListener('mouseout', () => {
-      button.style.backgroundColor = 'transparent';
-      button.style.borderColor = '#555';
+      button.style.opacity = '1';
+      button.style.transform = 'translateY(0)';
     });
-    
+  
     button.addEventListener('mousedown', () => {
-      button.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+      button.style.opacity = '0.8';
+      button.style.transform = 'translateY(1px)';
     });
-    
+  
     button.addEventListener('mouseup', () => {
-      button.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+      button.style.opacity = '0.9';
+      button.style.transform = 'translateY(-1px)';
     });
   }
   

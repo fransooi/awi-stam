@@ -2,8 +2,8 @@
 
 /* Volume Popup Styles */
 .side-window-volume-popup {
-  background: #232323;
-  border: 1px solid #333;
+  background: var(--popup-background, #232323);
+  border: 1px solid var(--border-color, #333);
   border-radius: 10px;
   box-shadow: 0 4px 24px rgba(0,0,0,0.45);
   padding: 24px 32px;
@@ -14,6 +14,7 @@
   justify-content: center;
   z-index: 2000;
   animation: fadeInVolumePopup 0.16s;
+  color: var(--text-primary, #ffffff);
 }
 @keyframes fadeInVolumePopup {
   from { opacity: 0; transform: translateY(-10px); }
@@ -92,8 +93,8 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  background-color: #1a1a1a;
-  border-right: 1px solid #333;
+  background-color: var(--background, #1a1a1a);
+  border-right: 1px solid var(--border-color, #333);
 }
 
 /* Windows Container */
@@ -118,11 +119,11 @@
 .side-window {
   display: flex;
   flex-direction: column;
-  background-color: #1a1a1a;
-  border: none;
+  background-color: var(--container-background, #252526);
   overflow: hidden;
-  margin: 0;
-  position: relative; /* Enable positioning context */
+  position: relative;
+  transition: height 0.1s ease-out;
+  box-sizing: border-box;
   height: 97%; /* Fill the wrapper */
   width: 100%;
 }
@@ -136,7 +137,7 @@
   margin-top: auto; /* Push to the bottom */
   min-height: 180px;
   max-height: 180px;
-  border-top: 1px solid #333;
+  border-top: 1px solid var(--border-color, #333);
 }
 
 .output-content {
@@ -145,22 +146,38 @@
 
 .side-window-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: space-between; /* Push title left and controls right */
   align-items: center;
-  padding: 4px 8px;
-  background-color: #2a2a2a;
-  border-bottom: 1px solid #333;
-  cursor: move;
+  padding: 6px 10px;
+  background-color: var(--side-title-background, #333333);
+  color: var(--side-title-text, #ffffff);
+  font-weight: 500;
   user-select: none;
-  font-weight: bold;
-  font-size: 14px;
-  color: #FFFFFF;
+  cursor: ns-resize;
+  position: relative;
+  z-index: 5;
+  transition: background-color 0.2s ease;
+  font-family: var(--font-side-window, 'Inter', system-ui, sans-serif);
+}
+
+.side-window-header:hover {
+  background-color: var(--side-title-background-hover, #3d3d3d);
+}
+
+/* Disable text selection during drag */
+.side-window.resizing * {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.side-window:first-child .side-window-header {
+  cursor: default;
 }
 
 .side-window-title {
   font-weight: bold;
   font-size: 14px;
-  color: #FFFFFF;
+  color: var(--side-title-text, #ffffff);
 }
 
 .side-window-controls {
@@ -170,44 +187,8 @@
 }
 
 .side-window-toggle,
-.side-window-close {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 12px;
-  width: 18px;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 3px;
-  color: #FFFFFF;
-}
-
-.side-window-toggle:hover,
-.side-window-close:hover {
-  background-color: #3b82f6;
-}
-
-.side-window-edit {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 12px;
-  width: 18px;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 3px;
-  color: #FFFFFF;
-  margin-right: 4px;
-}
-
-.side-window-edit:hover {
-  background-color: #3b82f6;
-}
-
+.side-window-close,
+.side-window-edit,
 .side-window-enlarge {
   background: none;
   border: none;
@@ -219,11 +200,20 @@
   align-items: center;
   justify-content: center;
   border-radius: 3px;
-  color: #FFFFFF;
+  color: var(--side-title-text, #ffffff);
+  transition: background-color 0.2s ease;
 }
 
+.side-window-edit {
+  margin-right: 4px;
+}
+
+.side-window-toggle:hover,
+.side-window-close:hover,
+.side-window-edit:hover,
 .side-window-enlarge:hover {
-  background-color: #3b82f6;
+  background-color: var(--button-hover-background, #3b82f6);
+  color: var(--button-hover-text, #ffffff);
 }
 
 /* Generic SideWindow Button Styles */

@@ -96,8 +96,8 @@ export default class PopupMenu extends BaseComponent {
     style.id = 'popup-menu-styles';
     style.textContent = `
       .popup-menu {
-        background-color: #2a2a2a;
-        border: 1px solid #444;
+        background-color: var(--dialog-background, #2a2a2a);
+        border: 1px solid var(--text-secondary, #444);
         border-radius: 4px;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         min-width: 150px;
@@ -106,27 +106,28 @@ export default class PopupMenu extends BaseComponent {
       }
       
       .popup-menu-item {
-        color: #e0e0e0;
+        color: var(--text-primary, #e0e0e0);
         cursor: pointer;
         display: flex;
         justify-content: space-between;
         padding: 8px 12px;
         transition: background-color 0.2s;
         user-select: none;
+        font-family: var(--font-menu, Arial, sans-serif);
       }
       
       .popup-menu-item:hover {
-        background-color: #3a3a3a;
+        background-color: var(--list-background, #3a3a3a);
       }
       
       .popup-menu-separator {
-        background-color: #444;
+        background-color: var(--text-secondary, #444);
         height: 1px;
         margin: 4px 0;
       }
       
       .popup-menu-submenu-indicator {
-        color: #888;
+        color: var(--text-secondary, #888);
         margin-left: 8px;
       }
     `;
