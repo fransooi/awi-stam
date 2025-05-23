@@ -102,59 +102,93 @@ class SideWindow extends BaseComponent {
       return;
     }
     
-    // Store references
-    const container = this.container;
-    let startY, startHeight, prevWindow, startPrevHeight;
+    // Get wrapper element once
+    const wrapper = this.container.closest('.side-window-wrapper');
+    if (!wrapper) {
+      console.error('Wrapper element not found for window:', this.id);
+      return;
+    }
     
-    // Get the previous visible window if it exists
-    const getPrevWindow = () => {
-      if (!container) return null;
+    // State for drag operation
+    let startY, startHeight, prevWrapper, startPrevHeight;
+    
+    // Get the previous visible window wrapper if it exists
+    const getPrevWrapper = () => {
+      const sidebar = wrapper.parentElement;
+      if (!sidebar || !sidebar.classList.contains('side-windows-container')) return null;
       
-      // Find the sidebar container that holds all windows
-      const sidebar = container.closest('.side-windows-container');
-      if (!sidebar) return null;
+      const wrappers = Array.from(sidebar.querySelectorAll('.side-window-wrapper'));
+      const currentIndex = wrappers.indexOf(wrapper);
       
-      // Get all visible side windows in the sidebar
-      const sideWindows = Array.from(sidebar.querySelectorAll('.side-window'));
-      const currentIndex = sideWindows.indexOf(container);
+      if (currentIndex <= 0) return null;
       
-      if (currentIndex <= 0) return null; // No previous window if this is the first one
-      
-      // Find the previous visible window
+      // Find the previous visible wrapper
       for (let i = currentIndex - 1; i >= 0; i--) {
-        const win = sideWindows[i];
-        const style = window.getComputedStyle(win);
+        const w = wrappers[i];
+        const style = window.getComputedStyle(w);
         if (style.display !== 'none' && style.visibility !== 'hidden') {
-          return win;
+          return w;
         }
       }
-      
-      return null; // No visible previous window found
+      return null;
     };
     
     // Handle mousedown on header
     const handleMouseDown = (e) => {
-      if (this.isTopWindow()||e.target.closest('button') )
-        return;
+      if (this.isTopWindow() || e.target.closest('button')) return;
       
       e.preventDefault();
       e.stopPropagation();
       
       // Store initial positions
       startY = e.clientY;
-      startHeight = container.offsetHeight;
-      prevWindow = getPrevWindow();
-      startPrevHeight = prevWindow ? prevWindow.offsetHeight : 0;
+      startHeight = wrapper.offsetHeight;
+      prevWrapper = getPrevWrapper();
+      startPrevHeight = prevWrapper ? prevWrapper.offsetHeight : 0;
       
       // Add global event listeners
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp, { once: true });
+      const moveHandler = handleMouseMove;
+      const upHandler = () => {
+        document.removeEventListener('mousemove', moveHandler);
+        document.removeEventListener('mouseup', upHandler);
+        handleMouseUp();
+      };
+      
+      document.addEventListener('mousemove', moveHandler);
+      document.addEventListener('mouseup', upHandler, { once: true });
       
       // Update styles
       document.body.style.cursor = 'row-resize';
       document.body.style.userSelect = 'none';
       document.body.style.webkitUserSelect = 'none';
-      container.classList.add('resizing');
+      this.container.classList.add('resizing');
+      
+      // Store cleanup function
+      this._cleanupDrag = () => {
+        document.removeEventListener('mousemove', moveHandler);
+        document.removeEventListener('mouseup', upHandler);
+      };
+    };
+    
+    // Function to update the content area size
+    const updateContentSize = (wrapper, newHeight) => {
+      if (!wrapper) return;
+      
+      // Update the wrapper height
+      wrapper.style.height = `${newHeight}px`;
+      
+      // The window inside will take full height of its wrapper
+      const winElement = wrapper.querySelector('.side-window');
+      if (!winElement) return;
+      
+      // Update content height if needed
+      const header = winElement.querySelector('.side-window-header');
+      const content = winElement.querySelector('.side-window-content');
+      
+      if (header && content) {
+        const headerHeight = header.offsetHeight;
+        content.style.height = `${newHeight - headerHeight}px`;
+      }
     };
     
     // Handle mousemove for dragging
@@ -162,35 +196,54 @@ class SideWindow extends BaseComponent {
       e.preventDefault();
       e.stopPropagation();
       
+      // Calculate the distance moved from the start
       const dy = e.clientY - startY;
-      const newHeight = startHeight + dy;
-      const newPrevHeight = startPrevHeight - dy;
+      const newHeight = startHeight - dy;  // Inverted the sign to match mouse movement
       
-      // Apply constraints
+      // Apply minimum height constraint
       const minHeight = 100;
-      const maxPrevHeight = prevWindow ? prevWindow.scrollHeight - 20 : 0;
       
-      if (newHeight >= minHeight && (!prevWindow || (newPrevHeight >= minHeight && newPrevHeight <= maxPrevHeight))) {
-        container.style.height = `${newHeight}px`;
-        if (prevWindow) {
-          prevWindow.style.height = `${newPrevHeight}px`;
+      if (newHeight >= minHeight) {
+        // If there's a window above, adjust its height to maintain the total height
+        if (prevWrapper) {
+          const newPrevHeight = startPrevHeight + dy;
+          
+          if (newPrevHeight >= minHeight) {
+            // Update the previous window's height
+            updateContentSize(prevWrapper, newPrevHeight);
+            // Update the current window's height
+            updateContentSize(wrapper, newHeight);
+          } else {
+            // If the previous window would be too small, cap the current window's height
+            const maxNewHeight = startHeight + startPrevHeight - minHeight;
+            // Set the previous window to minimum height first
+            updateContentSize(prevWrapper, minHeight);
+            // Then update the current window's height
+            updateContentSize(wrapper, maxNewHeight);
+          }
+        } else {
+          // If there's no previous window, just update the current window's height
+          updateContentSize(wrapper, newHeight);
         }
+        
+        // Force a reflow to ensure the layout is updated
+        void wrapper.offsetHeight;
       }
     };
     
     // Handle mouseup to end dragging
     const handleMouseUp = () => {
-      // Remove event listeners
-      document.removeEventListener('mousemove', handleMouseMove);
-      
       // Reset styles
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
       document.body.style.webkitUserSelect = '';
-      container.classList.remove('resizing');
+      this.container.classList.remove('resizing');
       
-      // Save the new height
-      this.height = container.offsetHeight;
+      // Clean up event listeners
+      if (this._cleanupDrag) {
+        this._cleanupDrag();
+        this._cleanupDrag = null;
+      }
       
       // Dispatch resize event
       window.dispatchEvent(new Event('resize'));
@@ -277,10 +330,7 @@ class SideWindow extends BaseComponent {
     // Add header and content to the container
     this.container.appendChild(this.header);
     this.container.appendChild(this.content);
-    
-    // Setup drag handling after all elements are created
-    this.setupDragHandling();
-    
+        
     // Set initial height
     if (this.minimized) {
       this.container.classList.add('minimized');
@@ -298,6 +348,10 @@ class SideWindow extends BaseComponent {
         e.preventDefault();
       }
     });
+    
+    // Setup drag handling after all elements are created
+    this.setupDragHandling();
+    
     return this.container;
   }
 

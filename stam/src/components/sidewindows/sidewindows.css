@@ -197,8 +197,11 @@
   transition: background-color 0.2s ease;
   font-family: var(--font-side-window, 'Inter', system-ui, sans-serif);
   height: 24px; /* Set a fixed height for consistency */
+  min-height: 24px; /* Ensure minimum height */
   box-sizing: border-box; /* Ensure padding is included in height */
   touch-action: none; /* Prevent touch events from interfering with dragging */
+  flex-shrink: 0; /* Prevent the header from shrinking */
+  width: 100%; /* Ensure full width */
 }
 
 /* Prevent text selection during drag */
