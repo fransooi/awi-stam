@@ -40,6 +40,7 @@ stam:select-project-to-open               Select a project to open
 stam:no-projects-available                No projects available
 stam:open                                 Open
 stam:please-select-a-project              Please select a project
+stam:select-file-to-open                  Select a file to open
 stam:open-file                            Open File
 stam:filter                               Filter
 stam:no-files-available                   No files available

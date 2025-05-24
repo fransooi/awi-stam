@@ -48,6 +48,7 @@ class ProjectManager extends BaseComponent {
     super('Project', parentId,containerId);      
     this.projectName = null;
     this.project = null;
+    this.expandedFolders = new Set(); // Track expanded folders by their path
 
     this.messageMap[SOCKETMESSAGES.CONNECTED] = this.handleConnected;
     this.messageMap[SOCKETMESSAGES.DISCONNECTED] = this.handleDisconnected;
@@ -614,6 +615,19 @@ class ProjectManager extends BaseComponent {
         title: this.root.messages.getMessage('stam:open-project'),
         content: content,
         theme: this.root.themeManager?.getCurrentTheme() || {},
+        className: 'project-dialog',
+        style: {
+          width: '600px',
+          maxWidth: '90vw',
+          maxHeight: '80vh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          position: 'relative',
+          margin: '0',
+          padding: '0',
+          boxSizing: 'border-box'
+        },
         buttons: [
           {
             label: this.root.messages.getMessage('stam:cancel'),
@@ -671,286 +685,227 @@ class ProjectManager extends BaseComponent {
     `).join('');
   }
   
-  /**
-   * Show a file open dialog with the project file structure
-   * @param {Array|string} fileExtensions - File extensions to filter (e.g., "*.js" or ["*.js", "*.mjs"])
-   * @returns {Promise} - Resolves with the selected file or null if cancelled
-   */
+  // Show a file open dialog with the project file structure
+  // @param {Array|string} fileExtensions - File extensions to filter (e.g., "*.js" or ["*.js", "*.mjs"])
+  // @returns {Promise} - Resolves with the selected file or null if cancelled
   async showOpenFileDialog(fileExtensions = null) {
     return new Promise((resolve) => {
-      // Convert single extension to array for consistent handling
-      const extensions = Array.isArray(fileExtensions) ? fileExtensions : (fileExtensions ? [fileExtensions] : null);
-      
-      // Create the dialog element
-      const dialog = document.createElement('div');
-      dialog.className = 'file-dialog';
-      dialog.style.display = 'block';
-      dialog.style.position = 'fixed';
-      dialog.style.top = '50%';
-      dialog.style.left = '50%';
-      dialog.style.transform = 'translate(-50%, -50%)';
-      dialog.style.backgroundColor = '#2a2a2a';
-      dialog.style.border = '1px solid #444';
-      dialog.style.borderRadius = '4px';
-      dialog.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
-      dialog.style.padding = '20px';
-      dialog.style.width = '500px';
-      dialog.style.maxHeight = '80vh';
-      dialog.style.zIndex = '1000';
-      dialog.style.display = 'flex';
-      dialog.style.flexDirection = 'column';
-      
-      // Create dialog header
-      const header = document.createElement('div');
-      header.className = 'file-dialog-header';
-      header.style.marginBottom = '20px';
-      header.style.borderBottom = '1px solid #444';
-      header.style.paddingBottom = '10px';
-      
-      const title = document.createElement('h2');
-      title.textContent = this.root.messages.getMessage('stam:open-file');
-      title.style.margin = '0';
-      title.style.color = '#eee';
-      title.style.fontSize = '18px';
-      
-      header.appendChild(title);
-      dialog.appendChild(header);
-      
-      // Create filter display if extensions are provided
-      if (extensions && extensions.length > 0) {
-        const filterInfo = document.createElement('div');
-        filterInfo.style.fontSize = '14px';
-        filterInfo.style.color = '#aaa';
-        filterInfo.style.marginBottom = '10px';
-        filterInfo.textContent = this.root.messages.getMessage('stam:filter') + `: ${extensions.join(', ')}`;
-        dialog.appendChild(filterInfo);
-      }
-      
-      // Create file tree container
-      const treeContainer = document.createElement('div');
-      treeContainer.className = 'file-tree-container';
-      treeContainer.style.overflowY = 'auto';
-      treeContainer.style.maxHeight = 'calc(80vh - 150px)';
-      treeContainer.style.marginBottom = '20px';
-      treeContainer.style.border = '1px solid #444';
-      treeContainer.style.borderRadius = '4px';
-      treeContainer.style.padding = '10px';
-      
-      // Function to check if a file matches the extensions filter
-      const fileMatchesFilter = (filename) => {
-        if (!extensions || extensions.length === 0) return true;
-        
-        return extensions.some(ext => {
-          const pattern = ext.replace('*.', '.').toLowerCase();
-          return filename.toLowerCase().endsWith(pattern);
-        });
-      };
-      
-      // Function to recursively build the file tree
-      const buildFileTree = (files, parentElement, level = 0) => {
-        if (!Array.isArray(files)) return;
-        
-        // Sort files: directories first, then files alphabetically
-        const sortedFiles = [...files].sort((a, b) => {
-          if (a.isDirectory && !b.isDirectory) return -1;
-          if (!a.isDirectory && b.isDirectory) return 1;
-          return a.name.localeCompare(b.name);
-        });
-        
-        sortedFiles.forEach(file => {
-          const isDirectory = file.isDirectory;
-          
-          // Skip files that don't match the filter
-          if (!isDirectory && !fileMatchesFilter(file.name)) return;
-          
-          // Create item container
-          const itemContainer = document.createElement('div');
-          itemContainer.className = 'file-tree-item';
-          itemContainer.style.paddingLeft = `${level * 20}px`;
-          itemContainer.style.padding = '5px';
-          itemContainer.style.paddingLeft = `${level * 20 + 5}px`;
-          itemContainer.style.cursor = 'pointer';
-          itemContainer.style.display = 'flex';
-          itemContainer.style.alignItems = 'center';
-          itemContainer.style.borderRadius = '3px';
-          
-          // Hover effect
-          itemContainer.addEventListener('mouseover', () => {
-            itemContainer.style.backgroundColor = '#3a3a3a';
-          });
-          
-          itemContainer.addEventListener('mouseout', () => {
-            itemContainer.style.backgroundColor = 'transparent';
-          });
-          
-          // Create icon
-          const icon = document.createElement('span');
-          icon.className = 'file-icon';
-          icon.style.marginRight = '5px';
-          icon.style.fontSize = '14px';
-          icon.textContent = isDirectory ? '📁' : '📄';
-          
-          // Create label
-          const label = document.createElement('span');
-          label.className = 'file-label';
-          label.textContent = file.name;
-          label.style.color = '#ddd';
-          
-          // Add elements to container
-          itemContainer.appendChild(icon);
-          itemContainer.appendChild(label);
-          parentElement.appendChild(itemContainer);
-          
-          // Handle directory expansion
-          if (isDirectory) {
-            // Add expand/collapse indicator
-            const expandIcon = document.createElement('span');
-            expandIcon.className = 'expand-icon';
-            expandIcon.style.marginRight = '5px';
-            expandIcon.textContent = '▶';
-            expandIcon.style.fontSize = '10px';
-            expandIcon.style.color = '#aaa';
-            
-            // Insert expand icon before the folder icon
-            itemContainer.insertBefore(expandIcon, icon);
-            
-            // Create container for children (initially hidden)
-            const childrenContainer = document.createElement('div');
-            childrenContainer.className = 'file-children';
-            childrenContainer.style.display = 'none';
-            parentElement.appendChild(childrenContainer);
-            
-            // Toggle expansion on click
-            let expanded = false;
-            itemContainer.addEventListener('click', (e) => {
-              e.stopPropagation();
-              expanded = !expanded;
-              expandIcon.textContent = expanded ? '▼' : '▶';
-              childrenContainer.style.display = expanded ? 'block' : 'none';
-              
-              // Only build children the first time we expand
-              if (expanded && childrenContainer.children.length === 0) {
-                buildFileTree(file.files, childrenContainer, level + 1);
-              }
-            });
-          } else {
-            // File selection
-            itemContainer.addEventListener('click', () => {
-              // Remove selection from any previously selected item
-              const selectedItems = treeContainer.querySelectorAll('.file-selected');
-              selectedItems.forEach(item => {
-                item.classList.remove('file-selected');
-                item.style.backgroundColor = 'transparent';
-              });
-              
-              // Mark this item as selected
-              itemContainer.classList.add('file-selected');
-              itemContainer.style.backgroundColor = '#4a6da7';
-              
-              // Store the selected file
-              selectedFile = file;
-              updateOpenButtonState();
-            });
-            
-            // Double-click to select and confirm
-            itemContainer.addEventListener('dblclick', () => {
-              selectedFile = file;
-              closeDialogWithResult(true);
-            });
-          }
-        });
-      };
-      
-      // Variable to store the selected file
+      const theme = this.root.preferences.getCurrentTheme();
       let selectedFile = null;
-      
-      // Build the initial file tree
-      if (this.project && this.project.files) {
-        buildFileTree(this.project.files, treeContainer);
-      } else {
-        const noFiles = document.createElement('div');
-        noFiles.textContent = this.root.messages.getMessage('stam:no-files-available');
-        noFiles.style.padding = '10px';
-        noFiles.style.color = '#aaa';
-        treeContainer.appendChild(noFiles);
+      let extensions = [];
+
+      // Convert single extension string to array if needed
+      if (typeof fileExtensions === 'string') {
+        extensions = [fileExtensions];
+      } else if (Array.isArray(fileExtensions)) {
+        extensions = [...fileExtensions];
       }
+
+      // Create dialog content container
+      const content = document.createElement('div');
+      content.className = 'file-selector';
       
-      dialog.appendChild(treeContainer);
-      
-      // Create dialog footer with buttons
-      const footer = document.createElement('div');
-      footer.className = 'file-dialog-footer';
-      footer.style.display = 'flex';
-      footer.style.justifyContent = 'flex-end';
-      footer.style.gap = '10px';
-      footer.style.marginTop = 'auto';
-      
-      const cancelButton = document.createElement('button');
-      cancelButton.textContent = this.root.messages.getMessage('stam:cancel');
-      cancelButton.style.padding = '8px 16px';
-      cancelButton.style.backgroundColor = '#3a3a3a';
-      cancelButton.style.color = '#ddd';
-      cancelButton.style.border = 'none';
-      cancelButton.style.borderRadius = '4px';
-      cancelButton.style.cursor = 'pointer';
-      
-      const openButton = document.createElement('button');
-      openButton.textContent = this.root.messages.getMessage('stam:open');
-      openButton.style.padding = '8px 16px';
-      openButton.style.backgroundColor = '#4a6da7';
-      openButton.style.color = '#fff';
-      openButton.style.border = 'none';
-      openButton.style.borderRadius = '4px';
-      openButton.style.cursor = 'pointer';
-      openButton.disabled = true;
-      openButton.style.opacity = '0.6';
-      
-      // Function to close the dialog and return result
-      const closeDialogWithResult = (confirmed) => {
-        document.body.removeChild(dialog);
-        if (confirmed && selectedFile) {
-          resolve(selectedFile);
+      // Create content HTML
+      content.innerHTML = `
+        ${extensions.length > 0 ? `
+          <div class="file-selector-header">
+            <div class="file-selector-filter">
+              ${this.root.messages.getMessage('stam:filter')}: ${extensions.join(', ')}
+            </div>
+          </div>` : ''}
+        
+        <div class="file-list-container">
+          <div class="file-list">
+            ${this._renderFileList(this.project?.files || [], extensions)}
+          </div>
+        </div>
+      `;
+
+      // Set up event listeners for file and folder selection
+      content.addEventListener('click', (e) => {
+        const fileItem = e.target.closest('.file-item');
+        if (!fileItem) return;
+        
+        const isDirectory = fileItem.dataset.isDirectory === 'true';
+        const filePath = fileItem.dataset.path;
+        
+        if (isDirectory) {
+          // Toggle folder expansion
+          if (this.expandedFolders.has(filePath)) {
+            this.expandedFolders.delete(filePath);
+          } else {
+            this.expandedFolders.add(filePath);
+          }
+          
+          // Re-render the file list
+          const fileList = content.querySelector('.file-list');
+          if (fileList) {
+            fileList.innerHTML = this._renderFileList(this.project?.files || [], extensions);
+            // Re-attach event listeners after re-rendering
+            this._attachFileListEventListeners(content);
+          }
+          e.stopPropagation();
         } else {
-          resolve(null);
-        }
-      };
-      
-      // Update open button state when a file is selected
-      const updateOpenButtonState = () => {
-        if (selectedFile && !selectedFile.isDirectory) {
-          openButton.disabled = false;
-          openButton.style.opacity = '1';
-        } else {
-          openButton.disabled = true;
-          openButton.style.opacity = '0.6';
-        }
-      };
-      
-      // Set up button click handlers
-      cancelButton.addEventListener('click', () => closeDialogWithResult(false));
-      openButton.addEventListener('click', () => closeDialogWithResult(true));
-      
-      footer.appendChild(cancelButton);
-      footer.appendChild(openButton);
-      dialog.appendChild(footer);
-      
-      // Add the dialog to the document body
-      document.body.appendChild(dialog);
-      
-      // Add keyboard navigation
-      dialog.tabIndex = 0;
-      dialog.focus();
-      dialog.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-          closeDialogWithResult(false);
-        } else if (e.key === 'Enter') {
-          if (selectedFile && !selectedFile.isDirectory) {
-            closeDialogWithResult(true);
+          // Handle file selection
+          content.querySelectorAll('.file-item').forEach(el => 
+            el.classList.remove('selected')
+          );
+          fileItem.classList.add('selected');
+          
+          // Find the selected file
+          const file = this._findFileByPath(this.project?.files || [], filePath);
+          if (file) {
+            selectedFile = file;
+            // Enable the Open button when a file is selected
+            const openButton = content.closest('.dialog').querySelector('.dialog-button.primary');
+            if (openButton) {
+              openButton.disabled = false;
+            }
           }
         }
       });
+      
+      // Helper method to attach event listeners to file items
+      this._attachFileListEventListeners = (container) => {
+        // No need to reattach click handlers as we're using event delegation
+      };
+
+      // Create and show the dialog
+      const dialog = new Dialog({
+        title: this.root.messages.getMessage('stam:select-file-to-open'),
+        content: content,
+        style: {
+          width: '600px',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          position: 'relative',
+          margin: '0',
+          padding: '0',
+          boxSizing: 'border-box'
+        },
+        className: 'file-dialog',
+        onOpen: (dialogEl) => {
+          // Ensure dialog maintains fixed height
+          const contentEl = dialogEl.querySelector('.dialog-content');
+          if (contentEl) {
+            contentEl.style.overflow = 'auto';
+            contentEl.style.display = 'flex';
+            contentEl.style.flexDirection = 'column';
+            contentEl.style.flex = '1 1 auto';
+            contentEl.style.minHeight = '0'; /* Crucial for flex children to respect overflow */
+          }
+        },
+        buttons: [
+          {
+            label: this.root.messages.getMessage('stam:cancel'),
+            className: 'secondary',
+            onClick: () => {
+              resolve(null);
+              dialog.close();
+            }
+          },
+          {
+            label: this.root.messages.getMessage('stam:open'),
+            className: 'primary',
+            disabled: true, // Initially disabled until a file is selected
+            onClick: () => {
+              if (selectedFile) {
+                resolve(selectedFile);
+                dialog.close();
+              }
+            }
+          }
+        ]
+      });
+
+      // Store reference to the dialog for external access if needed
+      this._openFileDialog = dialog;
+
+      // Show the dialog
+      dialog.open();
     });
   }
+
+  // Helper method to find a file by its path
+  _findFileByPath(files, targetPath, currentPath = '') {
+    for (const file of files) {
+      const filePath = currentPath ? `${currentPath}/${file.name}` : file.name;
+      
+      if (filePath === targetPath) {
+        return file;
+      }
+      
+      if (file.isDirectory && file.files) {
+        const found = this._findFileByPath(file.files, targetPath, filePath);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+
+  // Renders the file list HTML
+  _renderFileList(files, extensions = [], level = 0, parentPath = '') {
+    if (!files || !files.length) {
+      return `
+        <div class="file-list-empty" style="padding-left: ${level * 16}px;">
+          ${this.root.messages.getMessage('stam:no-files-found')}
+        </div>
+      `;
+    }
+    
+    let result = '';
+    
+    // Sort files: directories first, then files alphabetically
+    const sortedFiles = [...files].sort((a, b) => {
+      if (a.isDirectory && !b.isDirectory) return -1;
+      if (!a.isDirectory && b.isDirectory) return 1;
+      return a.name.localeCompare(b.name);
+    });
+    
+    sortedFiles.forEach(file => {
+      const isDirectory = file.isDirectory;
+      const filePath = parentPath ? `${parentPath}/${file.name}` : file.name;
+      const indent = level * 16;
+      const isExpanded = isDirectory && this.expandedFolders.has(filePath);
+      
+      // Only show files that match the filter
+      if (!isDirectory && extensions.length > 0) {
+        const matchesFilter = extensions.some(ext => {
+          const pattern = ext.replace('*.', '.').toLowerCase();
+          return file.name.toLowerCase().endsWith(pattern);
+        });
+        if (!matchesFilter) return;
+      }
+      
+      result += `
+        <div class="file-item ${isDirectory ? 'is-folder' : ''} ${isExpanded ? 'is-expanded' : ''}" 
+             style="padding-left: ${indent}px;" 
+             data-path="${filePath}" 
+             data-is-directory="${isDirectory}">
+          <div class="file-icon">
+            ${isDirectory ? (isExpanded ? '📂' : '📁') : '📄'}
+          </div>
+          <div class="file-name">${file.name}</div>
+        </div>
+      `;
+      
+      // Render children if this is an expanded directory
+      if (isDirectory && isExpanded && file.files && file.files.length > 0) {
+        result += this._renderFileList(file.files, extensions, level + 1, filePath);
+      }
+    });
+    
+    if (!result.trim() && extensions.length > 0) {
+      return `
+        <div class="file-list-empty" style="padding-left: ${level * 16}px;">
+          ${this.root.messages.getMessage('stam:no-matching-files')}
+        </div>
+      `;
+    }
+    
+    return result;
+  }  
   
   /**
    * Show a file save dialog with the project file structure

@@ -17,6 +17,9 @@ export class Dialog {
     this.buttons = options.buttons || [];
     this.theme = options.theme || {};
     this.onClose = options.onClose || (() => {});
+    this.onOpen = options.onOpen;
+    this.style = options.style || {};
+    this.className = options.className || '';
     
     this.dialog = null;
     this.overlay = null;
@@ -71,12 +74,21 @@ export class Dialog {
           align-items: center;
           padding: 16px 24px;
           border-bottom: 1px solid var(--border-color, #444);
+          flex-shrink: 0;
         }
         .dialog-header h2 {
           margin: 0;
           font-size: 1.25rem;
           font-weight: 500;
           color: var(--text-primary, #ffffff);
+        }
+        .dialog-footer {
+          flex-shrink: 0;
+          padding: 16px 24px;
+          display: flex;
+          justify-content: flex-end;
+          gap: 8px;
+          border-top: 1px solid var(--border-color, #444);
         }
       `;
       document.head.appendChild(style);
@@ -95,6 +107,14 @@ export class Dialog {
     
     // Apply theme
     this.applyTheme();
+    
+    // Apply custom styles and class
+    if (this.style) {
+      Object.assign(this.dialog.style, this.style);
+    }
+    if (this.className) {
+      this.dialog.classList.add(this.className);
+    }
     
     // Build dialog structure
     this.dialog.innerHTML = `
@@ -141,6 +161,11 @@ export class Dialog {
     requestAnimationFrame(() => {
       this.overlay.classList.add('visible');
       this.dialog.classList.add('visible');
+      
+      // Call onOpen callback if provided
+      if (typeof this.onOpen === 'function') {
+        this.onOpen(this.dialog);
+      }
     });
   }
 
