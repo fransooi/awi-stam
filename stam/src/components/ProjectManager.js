@@ -20,10 +20,11 @@
 * It extends the BaseComponent class and implements the necessary methods
 * for handling status updates and temporary status messages.
 */
-import BaseComponent, { MESSAGES } from '../utils/BaseComponent.js';
-import { EditorState } from '@codemirror/state'
+import BaseComponent from '../utils/BaseComponent.js';
 import { SOCKETMESSAGES } from './sidewindows/SocketSideWindow.js';
-import { MENUCOMMANDS } from './MenuBar.js'
+import { EditorState } from '@codemirror/state';
+import { MENUCOMMANDS } from './MenuBar.js';
+import { Dialog } from '../utils/Dialog.js';
 
 export const PROJECTMESSAGES = {
   UPDATE_PROJECT: 'PROJECT_UPDATE_PROJECT',
@@ -432,245 +433,135 @@ class ProjectManager extends BaseComponent {
   }
 
   
-  showNewProjectDialog(templateList) {
-    return new Promise((resolve, reject) => {
-      // Create the dialog element
-      const dialog = document.createElement('div');
-      dialog.className = 'new-project-dialog';
-      dialog.style.position = 'fixed';
-      dialog.style.top = '50%';
-      dialog.style.left = '50%';
-      dialog.style.transform = 'translate(-50%, -50%)';
-      dialog.style.backgroundColor = '#2a2a2a';
-      dialog.style.border = '1px solid #444';
-      dialog.style.borderRadius = '4px';
-      dialog.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
-      dialog.style.padding = '20px';
-      dialog.style.minWidth = '500px';
-      dialog.style.maxWidth = '800px';
-      dialog.style.zIndex = '1000';
-      
-      // Create dialog header
-      const header = document.createElement('div');
-      header.style.marginBottom = '20px';
-      header.style.borderBottom = '1px solid #444';
-      header.style.paddingBottom = '10px';
-      
-      const title = document.createElement('h2');
-      title.textContent = this.root.messages.getMessage('stam:new-project');
-      title.style.margin = '0';
-      title.style.color = '#eee';
-      title.style.fontSize = '18px';
-      
-      header.appendChild(title);
-      dialog.appendChild(header);
-      
-      // Create dialog content area
+  async showNewProjectDialog(templateList) {
+    return new Promise((resolve) => {
+      const theme = this.root.preferences.getCurrentTheme();
+      let selectedTemplate = templateList?.[0] || null;
+      let projectName = selectedTemplate?.name || this.root.messages.getMessage('stam:new-project');
+      let overwriteExisting = true;
+
+      // Create dialog content container
       const content = document.createElement('div');
-      content.style.marginBottom = '20px';
+      content.className = 'new-project-dialog';
+      content.style.padding = '0';
+      content.style.margin = '0';
+      content.style.width = 'auto';
+      content.style.minWidth = '0';
+      content.style.maxWidth = '100%';
+      content.style.boxSizing = 'border-box';
+      content.style.display = 'flex';
+      content.style.flexDirection = 'column';
       
-      // Project name input field
-      const projectNameContainer = document.createElement('div');
-      projectNameContainer.style.marginBottom = '20px';
+      // Create content HTML
+      content.innerHTML = `
+        <div style="padding: 0px 0px 0 0px; width: 100%; box-sizing: border-box;">
+          <div class="form-group">
+            <label for="project-name" class="dialog-label">${this.root.messages.getMessage('stam:project-name')}</label>
+            <input type="text" id="project-name" class="dialog-input" value="${projectName}" 
+                   placeholder="${this.root.messages.getMessage('stam:enter-project-name')}">
+          </div>
+        </div>
+        
+        <div style="padding: 0 0px; width: 100%; box-sizing: border-box;">
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="overwrite-checkbox" ${overwriteExisting ? 'checked' : ''}>
+              ${this.root.messages.getMessage('stam:overwrite-existing-project')}
+            </label>
+          </div>
+        </div>
+        
+        <div style="flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 2px 24px 8px 24px; width: 100%; box-sizing: border-box;">
+          <div class="dialog-label">${this.root.messages.getMessage('stam:template')}</div>
+          <div class="dialog-description" style="margin-bottom: 8px;">${this.root.messages.getMessage('stam:select-template-for-new-project')}</div>
+          <div class="template-list">
+            ${this._renderTemplateList(templateList, theme)}
+          </div>
+        </div>
+      `;
+
+      // Set up event listeners
+      const nameInput = content.querySelector('#project-name');
+      const overwriteCheckbox = content.querySelector('#overwrite-checkbox');
       
-      const projectNameLabel = document.createElement('label');
-      projectNameLabel.textContent = this.root.messages.getMessage('stam:project-name');
-      projectNameLabel.style.display = 'block';
-      projectNameLabel.style.color = '#ddd';
-      projectNameLabel.style.marginBottom = '5px';
-      
-      const projectNameInput = document.createElement('input');
-      projectNameInput.type = 'text';
-      projectNameInput.value = this.root.messages.getMessage('stam:new-project');
-      projectNameInput.style.width = '100%';
-      projectNameInput.style.padding = '8px';
-      projectNameInput.style.backgroundColor = '#3a3a3a';
-      projectNameInput.style.color = '#fff';
-      projectNameInput.style.border = '1px solid #555';
-      projectNameInput.style.borderRadius = '4px';
-      projectNameInput.style.fontSize = '14px';
-      
-      projectNameContainer.appendChild(projectNameLabel);
-      projectNameContainer.appendChild(projectNameInput);
-      content.appendChild(projectNameContainer);
-      
-      // Overwrite checkbox
-      const overwriteContainer = document.createElement('div');
-      overwriteContainer.style.marginBottom = '20px';
-      overwriteContainer.style.display = 'flex';
-      overwriteContainer.style.alignItems = 'center';
-      
-      const overwriteCheckbox = document.createElement('input');
-      overwriteCheckbox.type = 'checkbox';
-      overwriteCheckbox.id = 'overwrite-checkbox';
-      overwriteCheckbox.checked = true;
-      overwriteCheckbox.style.marginRight = '8px';
-      overwriteCheckbox.style.cursor = 'pointer';
-      
-      const overwriteLabel = document.createElement('label');
-      overwriteLabel.htmlFor = 'overwrite-checkbox';
-      overwriteLabel.textContent = this.root.messages.getMessage('stam:overwrite-existing-project');
-      overwriteLabel.style.color = '#ddd';
-      overwriteLabel.style.cursor = 'pointer';
-      
-      overwriteContainer.appendChild(overwriteCheckbox);
-      overwriteContainer.appendChild(overwriteLabel);
-      content.appendChild(overwriteContainer);
-      
-      // Template section with scrollable container
-      const templateSection = document.createElement('div');
-      templateSection.style.maxHeight = '300px';
-      templateSection.style.overflowY = 'auto';
-      
-      // Instructions text
-      const instructions = document.createElement('p');
-      instructions.textContent = this.root.messages.getMessage('stam:select-template-for-new-project');
-      instructions.style.color = '#ddd';
-      instructions.style.marginBottom = '15px';
-      templateSection.appendChild(instructions);
-      
-      // Template container
-      const templateContainer = document.createElement('div');
-      templateContainer.style.display = 'flex';
-      templateContainer.style.flexDirection = 'column';
-      templateContainer.style.gap = '10px';
-      
-      let selectedTemplate = null;
-      
-      // Create template items
-      if (templateList && templateList.length > 0) {
-        templateList.forEach((template, index) => {
-          const templateItem = document.createElement('div');
-          templateItem.className = 'template-item';
-          templateItem.style.display = 'flex';
-          templateItem.style.padding = '10px';
-          templateItem.style.border = '1px solid #444';
-          templateItem.style.borderRadius = '4px';
-          templateItem.style.cursor = 'pointer';
-          templateItem.style.transition = 'background-color 0.2s';
+      // Handle template selection
+      content.querySelectorAll('.template-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const templateId = item.dataset.templateId;
+          selectedTemplate = templateList.find(t => t.id === templateId);
           
-          // Add click handler to select template
-          templateItem.addEventListener('click', () => {
-            // Deselect all templates
-            document.querySelectorAll('.template-item').forEach(item => {
-              item.style.backgroundColor = '#2a2a2a';
-              item.style.borderColor = '#444';
-            });
-            
-            // Select this template
-            templateItem.style.backgroundColor = '#3a3a3a';
-            templateItem.style.borderColor = '#666';
-            selectedTemplate = template;
-          });
+          // Update UI
+          content.querySelectorAll('.template-item').forEach(el => 
+            el.classList.remove('selected')
+          );
+          item.classList.add('selected');
           
-          // Icon container
-          if (template.iconUrl) {
-            const iconContainer = document.createElement('div');
-            iconContainer.style.marginRight = '15px';
-            iconContainer.style.width = '96px';
-            iconContainer.style.height = '96px';
-            iconContainer.style.display = 'flex';
-            iconContainer.style.alignItems = 'center';
-            iconContainer.style.justifyContent = 'center';
-            
-            const icon = document.createElement('img');
-            icon.src = template.iconUrl;
-            icon.style.maxWidth = '100%';
-            icon.style.maxHeight = '100%';
-            icon.alt = template.name;
-            
-            iconContainer.appendChild(icon);
-            templateItem.appendChild(iconContainer);
-          }
-          
-          // Template info
-          const templateInfo = document.createElement('div');
-          templateInfo.style.flex = '1';
-          
-          const templateName = document.createElement('h3');
-          templateName.textContent = template.name;
-          templateName.style.margin = '0 0 5px 0';
-          templateName.style.color = '#eee';
-          templateName.style.fontSize = '16px';
-          
-          const templateDescription = document.createElement('p');
-          templateDescription.textContent = template.description;
-          templateDescription.style.margin = '0';
-          templateDescription.style.color = '#bbb';
-          templateDescription.style.fontSize = '14px';
-          templateDescription.style.whiteSpace = 'pre-line'; // Preserve line breaks
-          
-          templateInfo.appendChild(templateName);
-          templateInfo.appendChild(templateDescription);
-          templateItem.appendChild(templateInfo);
-          
-          templateContainer.appendChild(templateItem);
-          
-          // Select the first template by default
-          if (index === 0) {
-            templateItem.click();
+          // Update project name if it's still the default
+          if (nameInput.value === projectName) {
+            nameInput.value = selectedTemplate.name;
           }
         });
-      } else {
-        const noTemplates = document.createElement('p');
-        noTemplates.textContent = this.root.messages.getMessage('stam:no-templates-available');
-        noTemplates.style.color = '#ddd';
-        templateContainer.appendChild(noTemplates);
-      }
-      
-      templateSection.appendChild(templateContainer);
-      content.appendChild(templateSection);
-      dialog.appendChild(content);
-      
-      // Create dialog footer with buttons
-      const footer = document.createElement('div');
-      footer.style.display = 'flex';
-      footer.style.justifyContent = 'flex-end';
-      footer.style.gap = '10px';
-      footer.style.marginTop = '20px';
-      
-      const cancelButton = document.createElement('button');
-      cancelButton.textContent = this.root.messages.getMessage('stam:cancel');
-      cancelButton.style.padding = '8px 16px';
-      cancelButton.style.backgroundColor = '#3a3a3a';
-      cancelButton.style.color = '#ddd';
-      cancelButton.style.border = 'none';
-      cancelButton.style.borderRadius = '4px';
-      cancelButton.style.cursor = 'pointer';
-      cancelButton.addEventListener('click', () => {
-        document.body.removeChild(dialog);
-        resolve({});
       });
       
-      const createButton = document.createElement('button');
-      createButton.textContent = this.root.messages.getMessage('stam:create');
-      createButton.style.padding = '8px 16px';
-      createButton.style.backgroundColor = '#4a4a4a';
-      createButton.style.color = '#fff';
-      createButton.style.border = 'none';
-      createButton.style.borderRadius = '4px';
-      createButton.style.cursor = 'pointer';
-      createButton.addEventListener('click', () => {
-        if (selectedTemplate) {
-          document.body.removeChild(dialog);
-          // Include the project name and overwrite flag in the resolved object
-          resolve({
-            ...selectedTemplate,
-            projectName: projectNameInput.value || 'New Project',
-            overwrite: overwriteCheckbox.checked
-          });
-        } else {
-          alert(this.root.messages.getMessage('stam:please-select-a-template'));
-        }
+      // Create and show the dialog
+      const dialog = new Dialog({
+        title: this.root.messages.getMessage('stam:new-project'),
+        content: content,
+        theme: theme,
+        buttons: [
+          {
+            label: this.root.messages.getMessage('stam:cancel'),
+            className: 'secondary',
+            onClick: () => resolve({})
+          },
+          {
+            label: this.root.messages.getMessage('stam:create'),
+            className: 'primary',
+            onClick: () => {
+              if (selectedTemplate) {
+                resolve({
+                  ...selectedTemplate,
+                  projectName: nameInput.value || 'New Project',
+                  overwrite: overwriteCheckbox.checked
+                });
+              } else {
+                alert(this.root.messages.getMessage('stam:please-select-a-template'));
+                return false;
+              }
+            }
+          }
+        ]
       });
       
-      footer.appendChild(cancelButton);
-      footer.appendChild(createButton);
-      dialog.appendChild(footer);
-      
-      // Add the dialog to the document body
-      document.body.appendChild(dialog);
+      dialog.open();
     });
+  }
+  
+  /**
+   * Renders the template list HTML
+   * @private
+   */
+  _renderTemplateList(templates, theme) {
+    if (!templates || !templates.length) {
+      return `<div class="no-templates">
+        ${this.root.messages.getMessage('stam:no-templates-available')}
+      </div>`;
+    }
+    
+    return templates.map(template => `
+      <div class="template-item ${template === templates[0] ? 'selected' : ''}" 
+           data-template-id="${template.id}">
+        ${template.iconUrl ? `
+          <div class="template-icon">
+            <img src="${template.iconUrl}" alt="${template.name}">
+          </div>` : ''}
+        <div class="template-info">
+          <div class="template-name">${template.name}</div>
+          ${template.description ? `
+            <div class="template-description">${template.description}</div>` : ''}
+        </div>
+      </div>
+    `).join('');
   }
 
   /**

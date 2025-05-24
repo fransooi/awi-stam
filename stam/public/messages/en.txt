@@ -32,6 +32,7 @@ stam:project-name                         Project name
 stam:overwrite-existing-project           Overwrite existing project
 stam:select-template-for-new-project      Select a template for your new project
 stam:no-templates-available               No templates available
+stam:template                             Template
 stam:create                               Create
 stam:please-select-a-template             Please select a template
 stam:open-project                         Open Project

@@ -27,34 +27,34 @@ import { MENUCOMMANDS } from './MenuBar.js';
 const DEFAULT_THEME = {
   name: 'Dark',
   colors: {
-    'background': '#1e1e1e',
-    'dialog-background': '#2d2d2d',
-    'container-background': '#252526',
-    'button-positive': '#1a73e8',
-    'button-negative': '#dc3545',
-    'button-neutral': '#6c757d',
-    'list-background': '#3a3a3a',
-    'popup-background': '#333333',
-    'text-primary': '#e0e0e0',
-    'text-secondary': '#b0b0b0',
-    'text-positive': '#ffffff',
-    'text-negative': '#ffffff',
-    'text-neutral': '#ffffff',
-    'popup-text': '#ffffff',
-    'side-title-background': '#333333',
-    'side-title-text': '#ffffff',
-    'side-border': '#444444',
-    'side-resize': '#555555',
-    'side-title-background-hover': '#3d3d3d',
-    'border-color': '#444',
-    'slider-background': '#444',
-    'slider-track': '#666',
-    'slider-thumb': '#888',
+    'background': '#1e1e1e',                  // UI Background color
+    'dialog-background': '#2d2d2d',           // Dialog Background color
+    'container-background': '#252526',        // Container Background color
+    'button-positive': '#1a73e8',             // Button Positive color
+    'button-negative': '#dc3545',             // Button Negative color
+    'button-neutral': '#6c757d',              // Button Neutral color
+    'list-background': '#3a3a3a',             // List Background color
+    'popup-background': '#333333',            // Popup Background color
+    'text-primary': '#e0e0e0',                // Text Primary color
+    'text-secondary': '#b0b0b0',              // Text Secondary color
+    'text-positive': '#ffffff',               // Text Positive color
+    'text-negative': '#ffffff',               // Text Negative color
+    'text-neutral': '#ffffff',                // Text Neutral color
+    'popup-text': '#ffffff',                  // Popup Text color
+    'side-title-background': '#333333',       // Side Title Background color
+    'side-title-text': '#ffffff',             // Side Title Text color
+    'side-border': '#444444',                 // Side Border color
+    'side-resize': '#555555',                 // Side Resize color
+    'side-title-background-hover': '#3d3d3d', // Side Title Background Hover color
+    'border-color': '#444',                   // Border color
+    'slider-background': '#444',              // Slider Background color
+    'slider-track': '#666',                   // Slider Track color
+    'slider-thumb': '#888',                   // Slider Thumb color
   },
   fonts: {
-    'menu': 'Inter, system-ui, sans-serif',
-    'side-window': 'Inter, system-ui, sans-serif',
-    'status-bar': 'Consolas, monospace'
+    'menu': 'Inter, system-ui, sans-serif', // Menu Font
+    'side-window': 'Inter, system-ui, sans-serif', // Side Window Font
+    'status-bar': 'Consolas, monospace' // Status Bar Font
   }
 };
 

@@ -58,6 +58,7 @@ class ConnectorProject extends ConnectorBase
             version: this.version,
             commands: {
                 getProjectList: this.command_getProjectList.bind(this),
+                getTemplates: this.command_getTemplates.bind(this),
                 newProject: this.command_newProject.bind(this),
                 openProject: this.command_openProject.bind(this),
                 saveProject: this.command_saveProject.bind(this),
