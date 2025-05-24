@@ -1335,7 +1335,206 @@ select.form-control option {
   margin: 0;
 }
 
-.new-project-dialog .no-templates {
+/* ==========================================
+   Generic List Item Styles
+   ========================================== */
+
+.dialog-list-container {
+  margin: 4px 0 0 0;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color, #444);
+  border-radius: 4px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  background-color: var(--list-background, #2a2a2a);
+  flex-shrink: 0;
+  overflow-x: hidden;
+  padding: 2px 0;
+}
+
+.dialog-list-item {
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border-color, #3a3a3a);
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  transition: background-color 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.dialog-list-item:last-child {
+  border-bottom: none;
+}
+
+.dialog-list-item:hover,
+.dialog-list-item.selected {
+  background-color: var(--list-background-hover, #3a3a3a);
+}
+
+.dialog-list-item-icon {
+  flex: 0 0 96px;
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+  background-color: var(--icon-background, #1e1e1e);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dialog-list-item-icon img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.dialog-list-item-info {
+  flex: 1;
+  margin-left: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2px 0;
+  min-width: 0;
+}
+
+.dialog-list-item-name {
+  font-weight: 500;
+  color: var(--text-primary, #fff);
+  margin: 0 0 2px 0;
+  font-size: 0.9em;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dialog-list-item-description {
+  color: var(--text-secondary, #b0b0b0);
+  font-size: 0.8em;
+  line-height: 1.3;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dialog-list-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-secondary, #b0b0b0);
+  font-style: italic;
+}
+
+/* ==========================================
+   Template List Styles (extending generic list styles)
+   ========================================== */
+
+.new-project-dialog .template-list,
+.new-project-dialog .template-list.dialog-list-container {
+  margin: 4px 0 0 0;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color, #444);
+  border-radius: 4px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  background-color: var(--list-background, #2a2a2a);
+  flex-shrink: 0;
+  overflow-x: hidden;
+  padding: 2px 0;
+}
+
+.new-project-dialog .template-item,
+.new-project-dialog .template-item.dialog-list-item {
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border-color, #3a3a3a);
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  transition: background-color 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.new-project-dialog .template-item:last-child {
+  border-bottom: none;
+}
+
+.new-project-dialog .template-item:hover,
+.new-project-dialog .template-item.selected,
+.new-project-dialog .template-item.dialog-list-item:hover,
+.new-project-dialog .template-item.dialog-list-item.selected {
+  background-color: var(--list-background-hover, #3a3a3a);
+}
+
+.new-project-dialog .template-icon,
+.new-project-dialog .template-icon.dialog-list-item-icon {
+  flex: 0 0 96px;
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+  background-color: var(--icon-background, #1e1e1e);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.new-project-dialog .template-icon img,
+.new-project-dialog .template-icon.dialog-list-item-icon img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.new-project-dialog .template-info,
+.new-project-dialog .template-info.dialog-list-item-info {
+  flex: 1;
+  margin-left: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2px 0;
+  min-width: 0;
+}
+
+.new-project-dialog .template-name,
+.new-project-dialog .template-name.dialog-list-item-name {
+  font-weight: 500;
+  color: var(--text-primary, #fff);
+  margin: 0 0 2px 0;
+  font-size: 0.9em;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.new-project-dialog .template-description,
+.new-project-dialog .template-description.dialog-list-item-description {
+  color: var(--text-secondary, #b0b0b0);
+  font-size: 0.8em;
+  line-height: 1.3;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.new-project-dialog .no-templates,
+.new-project-dialog .no-templates.dialog-list-empty {
   padding: 16px;
   text-align: center;
   color: var(--text-secondary, #b0b0b0);

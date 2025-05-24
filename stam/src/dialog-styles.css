@@ -1,0 +1,43 @@
+/* Dialog close button */
+.dialog-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  color: var(--text-secondary, #b0b0b0);
+  transition: all 0.2s;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.dialog-close:hover {
+  color: var(--text-primary, #ffffff);
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.dialog-close:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--button-positive, #1a73e8);
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-color, #444);
+}
+
+.dialog-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--text-primary, #ffffff);
+}

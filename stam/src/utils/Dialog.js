@@ -31,6 +31,57 @@ export class Dialog {
   open() {
     if (this.isOpen) return;
     
+    // Add styles if not already added
+    if (!document.getElementById('dialog-styles')) {
+      const style = document.createElement('style');
+      style.id = 'dialog-styles';
+      style.textContent = `
+        .dialog-close {
+          background: none !important;
+          border: none !important;
+          font-size: 24px;
+          line-height: 1;
+          padding: 0;
+          margin: 0;
+          cursor: pointer;
+          color: var(--text-secondary, #b0b0b0);
+          transition: color 0.2s;
+          width: 30px;
+          height: 30px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+          appearance: none;
+          -webkit-appearance: none;
+          -moz-appearance: none;
+        }
+        .dialog-close:hover {
+          color: var(--text-primary, #ffffff);
+          background-color: transparent !important;
+        }
+        .dialog-close:focus {
+          outline: none !important;
+          box-shadow: none !important;
+        }
+        .dialog-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 16px 24px;
+          border-bottom: 1px solid var(--border-color, #444);
+        }
+        .dialog-header h2 {
+          margin: 0;
+          font-size: 1.25rem;
+          font-weight: 500;
+          color: var(--text-primary, #ffffff);
+        }
+      `;
+      document.head.appendChild(style);
+    }
+    
     // Create overlay
     this.overlay = document.createElement('div');
     this.overlay.className = 'dialog-overlay';

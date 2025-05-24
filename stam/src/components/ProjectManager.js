@@ -485,10 +485,9 @@ class ProjectManager extends BaseComponent {
       const overwriteCheckbox = content.querySelector('#overwrite-checkbox');
       
       // Handle template selection
-      content.querySelectorAll('.template-item').forEach(item => {
+      content.querySelectorAll('.template-item').forEach((item, index) => {
         item.addEventListener('click', () => {
-          const templateId = item.dataset.templateId;
-          selectedTemplate = templateList.find(t => t.id === templateId);
+          selectedTemplate = templateList[index];
           
           // Update UI
           content.querySelectorAll('.template-item').forEach(el => 
@@ -512,7 +511,7 @@ class ProjectManager extends BaseComponent {
           {
             label: this.root.messages.getMessage('stam:cancel'),
             className: 'secondary',
-            onClick: () => resolve({})
+            onClick: () => {resolve({}); dialog.close();}
           },
           {
             label: this.root.messages.getMessage('stam:create'),
@@ -524,6 +523,7 @@ class ProjectManager extends BaseComponent {
                   projectName: nameInput.value || 'New Project',
                   overwrite: overwriteCheckbox.checked
                 });
+                dialog.close();
               } else {
                 alert(this.root.messages.getMessage('stam:please-select-a-template'));
                 return false;
@@ -543,22 +543,21 @@ class ProjectManager extends BaseComponent {
    */
   _renderTemplateList(templates, theme) {
     if (!templates || !templates.length) {
-      return `<div class="no-templates">
+      return `<div class="no-templates dialog-list-empty">
         ${this.root.messages.getMessage('stam:no-templates-available')}
       </div>`;
     }
     
-    return templates.map(template => `
-      <div class="template-item ${template === templates[0] ? 'selected' : ''}" 
-           data-template-id="${template.id}">
+    return templates.map((template, index) => `
+      <div class="template-item dialog-list-item ${index === 0 ? 'selected' : ''}">
         ${template.iconUrl ? `
-          <div class="template-icon">
+          <div class="template-icon dialog-list-item-icon">
             <img src="${template.iconUrl}" alt="${template.name}">
           </div>` : ''}
-        <div class="template-info">
-          <div class="template-name">${template.name}</div>
+        <div class="template-info dialog-list-item-info">
+          <div class="template-name dialog-list-item-name">${template.name}</div>
           ${template.description ? `
-            <div class="template-description">${template.description}</div>` : ''}
+            <div class="template-description dialog-list-item-description">${template.description}</div>` : ''}
         </div>
       </div>
     `).join('');
@@ -570,191 +569,106 @@ class ProjectManager extends BaseComponent {
    * @returns {Promise} - Resolves with the selected project or null if cancelled
    */
   showOpenProjectDialog(projectList) {
-    return new Promise((resolve, reject) => {
-      // Create the dialog element
-      const dialog = document.createElement('div');
-      dialog.className = 'open-project-dialog';
-      dialog.style.position = 'fixed';
-      dialog.style.top = '50%';
-      dialog.style.left = '50%';
-      dialog.style.transform = 'translate(-50%, -50%)';
-      dialog.style.backgroundColor = '#2a2a2a';
-      dialog.style.border = '1px solid #444';
-      dialog.style.borderRadius = '4px';
-      dialog.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
-      dialog.style.padding = '20px';
-      dialog.style.minWidth = '500px';
-      dialog.style.maxWidth = '800px';
-      dialog.style.zIndex = '1000';
-      
-      // Create dialog header
-      const header = document.createElement('div');
-      header.style.marginBottom = '20px';
-      header.style.borderBottom = '1px solid #444';
-      header.style.paddingBottom = '10px';
-      
-      const title = document.createElement('h2');
-      title.textContent = this.root.messages.getMessage('stam:open-project');
-      title.style.margin = '0';
-      title.style.color = '#eee';
-      title.style.fontSize = '18px';
-      
-      header.appendChild(title);
-      dialog.appendChild(header);
-      
-      // Create dialog content area
+    return new Promise((resolve) => {
+      // Create the dialog element using the Dialog component
       const content = document.createElement('div');
-      content.style.marginBottom = '20px';
+      content.className = 'open-project-dialog';
+      content.style.padding = '0';
+      content.style.margin = '0';
+      content.style.width = '600px';
+      content.style.maxWidth = '90vw';
+      content.style.boxSizing = 'border-box';
+      content.style.display = 'flex';
+      content.style.flexDirection = 'column';
       
-      // Project section with scrollable container
-      const projectSection = document.createElement('div');
-      projectSection.style.maxHeight = '400px';
-      projectSection.style.overflowY = 'auto';
+      // Create content HTML
+      content.innerHTML = `
+        <div style="padding: 0 24px 16px 24px; width: 100%; box-sizing: border-box;">
+          <div class="form-group">
+            <div class="dialog-label">${this.root.messages.getMessage('stam:select-project-to-open')}</div>
+          </div>
+          
+          <div class="dialog-list-container">
+            ${this._renderProjectList(projectList)}
+          </div>
+        </div>
+      `;
       
-      // Instructions text
-      const instructions = document.createElement('p');
-      instructions.textContent = this.root.messages.getMessage('stam:select-project-to-open');
-      instructions.style.color = '#ddd';
-      instructions.style.marginBottom = '15px';
-      projectSection.appendChild(instructions);
+      let selectedProject = projectList?.[0] || null;
       
-      // Project container
-      const projectContainer = document.createElement('div');
-      projectContainer.style.display = 'flex';
-      projectContainer.style.flexDirection = 'column';
-      projectContainer.style.gap = '10px';
-      
-      let selectedProject = null;
-      
-      // Create project items
-      if (projectList && projectList.length > 0) {
-        projectList.forEach((project, index) => {
-          const projectItem = document.createElement('div');
-          projectItem.className = 'project-item';
-          projectItem.style.display = 'flex';
-          projectItem.style.padding = '10px';
-          projectItem.style.border = '1px solid #444';
-          projectItem.style.borderRadius = '4px';
-          projectItem.style.cursor = 'pointer';
-          projectItem.style.transition = 'background-color 0.2s';
+      // Handle project selection
+      content.querySelectorAll('.dialog-list-item').forEach((item, index) => {
+        item.addEventListener('click', () => {
+          selectedProject = projectList[index];
           
-          // Add click handler to select project
-          projectItem.addEventListener('click', () => {
-            // Deselect all projects
-            document.querySelectorAll('.project-item').forEach(item => {
-              item.style.backgroundColor = '#2a2a2a';
-              item.style.borderColor = '#444';
-            });
-            
-            // Select this project
-            projectItem.style.backgroundColor = '#3a3a3a';
-            projectItem.style.borderColor = '#666';
-            selectedProject = project;
-          });
-          
-          // Icon container
-          if (project.iconUrl) {
-            const iconContainer = document.createElement('div');
-            iconContainer.style.marginRight = '15px';
-            iconContainer.style.width = '96px';
-            iconContainer.style.height = '96px';
-            iconContainer.style.display = 'flex';
-            iconContainer.style.alignItems = 'center';
-            iconContainer.style.justifyContent = 'center';
-            
-            const icon = document.createElement('img');
-            icon.src = project.iconUrl;
-            icon.style.maxWidth = '100%';
-            icon.style.maxHeight = '100%';
-            icon.alt = project.name;
-            
-            iconContainer.appendChild(icon);
-            projectItem.appendChild(iconContainer);
-          }
-          
-          // Project info
-          const projectInfo = document.createElement('div');
-          projectInfo.style.flex = '1';
-          
-          const projectName = document.createElement('h3');
-          projectName.textContent = project.name;
-          projectName.style.margin = '0 0 5px 0';
-          projectName.style.color = '#eee';
-          projectName.style.fontSize = '16px';
-          
-          const projectDescription = document.createElement('p');
-          projectDescription.textContent = project.description || '';
-          projectDescription.style.margin = '0';
-          projectDescription.style.color = '#bbb';
-          projectDescription.style.fontSize = '14px';
-          projectDescription.style.whiteSpace = 'pre-line'; // Preserve line breaks
-          
-          projectInfo.appendChild(projectName);
-          projectInfo.appendChild(projectDescription);
-          projectItem.appendChild(projectInfo);
-          
-          projectContainer.appendChild(projectItem);
-          
-          // Select the first project by default
-          if (index === 0) {
-            projectItem.click();
-          }
+          // Update UI
+          content.querySelectorAll('.dialog-list-item').forEach(el => 
+            el.classList.remove('selected')
+          );
+          item.classList.add('selected');
         });
-      } else {
-        const noProjects = document.createElement('p');
-        noProjects.textContent = this.root.messages.getMessage('stam:no-projects-available');
-        noProjects.style.color = '#ddd';
-        projectContainer.appendChild(noProjects);
-      }
-      
-      projectSection.appendChild(projectContainer);
-      content.appendChild(projectSection);
-      dialog.appendChild(content);
-      
-      // Create dialog footer with buttons
-      const footer = document.createElement('div');
-      footer.style.display = 'flex';
-      footer.style.justifyContent = 'flex-end';
-      footer.style.gap = '10px';
-      footer.style.marginTop = '20px';
-      
-      const cancelButton = document.createElement('button');
-      cancelButton.textContent = this.root.messages.getMessage('stam:cancel');
-      cancelButton.style.padding = '8px 16px';
-      cancelButton.style.backgroundColor = '#3a3a3a';
-      cancelButton.style.color = '#ddd';
-      cancelButton.style.border = 'none';
-      cancelButton.style.borderRadius = '4px';
-      cancelButton.style.cursor = 'pointer';
-      cancelButton.addEventListener('click', () => {
-        document.body.removeChild(dialog);
-        resolve(null);
       });
       
-      const openButton = document.createElement('button');
-      openButton.textContent = this.root.messages.getMessage('stam:open');
-      openButton.style.padding = '8px 16px';
-      openButton.style.backgroundColor = '#4a4a4a';
-      openButton.style.color = '#fff';
-      openButton.style.border = 'none';
-      openButton.style.borderRadius = '4px';
-      openButton.style.cursor = 'pointer';
-      openButton.addEventListener('click', () => {
-        if (selectedProject) {
-          document.body.removeChild(dialog);
-          resolve(selectedProject);
-        } else {
-          alert(this.root.messages.getMessage('stam:please-select-a-project'));
-        }
+      // Create and show the dialog
+      const dialog = new Dialog({
+        title: this.root.messages.getMessage('stam:open-project'),
+        content: content,
+        theme: this.root.themeManager?.getCurrentTheme() || {},
+        buttons: [
+          {
+            label: this.root.messages.getMessage('stam:cancel'),
+            className: 'secondary',
+            onClick: () => {resolve(null); dialog.close();}
+          },
+          {
+            label: this.root.messages.getMessage('stam:open'),
+            className: 'primary',
+            onClick: () => {
+              if (selectedProject) {
+                resolve(selectedProject);
+                dialog.close();
+              } else {
+                alert(this.root.messages.getMessage('stam:please-select-a-project'));
+                dialog.close();
+                return false;
+              }
+            }
+          }
+        ]
       });
       
-      footer.appendChild(cancelButton);
-      footer.appendChild(openButton);
-      dialog.appendChild(footer);
-      
-      // Add the dialog to the document body
-      document.body.appendChild(dialog);
+      dialog.open();
     });
+  }
+  
+  /**
+   * Renders the project list HTML using the generic list item styles
+   * @param {Array} projects - Array of project objects
+   * @returns {string} HTML string of the project list
+   * @private
+   */
+  _renderProjectList(projects) {
+    if (!projects || !projects.length) {
+      return `
+        <div class="dialog-list-empty">
+          ${this.root.messages.getMessage('stam:no-projects-available')}
+        </div>`;
+    }
+    
+    return projects.map((project, index) => `
+      <div class="dialog-list-item ${index === 0 ? 'selected' : ''}" 
+           data-project-index="${index}">
+        ${project.iconUrl ? `
+          <div class="dialog-list-item-icon">
+            <img src="${project.iconUrl}" alt="${project.name}">
+          </div>` : ''}
+        <div class="dialog-list-item-info">
+          <div class="dialog-list-item-name">${project.name}</div>
+          ${project.description ? `
+            <div class="dialog-list-item-description">${project.description}</div>` : ''}
+        </div>
+      </div>
+    `).join('');
   }
   
   /**
