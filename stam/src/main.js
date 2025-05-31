@@ -61,8 +61,9 @@ class StamApp extends BaseComponent {
       { value: 'c64', text: 'Commodore 64' }
     ];
     this.currentMode = 'phaser'; 
-    this.webSocketUrl = 'ws://192.168.1.66:1033';  //'ws://localhost:1033'; 
-    
+    this.webSocketUrl = 'ws://192.168.1.66:1033';   //'ws://localhost:1033'; 
+    this.httpUrl = 'http://192.168.1.66/stam';      //'http://localhost:1033'; 
+
     // Initialize managers
     this.utilities = new Utilities();
     this.messages = new MessageManager(this.componentId);

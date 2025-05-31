@@ -153,7 +153,18 @@ export default class Utilities {
 		} while( toCheck[ id ] );
 		return id;
 	}
-
+  generateRandomString(nGroups = 2){
+    const characters = 'abcdefghijklmnopqrstuvwxyz'; 
+    const numbers = '0123456789'; 
+    let randomString = '';
+    for(var ng = 0; ng < nGroups; ng++)
+    {
+        randomString += characters.charAt(Math.floor(Math.random() * characters.length));
+        randomString += characters.charAt(Math.floor(Math.random() * characters.length));
+        randomString += numbers.charAt(Math.floor(Math.random() * numbers.length));
+    }
+    return randomString;
+  }
   /**
    * Debounce a function
    * 

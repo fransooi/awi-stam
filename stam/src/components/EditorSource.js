@@ -178,7 +178,7 @@ class EditorSource extends BaseComponent {
       this.multi = configResult.modeConfig.multi;
       
       // Prepare container if mode requires it
-      this.editorInstance.prepareContainer();
+      await this.editorInstance.prepareContainer();
       
       // Ensure all nested containers have proper width
       if (this.editorContainer) {
@@ -368,7 +368,7 @@ class EditorSource extends BaseComponent {
     else 
       this.loadTabState(tab,content);
     */
-      this.createEditor(tab,content);
+    await this.createEditor(tab,content);
     // Update the tabs UI
     this.renderTabs();    
     setTimeout(() => {
@@ -748,6 +748,7 @@ class EditorSource extends BaseComponent {
     if (tab) {
       this.saveTabState(tab);
       var data = this.getTabData(tab);
+      data.path = '';
       var response = await this.sendMessageTo('class:ProjectManager', PROJECTMESSAGES.SAVE_FILE, data);
       if (response && !response.error)
       {

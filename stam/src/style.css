@@ -1793,6 +1793,7 @@ select.form-control option {
   color: var(--text-primary, #e0e0e0);
   overflow: hidden;
   border-radius: 4px;
+  padding: 12px !important;
 }
 
 .file-selector-header {
@@ -1895,6 +1896,164 @@ select.form-control option {
   transition: transform 0.2s ease;
   position: relative;
   top: -1px; /* Better alignment with text */
+}
+
+/* ======================
+   Classroom Dialog
+   ====================== */
+.create-classroom-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: var(--text-primary, #e0e0e0);
+  font-family: var(--font-menu, system-ui, sans-serif);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.create-classroom-dialog .form-group {
+  margin-bottom: 12px;
+}
+
+.create-classroom-dialog .form-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.create-classroom-dialog .dialog-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: var(--text-primary, #e0e0e0);
+  font-size: 0.9em;
+}
+
+.create-classroom-dialog .dialog-input,
+.create-classroom-dialog .dialog-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  background-color: var(--dialog-background, #2d2d2d);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 4px;
+  color: var(--text-primary, #e0e0e0);
+  font-family: inherit;
+  font-size: 0.95em;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.create-classroom-dialog .dialog-input:focus,
+.create-classroom-dialog .dialog-textarea:focus {
+  outline: none;
+  border-color: var(--button-positive, #1a73e8);
+  box-shadow: 0 0 0 1px var(--button-positive, #1a73e8);
+}
+
+.create-classroom-dialog .dialog-textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.create-classroom-dialog .icon-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.create-classroom-dialog .icon-placeholder {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--dialog-background, #2d2d2d);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 8px;
+  font-size: 32px;
+  user-select: none;
+}
+
+.create-classroom-dialog .project-selection {
+  display: flex;
+  gap: 8px;
+}
+
+.create-classroom-dialog .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.9em;
+}
+
+.create-classroom-dialog .checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.create-classroom-dialog .url-display {
+  display: flex;
+  gap: 8px;
+}
+
+.create-classroom-dialog .primary-button {
+  padding: 8px 16px;
+  background-color: var(--button-positive, #1a73e8);
+  color: var(--text-positive, #ffffff);
+  border: 1px solid var(--button-positive, #1a73e8);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  font-weight: 500;
+  transition: background-color 0.2s, border-color 0.2s, opacity 0.2s;
+}
+
+.create-classroom-dialog .primary-button:hover {
+  background-color: var(--button-positive-hover, #0d5fcc);
+  border-color: var(--button-positive-hover, #0d5fcc);
+}
+
+.create-classroom-dialog .primary-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.create-classroom-dialog .secondary-button {
+  padding: 8px 16px;
+  background-color: var(--button-neutral, #6c757d);
+  color: var(--text-neutral, #ffffff);
+  border: 1px solid var(--button-neutral, #6c757d);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background-color 0.2s, border-color 0.2s, opacity 0.2s;
+}
+
+.create-classroom-dialog .secondary-button:hover {
+  background-color: var(--button-neutral-hover, #5a6268);
+  border-color: var(--button-neutral-hover, #5a6268);
+}
+
+.create-classroom-dialog .secondary-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .create-classroom-dialog .form-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .create-classroom-dialog .icon-group {
+    align-self: flex-start;
+  }
 }
 
 .file-name {

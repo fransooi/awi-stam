@@ -37,6 +37,8 @@ export const PROJECTMESSAGES = {
   NEW_FILE_ADDED: 'PROJECT_NEW_FILE_ADDED',
   GET_PROJECT: 'PROJECT_GET_PROJECT',
   GET_TEMPLATE: 'PROJECT_GET_TEMPLATE',
+  CHOOSE_TEMPLATE: 'PROJECT_CHOOSE_TEMPLATE',
+  CHOOSE_PROJECT: 'PROJECT_CHOOSE_PROJECT',
 };
 
 class ProjectManager extends BaseComponent {
@@ -60,6 +62,9 @@ class ProjectManager extends BaseComponent {
     this.messageMap[PROJECTMESSAGES.SAVE_FILE] = this.handleSaveFile;
     this.messageMap[PROJECTMESSAGES.GET_PROJECT] = this.handleGetProject;
     this.messageMap[PROJECTMESSAGES.GET_TEMPLATE] = this.handleGetTemplate;
+    this.messageMap[PROJECTMESSAGES.CHOOSE_TEMPLATE] = this.handleChooseTemplate;
+    this.messageMap[PROJECTMESSAGES.CHOOSE_PROJECT] = this.handleChooseProject;
+    
   }
 
   async init(options = {}) {
@@ -199,6 +204,30 @@ class ProjectManager extends BaseComponent {
     return null;
   }
 
+  async handleChooseTemplate(data, senderId) {
+    if ( !await this.sendRequestTo( 'class:SocketSideWindow', SOCKETMESSAGES.ENSURE_CONNECTED, {}))
+      return;
+   
+    var templates = await this.root.server.getTemplates({ mode: this.root.currentMode });
+    if ( templates )
+    {
+      var response = await this.showNewProjectDialog(templates, true);
+      if (response)
+        return response;
+      return null;
+    }
+    return null;
+  }
+  async handleChooseProject(data, senderId)
+  {
+    if ( !await this.sendRequestTo( 'class:SocketSideWindow', SOCKETMESSAGES.ENSURE_CONNECTED, {}))
+      return null;
+    var projects = await this.root.server.getProjectList({ mode: this.root.currentMode });
+    if (projects)
+      return await this.showOpenProjectDialog(projects);
+    return null;
+
+  }
   async handleNewProject(data, senderId) {
     if ( !await this.sendRequestTo( 'class:SocketSideWindow', SOCKETMESSAGES.ENSURE_CONNECTED, {}))
       return;
@@ -434,7 +463,7 @@ class ProjectManager extends BaseComponent {
   }
 
   
-  async showNewProjectDialog(templateList) {
+  async showNewProjectDialog(templateList,chooseTemplate = false) {
     return new Promise((resolve) => {
       const theme = this.root.preferences.getCurrentTheme();
       let selectedTemplate = templateList?.[0] || null;
@@ -505,7 +534,7 @@ class ProjectManager extends BaseComponent {
       
       // Create and show the dialog
       const dialog = new Dialog({
-        title: this.root.messages.getMessage('stam:new-project'),
+        title: this.root.messages.getMessage(chooseTemplate ? 'stam:choose-template' : 'stam:new-project'),
         content: content,
         theme: theme,
         buttons: [
@@ -515,7 +544,7 @@ class ProjectManager extends BaseComponent {
             onClick: () => {resolve({}); dialog.close();}
           },
           {
-            label: this.root.messages.getMessage('stam:create'),
+            label: this.root.messages.getMessage(chooseTemplate?'stam:choose':'stam:create'),
             className: 'primary',
             onClick: () => {
               if (selectedTemplate) {
@@ -913,367 +942,179 @@ class ProjectManager extends BaseComponent {
    * @param {string} defaultFileName - Default filename suggestion
    * @returns {Promise} - Resolves with the file data object or null if cancelled
    */
-  async showSaveFileDialog(defaultFileName = 'Untitled.js', title='') {
+  /**
+   * Show a file save dialog with the project file structure
+   * @param {string} defaultFileName - Default filename suggestion
+   * @param {string} title - Dialog title
+   * @returns {Promise} - Resolves with the file data object or null if cancelled
+   */
+  async showSaveFileDialog(defaultFileName = 'Untitled.js', title = '') {
     return new Promise((resolve) => {
-      // Create the dialog element
-      const dialog = document.createElement('div');
-      dialog.className = 'file-dialog';
-      dialog.style.display = 'block';
-      dialog.style.position = 'fixed';
-      dialog.style.top = '50%';
-      dialog.style.left = '50%';
-      dialog.style.transform = 'translate(-50%, -50%)';
-      dialog.style.backgroundColor = '#2a2a2a';
-      dialog.style.border = '1px solid #444';
-      dialog.style.borderRadius = '4px';
-      dialog.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
-      dialog.style.padding = '20px';
-      dialog.style.width = '500px';
-      dialog.style.maxHeight = '80vh';
-      dialog.style.zIndex = '1000';
-      dialog.style.display = 'flex';
-      dialog.style.flexDirection = 'column';
+      const theme = this.root.preferences.getCurrentTheme();
+      let currentPath = '';
+      let fileName = defaultFileName;
+      let currentDirectory = null;
+
+      // Create dialog content container
+      const content = document.createElement('div');
+      content.className = 'file-selector';
       
-      // Create dialog header
-      const header = document.createElement('div');
-      header.className = 'file-dialog-header';
-      header.style.marginBottom = '20px';
-      header.style.borderBottom = '1px solid #444';
-      header.style.paddingBottom = '10px';
-      
-      const title = document.createElement('h2');
-      title.textContent = title || this.root.messages.getMessage('stam:save-file');
-      title.style.margin = '0';
-      title.style.color = '#eee';
-      title.style.fontSize = '18px';
-      
-      header.appendChild(title);
-      dialog.appendChild(header);
-      
-      // Create filename input section
-      const filenameSection = document.createElement('div');
-      filenameSection.style.marginBottom = '15px';
-      
-      const filenameLabel = document.createElement('label');
-      filenameLabel.textContent = this.root.messages.getMessage('stam:filename') + ':';
-      filenameLabel.style.display = 'block';
-      filenameLabel.style.marginBottom = '5px';
-      filenameLabel.style.color = '#ddd';
-      
-      const filenameInput = document.createElement('input');
-      filenameInput.type = 'text';
-      filenameInput.value = defaultFileName;
-      filenameInput.style.width = '100%';
-      filenameInput.style.padding = '8px';
-      filenameInput.style.backgroundColor = '#3a3a3a';
-      filenameInput.style.color = '#fff';
-      filenameInput.style.border = '1px solid #555';
-      filenameInput.style.borderRadius = '4px';
-      filenameInput.style.marginBottom = '10px';
-      
-      filenameSection.appendChild(filenameLabel);
-      filenameSection.appendChild(filenameInput);
-      dialog.appendChild(filenameSection);
-      
-      // Create location section
-      const locationSection = document.createElement('div');
-      locationSection.style.marginBottom = '15px';
-      
-      const locationLabel = document.createElement('label');
-      locationLabel.textContent = this.root.messages.getMessage('stam:location') + ':';
-      locationLabel.style.display = 'block';
-      locationLabel.style.marginBottom = '5px';
-      locationLabel.style.color = '#ddd';
-      
-      locationSection.appendChild(locationLabel);
-      dialog.appendChild(locationSection);
-      
-      // Create directory tree container
-      const treeContainer = document.createElement('div');
-      treeContainer.className = 'directory-tree-container';
-      treeContainer.style.overflowY = 'auto';
-      treeContainer.style.maxHeight = 'calc(80vh - 250px)';
-      treeContainer.style.marginBottom = '20px';
-      treeContainer.style.border = '1px solid #444';
-      treeContainer.style.borderRadius = '4px';
-      treeContainer.style.padding = '10px';
-      
-      // Function to recursively build the directory tree
-      const buildDirectoryTree = (files, parentElement, level = 0, parentPath = '') => {
-        if (!Array.isArray(files)) return;
+      // Create content HTML
+      content.innerHTML = `
+        <div class="file-save-controls" style="margin-bottom: 16px;">
+          <div style="margin-bottom: 8px; font-size: 14px; color: var(--text-secondary, #b0b0b0);">
+            ${this.root.messages.getMessage('stam:filename')}:
+          </div>
+          <input type="text" class="file-name-input" value="${defaultFileName}" 
+                 style="width: 100%; padding: 8px; margin-bottom: 16px; background: var(--container-background, #252526); 
+                        border: 1px solid var(--border-color, #444); color: var(--text-primary, #e0e0e0);
+                        border-radius: 4px; font-size: 14px; outline: none;">
+          
+          <div style="margin-bottom: 8px; font-size: 14px; color: var(--text-secondary, #b0b0b0);">
+            ${this.root.messages.getMessage('stam:location')}:
+          </div>
+          <div class="current-location" style="margin-bottom: 16px; padding: 8px; background: var(--container-background, #252526); 
+                                          border: 1px solid var(--border-color, #444); color: var(--text-primary, #e0e0e0);
+                                          border-radius: 4px; font-size: 14px; min-height: 16px;">
+            ${currentPath ? `/${currentPath}` : '/'}
+          </div>
+        </div>
         
-        // Sort files: directories first, then files alphabetically
-        const sortedFiles = [...files].sort((a, b) => {
-          if (a.isDirectory && !b.isDirectory) return -1;
-          if (!a.isDirectory && b.isDirectory) return 1;
-          return a.name.localeCompare(b.name);
-        });
+        <div class="file-list-container" style="flex: 1; overflow: auto; border: 1px solid var(--border-color, #444);">
+          <div class="file-list">
+            ${this._renderFileList(this.project?.files || [])}
+          </div>
+        </div>
+      `;
+
+      // Helper function to update the UI
+      const updateUI = () => {
+        const locationEl = content.querySelector('.current-location');
+        if (locationEl) {
+          locationEl.textContent = currentPath ? `/${currentPath}` : '/';
+        }
         
-        sortedFiles.forEach(file => {
-          // Only show directories
-          if (!file.isDirectory) return;
-          
-          // Create item container
-          const itemContainer = document.createElement('div');
-          itemContainer.className = 'directory-tree-item';
-          itemContainer.style.paddingLeft = `${level * 20}px`;
-          itemContainer.style.padding = '5px';
-          itemContainer.style.paddingLeft = `${level * 20 + 5}px`;
-          itemContainer.style.cursor = 'pointer';
-          itemContainer.style.display = 'flex';
-          itemContainer.style.alignItems = 'center';
-          itemContainer.style.borderRadius = '3px';
-          
-          // Hover effect
-          itemContainer.addEventListener('mouseover', () => {
-            if (!itemContainer.classList.contains('directory-selected')) {
-              itemContainer.style.backgroundColor = '#3a3a3a';
-            }
-          });
-          
-          itemContainer.addEventListener('mouseout', () => {
-            if (!itemContainer.classList.contains('directory-selected')) {
-              itemContainer.style.backgroundColor = 'transparent';
-            }
-          });
-          
-          // Create icon
-          const icon = document.createElement('span');
-          icon.className = 'directory-icon';
-          icon.style.marginRight = '5px';
-          icon.style.fontSize = '14px';
-          icon.textContent = '📁';
-          
-          // Create label
-          const label = document.createElement('span');
-          label.className = 'directory-label';
-          label.textContent = file.name;
-          label.style.color = '#ddd';
-          
-          // Add elements to container
-          itemContainer.appendChild(icon);
-          itemContainer.appendChild(label);
-          parentElement.appendChild(itemContainer);
-          
-          // Add expand/collapse indicator
-          const expandIcon = document.createElement('span');
-          expandIcon.className = 'expand-icon';
-          expandIcon.style.marginRight = '5px';
-          expandIcon.textContent = '▶';
-          expandIcon.style.fontSize = '10px';
-          expandIcon.style.color = '#aaa';
-          
-          // Insert expand icon before the folder icon
-          itemContainer.insertBefore(expandIcon, icon);
-          
-          // Create container for children (initially hidden)
-          const childrenContainer = document.createElement('div');
-          childrenContainer.className = 'directory-children';
-          childrenContainer.style.display = 'none';
-          parentElement.appendChild(childrenContainer);
-          
-          // Current directory's full path
-          const currentPath = parentPath ? `${parentPath}/${file.name}` : file.name;
-          
-          // Toggle expansion on click
-          let expanded = false;
-          itemContainer.addEventListener('click', (e) => {
-            e.stopPropagation();
-            
-            // Select this directory
-            const selectedItems = treeContainer.querySelectorAll('.directory-selected');
-            selectedItems.forEach(item => {
-              item.classList.remove('directory-selected');
-              item.style.backgroundColor = 'transparent';
-            });
-            
-            itemContainer.classList.add('directory-selected');
-            itemContainer.style.backgroundColor = '#4a6da7';
-            
-            // Store the selected directory path
-            selectedDirectory = file.path;
-            updateSaveButtonState();
-            
-            // Toggle expansion
-            expanded = !expanded;
-            expandIcon.textContent = expanded ? '▼' : '▶';
-            childrenContainer.style.display = expanded ? 'block' : 'none';
-            
-            // Only build children the first time we expand
-            if (expanded && childrenContainer.children.length === 0) {
-              buildDirectoryTree(file.files, childrenContainer, level + 1, currentPath);
-            }
-          });
-        });
+        // Update save button state
+        const saveButton = content.closest('.dialog')?.querySelector('.dialog-button.primary');
+        if (saveButton) {
+          saveButton.disabled = !fileName.trim();
+        }
       };
-      
-      // Variable to store the selected directory
-      let selectedDirectory = this.project.path;  
-      
-      // Build the initial directory tree
-      if (this.project && this.project.files) {
-        // Add a root directory option
-        const rootContainer = document.createElement('div');
-        rootContainer.className = 'directory-tree-item';
-        rootContainer.style.padding = '5px';
-        rootContainer.style.cursor = 'pointer';
-        rootContainer.style.display = 'flex';
-        rootContainer.style.alignItems = 'center';
-        rootContainer.style.borderRadius = '3px';
-        rootContainer.classList.add('directory-selected');
-        rootContainer.style.backgroundColor = '#4a6da7';
+
+      // Set up event listeners for file and folder selection
+      content.addEventListener('click', (e) => {
+        const fileItem = e.target.closest('.file-item');
+        if (!fileItem) return;
         
-        const rootIcon = document.createElement('span');
-        rootIcon.style.marginRight = '5px';
-        rootIcon.style.fontSize = '14px';
-        rootIcon.textContent = '📁';
+        const isDirectory = fileItem.dataset.isDirectory === 'true';
+        const filePath = fileItem.dataset.path;
         
-        const rootLabel = document.createElement('span');
-        rootLabel.textContent = this.project.name + ' (root)';
-        rootLabel.style.color = '#ddd';
-        
-        rootContainer.appendChild(rootIcon);
-        rootContainer.appendChild(rootLabel);
-        
-        rootContainer.addEventListener('click', () => {
-          const selectedItems = treeContainer.querySelectorAll('.directory-selected');
-          selectedItems.forEach(item => {
-            item.classList.remove('directory-selected');
-            item.style.backgroundColor = 'transparent';
-          });
-          
-          rootContainer.classList.add('directory-selected');
-          rootContainer.style.backgroundColor = '#4a6da7';
-          
-          selectedDirectory = this.project.path;
-          updateSaveButtonState();
-        });
-        
-        treeContainer.appendChild(rootContainer);
-        
-        // Add the rest of the directory tree
-        buildDirectoryTree(this.project.files, treeContainer);
-      } else {
-        const noDirectories = document.createElement('div');
-        noDirectories.textContent = this.root.messages.getMessage('stam:no-directories-available');
-        noDirectories.style.padding = '10px';
-        noDirectories.style.color = '#aaa';
-        treeContainer.appendChild(noDirectories);
-      }
-      
-      locationSection.appendChild(treeContainer);
-      
-      // Selected path display
-      const selectedPathDisplay = document.createElement('div');
-      selectedPathDisplay.style.marginTop = '10px';
-      selectedPathDisplay.style.fontSize = '14px';
-      selectedPathDisplay.style.color = '#aaa';
-      selectedPathDisplay.textContent = this.root.messages.getMessage('stam:selected') + `: ${selectedDirectory || 'Root'}`;
-      
-      locationSection.appendChild(selectedPathDisplay);
-      
-      // Update the selected path display when a directory is selected
-      const updateSelectedPath = () => {
-        selectedPathDisplay.textContent = this.root.messages.getMessage('stam:selected') + `: ${selectedDirectory || 'Root'}`;
-      };
-      
-      // Create dialog footer with buttons
-      const footer = document.createElement('div');
-      footer.className = 'file-dialog-footer';
-      footer.style.display = 'flex';
-      footer.style.justifyContent = 'flex-end';
-      footer.style.gap = '10px';
-      footer.style.marginTop = 'auto';
-      
-      const cancelButton = document.createElement('button');
-      cancelButton.textContent = this.root.messages.getMessage('stam:cancel');
-      cancelButton.style.padding = '8px 16px';
-      cancelButton.style.backgroundColor = '#3a3a3a';
-      cancelButton.style.color = '#ddd';
-      cancelButton.style.border = 'none';
-      cancelButton.style.borderRadius = '4px';
-      cancelButton.style.cursor = 'pointer';
-      
-      const saveButton = document.createElement('button');
-      saveButton.textContent = this.root.messages.getMessage('stam:save');
-      saveButton.style.padding = '8px 16px';
-      saveButton.style.backgroundColor = '#4a6da7';
-      saveButton.style.color = '#fff';
-      saveButton.style.border = 'none';
-      saveButton.style.borderRadius = '4px';
-      saveButton.style.cursor = 'pointer';
-      saveButton.disabled = false; // Enabled by default since we have a default directory
-      
-      // Function to close the dialog and return result
-      const closeDialogWithResult = (confirmed) => {
-        document.body.removeChild(dialog);
-        if (confirmed) {
-          const filename = filenameInput.value.trim();
-          if (!filename) {
-            resolve(null);
-            return;
+        if (isDirectory) {
+          // Toggle folder expansion
+          if (this.expandedFolders.has(filePath)) {
+            this.expandedFolders.delete(filePath);
+          } else {
+            this.expandedFolders.add(filePath);
+            // Update current path when entering a directory
+            currentPath = filePath;
+            currentDirectory = this._findFileByPath(this.project?.files || [], filePath);
+            updateUI();
           }
           
-          // Construct the full path
-          let fullPath = `${selectedDirectory}/${filename}`;
-          
-          // Make sure the path doesn't have double slashes
-          fullPath = fullPath.replace(/\/+/g, '/');
-          
-          resolve({
-            path: fullPath
-          });
+          // Re-render the file list
+          const fileList = content.querySelector('.file-list');
+          if (fileList) {
+            fileList.innerHTML = this._renderFileList(this.project?.files || []);
+          }
+          e.stopPropagation();
         } else {
-          resolve(null);
-        }
-      };
-      
-      // Update save button state
-      const updateSaveButtonState = () => {
-        const filename = filenameInput.value.trim();
-        if (filename) {
-          saveButton.disabled = false;
-          saveButton.style.opacity = '1';
-        } else {
-          saveButton.disabled = true;
-          saveButton.style.opacity = '0.6';
-        }
-        
-        // Update the selected path display
-        updateSelectedPath();
-      };
-      
-      // Set up button click handlers
-      cancelButton.addEventListener('click', () => closeDialogWithResult(false));
-      saveButton.addEventListener('click', () => closeDialogWithResult(true));
-      
-      // Update save button state when filename changes
-      filenameInput.addEventListener('input', updateSaveButtonState);
-      
-      footer.appendChild(cancelButton);
-      footer.appendChild(saveButton);
-      dialog.appendChild(footer);
-      
-      // Add the dialog to the document body
-      document.body.appendChild(dialog);
-      
-      // Focus the filename input
-      filenameInput.focus();
-      filenameInput.select();
-      
-      // Add keyboard navigation
-      dialog.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-          closeDialogWithResult(false);
-        } else if (e.key === 'Enter') {
-          if (!saveButton.disabled) {
-            closeDialogWithResult(true);
+          // Update selected file name
+          const fileNameInput = content.querySelector('.file-name-input');
+          if (fileNameInput) {
+            const parts = filePath.split('/');
+            fileNameInput.value = parts[parts.length - 1];
+            fileName = fileNameInput.value;
+            updateUI();
           }
         }
       });
-      
-      // Initial update of the save button state
-      updateSaveButtonState();
+
+      // Handle file name input changes
+      content.querySelector('.file-name-input')?.addEventListener('input', (e) => {
+        fileName = e.target.value.trim();
+        updateUI();
+      });
+
+      // Create and show the dialog
+      const dialog = new Dialog({
+        title: title || this.root.messages.getMessage('stam:save-file'),
+        content: content,
+        style: {
+          width: '600px',
+          height: '500px',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          position: 'relative',
+          margin: '0',
+          padding: '0',
+          boxSizing: 'border-box'
+        },
+        className: 'file-dialog',
+        onOpen: (dialogEl) => {
+          // Ensure dialog maintains fixed height
+          const contentEl = dialogEl.querySelector('.dialog-content');
+          if (contentEl) {
+            contentEl.style.overflow = 'auto';
+            contentEl.style.display = 'flex';
+            contentEl.style.flexDirection = 'column';
+            contentEl.style.flex = '1 1 auto';
+            contentEl.style.minHeight = '0'; // Crucial for flex children to respect overflow
+          }
+          
+          // Focus the file name input
+          const fileNameInput = dialogEl.querySelector('.file-name-input');
+          if (fileNameInput) {
+            fileNameInput.focus();
+            fileNameInput.select();
+          }
+        },
+        buttons: [
+          {
+            label: this.root.messages.getMessage('stam:cancel'),
+            className: 'secondary',
+            onClick: () => {
+              resolve(null);
+              dialog.close();
+            }
+          },
+          {
+            label: this.root.messages.getMessage('stam:save'),
+            className: 'primary',
+            disabled: !fileName.trim(),
+            onClick: () => {
+              const fullPath = currentPath ? `${currentPath}/${fileName}` : fileName;
+              
+              // Check if file exists
+              const fileExists = this._findFileByPath(this.project?.files || [], fullPath);
+              
+              if (fileExists) {
+                // Show confirmation dialog for overwrite
+                if (confirm(this.root.messages.getMessage('stam:file-exists-overwrite', { fileName }))) {
+                  resolve({ path: fullPath, name: fileName });
+                  dialog.close();
+                }
+              } else {
+                resolve({ path: fullPath, name: fileName });
+                dialog.close();
+              }
+            }
+          }
+        ]
+      });
+
+      // Show the dialog
+      dialog.open();
     });
   }
   

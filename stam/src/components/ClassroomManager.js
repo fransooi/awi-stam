@@ -24,6 +24,8 @@ import BaseComponent, { MESSAGES } from '../utils/BaseComponent.js';
 import { SOCKETMESSAGES } from './sidewindows/SocketSideWindow.js';
 import { MENUCOMMANDS } from './MenuBar.js'
 import * as mediasoupClient from 'mediasoup-client';
+import { PROJECTMESSAGES } from './ProjectManager.js';
+import { Dialog } from '../utils/Dialog.js';
 
 export const CLASSROOMCOMMANDS = {
   CREATE_CLASSROOM: 'CREATE_CLASSROOM',
@@ -789,331 +791,452 @@ class ClassroomManager extends BaseComponent {
    * @returns {Promise<object|null>} Resolves with dialog data or null if cancelled
    */
   async showCreateClassroomDialog() {
-    return new Promise((resolve) => {
-      // Create dialog overlay
-      const overlay = document.createElement('div');
-      overlay.className = 'classroom-dialog-overlay';
-      overlay.style = `position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:10000;background:rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;`;
+    return new Promise(async (resolve) => {
+      const messages = this.root.messages;
+      const theme = this.root.preferences.getCurrentTheme();
+      let loadedIcon = null; // Track the current icon (null means use default)
+      const content = document.createElement('div');
+      content.className = 'create-classroom-dialog';
+      content.style.display = 'flex';
+      content.style.flexDirection = 'column';
+      content.style.gap = '0px';
+      content.style.padding = '16px 24px';
 
-      // Dialog container
-      const dialog = document.createElement('div');
-      dialog.className = 'classroom-dialog';
-      dialog.style = `background:#2a2a2a;max-width:660px;width:98vw;padding:24px 32px 16px 32px;border-radius:4px;box-shadow:0 4px 8px rgba(0,0,0,0.3);font-family:sans-serif;position:relative;border:1px solid #444;color:#eee;`;
-      overlay.appendChild(dialog);
+      // Classroom name
+      const nameGroup = document.createElement('div');
+      nameGroup.className = 'form-group';
+      nameGroup.innerHTML = `
+        <label class="dialog-label">${messages.getMessage('stam:classroom-name')}</label>
+        <input type="text" id="classroom-name" class="dialog-input" 
+               placeholder="${messages.getMessage('stam:classroom-title-placeholder')}">
+      `;
 
-      // Add show/hide methods to dialog for overlay
-      dialog.hide = function() { overlay.style.display = 'none'; };
-      dialog.show = function() { overlay.style.display = 'flex'; };
-      // Show initially
-      overlay.style.display = 'flex';
+      // Description and Icon row
+      const rowGroup = document.createElement('div');
+      rowGroup.className = 'form-row';
+      rowGroup.style.display = 'flex';
+      rowGroup.style.gap = '0px';
+      rowGroup.style.alignItems = 'flex-start';
 
-      // Title
-      const title = document.createElement('h2');
-      title.textContent = this.root.messages.getMessage('stam:create-classroom');
-      title.style = 'color:#eee;margin-bottom:10px;';
-      dialog.appendChild(title);
+      // Description textarea
+      const descGroup = document.createElement('div');
+      descGroup.className = 'form-group';
+      descGroup.style.flex = '1';
+      descGroup.innerHTML = `
+        <label class="dialog-label">${messages.getMessage('stam:classroom-description')}</label>
+        <textarea id="classroom-description" class="dialog-textarea" rows="7"
+                  placeholder="${messages.getMessage('stam:classroom-description-placeholder')}"></textarea>
+      `;
 
-      // --- Classroom Title ---
-      const titleLabel = document.createElement('label');
-      titleLabel.textContent = this.root.messages.getMessage('stam:classroom-title');
-      titleLabel.htmlFor = 'classroom-title-input';
-      titleLabel.style = 'color:#eee;';
-      dialog.appendChild(titleLabel);
-      const titleInput = document.createElement('input');
-      titleInput.type = 'text';
-      titleInput.id = 'classroom-title-input';
-      titleInput.value = this.root.messages.getMessage('stam:classroom-title-placeholder');
-      titleInput.style = 'width:100%;margin-bottom:10px;display:block;font-size:1.1em;padding:4px 8px;background:#222;border:1px solid #444;color:#eee;border-radius:3px;';
-      dialog.appendChild(titleInput);
+      // Icon group
+      const iconGroup = document.createElement('div');
+      iconGroup.className = 'form-group';
+      iconGroup.style.display = 'flex';
+      iconGroup.style.flexDirection = 'column';
+      iconGroup.style.alignItems = 'center';
+      iconGroup.style.gap = '0px';
 
-      // --- Description + Icon Row ---
-      const descIconRow = document.createElement('div');
-      descIconRow.style = 'display:flex;flex-direction:row;align-items:flex-start;gap:16px;width:100%;margin-bottom:14px;height:180px;min-height:180px;';
-      dialog.appendChild(descIconRow);
-
-      // Description area (left)
-      const descCol = document.createElement('div');
-      descCol.style = 'flex:2 1 0;min-width:260px;';
-      descIconRow.appendChild(descCol);
-      const descLabel = document.createElement('label');
-      descLabel.textContent = this.root.messages.getMessage('stam:classroom-description');
-      descLabel.htmlFor = 'classroom-desc-input';
-      descLabel.style = 'color:#eee;';
-      descCol.appendChild(descLabel);
-      const descInput = document.createElement('textarea');
-      descInput.id = 'classroom-desc-input';
-      descInput.rows = 7;
-      descInput.placeholder = this.root.messages.getMessage('stam:classroom-description-placeholder');
-      descInput.value = this.root.messages.getMessage('stam:classroom-description-placeholder');
-      descInput.style = 'width:100%;height:172px;min-width:260px;flex:2 1 0;display:block;font-size:1em;padding:8px 10px;background:#222;border:1px solid #444;color:#eee;border-radius:3px;resize:both;';
-      descCol.appendChild(descInput);
-
-      // Icon + Choose (right)
-      const iconCol = document.createElement('div');
-      iconCol.style = 'flex:1 1 0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;min-width:150px;height:172px;';
-      descIconRow.appendChild(iconCol);
       const iconLabel = document.createElement('label');
-      iconLabel.textContent = this.root.messages.getMessage('stam:classroom-icon');
-      iconLabel.style = 'color:#eee;margin-bottom:6px;';
-      iconCol.appendChild(iconLabel);
-      const iconPreview = document.createElement('img');
-      iconPreview.src = '/classroom.png?v=' + Date.now(); // Force reload, avoid cache
-      iconPreview.alt = this.root.messages.getMessage('stam:classroom-icon');
-      iconPreview.onerror = function(){ this.src='/classroom.png?v=' + Date.now(); }; // Always show default if error
-      iconPreview.style = 'width:128px;height:128px;object-fit:contain;border:1px solid #666;border-radius:8px;background:#181818;margin-bottom:8px;';
-      iconPreview.draggable = false;
-      iconCol.appendChild(iconPreview);
-      let iconFile = null;
-      let iconChangedByUser = false;
-      // Upload button
-      const uploadBtn = document.createElement('button');
-      uploadBtn.textContent = this.root.messages.getMessage('stam:classroom-icon');
-      uploadBtn.style = 'margin:0 auto 0 auto;width:90px;height:36px;padding:6px 0;background:#333;color:#eee;border:1px solid #444;border-radius:4px;cursor:pointer;';
-      iconCol.appendChild(uploadBtn);
-      // Hidden file input
+      iconLabel.className = 'dialog-label';
+      iconLabel.textContent = messages.getMessage('stam:classroom-icon');
+
+      const iconPreview = document.createElement('div');
+      iconPreview.className = 'icon-preview';
+
+      const iconPlaceholder = document.createElement('div');
+      iconPlaceholder.className = 'icon-placeholder';
+      iconPlaceholder.style.width = '96px';
+      iconPlaceholder.style.height = '96px';
+      iconPlaceholder.style.display = 'flex';
+      iconPlaceholder.style.alignItems = 'center';
+      iconPlaceholder.style.justifyContent = 'center';
+      iconPlaceholder.style.background = 'var(--container-background)';
+      iconPlaceholder.style.borderRadius = '8px';
+      iconPlaceholder.style.overflow = 'hidden';
+      iconPlaceholder.style.position = 'relative';
+      iconPlaceholder.style.cursor = 'pointer';
+      iconPlaceholder.style.transition = 'all 0.2s ease';
+      
+      // Add drop zone indicator
+      const dropZoneOverlay = document.createElement('div');
+      dropZoneOverlay.style.position = 'absolute';
+      dropZoneOverlay.style.top = '0';
+      dropZoneOverlay.style.left = '0';
+      dropZoneOverlay.style.right = '0';
+      dropZoneOverlay.style.bottom = '0';
+      dropZoneOverlay.style.border = '2px dashed transparent';
+      dropZoneOverlay.style.borderRadius = '6px';
+      dropZoneOverlay.style.pointerEvents = 'none';
+      dropZoneOverlay.style.transition = 'all 0.2s ease';
+      iconPlaceholder.appendChild(dropZoneOverlay);
+      
+      // Drag and drop event handlers
+      const handleDragOver = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        iconPlaceholder.style.transform = 'scale(1.03)';
+        dropZoneOverlay.style.borderColor = 'var(--primary-color)';
+        dropZoneOverlay.style.background = 'rgba(var(--primary-color-rgb), 0.1)';
+      };
+      
+      const handleDragLeave = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        iconPlaceholder.style.transform = 'scale(1)';
+        dropZoneOverlay.style.borderColor = 'transparent';
+        dropZoneOverlay.style.background = 'transparent';
+      };
+      
+      const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        handleDragLeave(e);
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          const file = files[0];
+          if (file.type.match('image.*')) {
+            // Use the existing file input change handler
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            fileInput.files = dataTransfer.files;
+            fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+          } else {
+            this.root.messageBar.showErrorMessage(messages.getMessage('stam:invalid-image-type'));
+          }
+        }
+      };
+      
+      // Add event listeners
+      iconPlaceholder.addEventListener('dragover', handleDragOver);
+      iconPlaceholder.addEventListener('dragleave', handleDragLeave);
+      iconPlaceholder.addEventListener('drop', handleDrop);
+      
+      // Add title for better UX
+      iconPlaceholder.title = messages.getMessage('stam:drag-drop-icon');
+
+      // Function to set default icon
+      const setDefaultIcon = (container) => {
+        container.innerHTML = '';
+        const defaultIcon = document.createElement('i');
+        defaultIcon.className = 'fas fa-chalkboard-teacher';
+        defaultIcon.style.fontSize = '32px';
+        defaultIcon.style.color = 'var(--text-primary)';
+        container.appendChild(defaultIcon);
+        loadedIcon = null; // Reset loaded icon
+      };
+      
+      // Set default icon initially
+      setDefaultIcon(iconPlaceholder);
+
+      const changeIconBtn = document.createElement('button');
+      changeIconBtn.id = 'change-icon';
+      changeIconBtn.className = 'secondary-button';
+      changeIconBtn.style.marginTop = '8px';
+      changeIconBtn.textContent = messages.getMessage('stam:classroom-choose');
+
+      iconPreview.appendChild(iconPlaceholder);
+      iconPreview.appendChild(changeIconBtn);
+
+      iconGroup.appendChild(iconLabel);
+      iconGroup.appendChild(iconPreview);
+
+      // Project section
+      const projectGroup = document.createElement('div');
+      projectGroup.className = 'form-group';
+      
+      // Project section title
+      const projectLabel = document.createElement('label');
+      projectLabel.className = 'dialog-label';
+      projectLabel.textContent = messages.getMessage('stam:classroom-project-name');
+      projectGroup.appendChild(projectLabel);
+      
+      // Radio buttons container
+      const radioContainer = document.createElement('div');
+      radioContainer.style.display = 'flex';
+      radioContainer.style.gap = '16px';
+      radioContainer.style.marginBottom = '8px';
+      radioContainer.style.alignItems = 'center'; // Align items vertically in the center
+      
+      // New project radio
+      const newProjectDiv = document.createElement('div');
+      const newProjectRadio = document.createElement('input');
+      newProjectRadio.type = 'radio';
+      newProjectRadio.id = 'project-type-new';
+      newProjectRadio.name = 'project-type';
+      newProjectRadio.checked = true; // Default selection
+      const newProjectLabel = document.createElement('label');
+      newProjectLabel.htmlFor = 'project-type-new';
+      newProjectLabel.textContent = messages.getMessage('stam:classroom-project-new');
+      newProjectLabel.style.cursor = 'pointer';
+      // Style the radio button directly for better control
+      newProjectRadio.style.marginRight = '10px';
+      newProjectLabel.style.display = 'inline-flex';
+      newProjectLabel.style.alignItems = 'center';
+      newProjectLabel.style.whiteSpace = 'nowrap'; // Prevent text wrapping
+      newProjectDiv.appendChild(newProjectRadio);
+      newProjectDiv.appendChild(newProjectLabel);
+      radioContainer.appendChild(newProjectDiv);
+      
+      // Existing project radio
+      const existingProjectDiv = document.createElement('div');
+      const existingProjectRadio = document.createElement('input');
+      existingProjectRadio.type = 'radio';
+      existingProjectRadio.id = 'project-type-existing';
+      existingProjectRadio.name = 'project-type';
+      const existingProjectLabel = document.createElement('label');
+      existingProjectLabel.htmlFor = 'project-type-existing';
+      existingProjectLabel.textContent = messages.getMessage('stam:classroom-project-existing');
+      existingProjectLabel.style.cursor = 'pointer';
+      // Style the radio button directly for better control
+      existingProjectRadio.style.marginRight = '10px';
+      existingProjectLabel.style.display = 'inline-flex';
+      existingProjectLabel.style.alignItems = 'center';
+      existingProjectLabel.style.whiteSpace = 'nowrap'; // Prevent text wrapping
+      existingProjectDiv.appendChild(existingProjectRadio);
+      existingProjectDiv.appendChild(existingProjectLabel);
+      radioContainer.appendChild(existingProjectDiv);
+      
+      projectGroup.appendChild(radioContainer);
+      
+      // Project name input and choose button
+      const projectSelection = document.createElement('div');
+      projectSelection.className = 'project-selection';
+      projectSelection.style.display = 'flex';
+      projectSelection.style.gap = '8px';
+      
+      const projectNameInput = document.createElement('input');
+      projectNameInput.type = 'text';
+      projectNameInput.id = 'project-name';
+      projectNameInput.className = 'dialog-input';
+      projectNameInput.style.flex = '1';
+      
+      const chooseButton = document.createElement('button');
+      chooseButton.id = 'choose-project';
+      chooseButton.className = 'primary-button';
+      chooseButton.textContent = messages.getMessage('stam:classroom-choose');
+      
+      projectSelection.appendChild(projectNameInput);
+      projectSelection.appendChild(chooseButton);
+      projectGroup.appendChild(projectSelection);
+
+      // Global project checkbox
+      const globalGroup = document.createElement('div');
+      globalGroup.className = 'form-group';
+      globalGroup.innerHTML = `
+        <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+          <input type="checkbox" id="global-project">
+          ${messages.getMessage('stam:classroom-project-global')}
+        </label>
+      `;
+
+      // Classroom URL
+      const urlGroup = document.createElement('div');
+      var classroomId = this.root.utilities.generateRandomString(3);
+      urlGroup.className = 'form-group';
+      urlGroup.innerHTML = `
+        <label class="dialog-label">${messages.getMessage('stam:classroom-url')}</label>
+        <div class="url-display" style="display: flex; gap: 8px;">
+          <input type="text" id="classroom-url" class="dialog-input" 
+                 value="${this.root.httpUrl}/classroom/${classroomId}" readonly style="flex: 1;">
+          <button id="copy-url" class="secondary-button">
+            ${messages.getMessage('stam:classroom-copy-url')}
+          </button>
+        </div>
+      `;
+
+      // Assemble the dialog content
+      rowGroup.appendChild(descGroup);
+      rowGroup.appendChild(iconGroup);
+      
+      content.appendChild(nameGroup);
+      content.appendChild(rowGroup);
+      content.appendChild(projectGroup);
+      content.appendChild(globalGroup);
+      content.appendChild(urlGroup);
+
+      // Create and show the dialog
+      let selectedProject = null;
+      const dialog = new Dialog({
+        title: messages.getMessage('stam:create-classroom'),
+        content: content,
+        theme: theme,
+        buttons: [
+          {
+            label: messages.getMessage('stam:cancel'),
+            className: 'secondary',
+            onClick: () => { resolve(null); dialog.close(); }
+          },
+          {
+            label: messages.getMessage('stam:create'),
+            className: 'primary',
+            onClick: () => {
+              const name = document.getElementById('classroom-name').value.trim();
+              const description = document.getElementById('classroom-description').value.trim();
+              const isGlobal = document.getElementById('global-project').checked;
+              
+              if (!name) {
+                this.root.messageBar.showErrorMessage(messages.getMessage('stam:classroom-title-required'));
+                return false;
+              }
+              
+              if (!selectedProject) {
+                this.root.messageBar.showErrorMessage(messages.getMessage('stam:project-required'));
+                return false;
+              }
+              selectedProject.projectName = projectNameInput.value;
+              let iconUrl = loadedIcon || '';
+
+              resolve({
+                name,
+                description,
+                isGlobal,
+                classroomUrl: document.getElementById('classroom-url').value,
+                iconUrl: iconUrl,               
+                createProject: document.getElementById('project-type-new').checked,
+                project: selectedProject,
+              });
+              dialog.close();
+            }
+          }
+        ]
+      });
+      
+      // Add event listeners after dialog is created
+      const chooseProjectBtn = content.querySelector('#choose-project');
+      chooseProjectBtn.addEventListener('click', async () => {
+        try {
+          // Save current description to restore if needed
+          const currentDescription = document.getElementById('classroom-description').value;
+          const projectNameInput = document.getElementById('project-name');
+          const isNewProject = document.getElementById('project-type-new').checked;
+          
+          // Request either template or project selection based on radio button
+          const messageType = isNewProject ? PROJECTMESSAGES.CHOOSE_TEMPLATE : PROJECTMESSAGES.CHOOSE_PROJECT;
+          selectedProject = await this.sendRequestTo('class:ProjectManager', messageType);
+          
+          if (selectedProject) {
+            if (selectedProject.projectName)
+              projectNameInput.value = selectedProject.projectName;
+            else
+              projectNameInput.value = selectedProject.name;
+            document.getElementById('classroom-description').value = selectedProject.description;
+            
+            // Update icon if available
+            if (selectedProject.iconUrl) {
+              // Update icon preview using an img element
+              const iconPreview = content.querySelector('.icon-preview .icon-placeholder');
+              // Clear existing content
+              iconPreview.innerHTML = '';
+              // Create and append img element
+              const img = document.createElement('img');
+              img.src = selectedProject.iconUrl;
+              img.alt = 'Classroom Icon';
+              img.style = 'width: 100%; height: 100%; object-fit: contain;';
+              img.onerror = function() { 
+                // Fallback to default icon if loading fails
+                setDefaultIcon(iconPreview);
+              };
+              iconPreview.appendChild(img);
+              // Store the project icon URL
+              loadedIcon = selectedProject.iconUrl;
+            } else {
+              // No icon in project, set default
+              const iconPreview = content.querySelector('.icon-preview .icon-placeholder');
+              setDefaultIcon(iconPreview);
+            }
+          }
+        } catch (error) {
+          console.error('Error selecting template:', error);
+          this.root.messageBar.showErrorMessage(messages.getMessage('stam:error-loading-template'));
+        }
+      });
+      
+      // Copy URL button handler
+      const copyUrlBtn = content.querySelector('#copy-url');
+      copyUrlBtn.addEventListener('click', () => {
+        const urlInput = document.getElementById('classroom-url');
+        urlInput.select();
+        document.execCommand('copy');
+        
+        // Show feedback
+        const originalText = copyUrlBtn.textContent;
+        copyUrlBtn.textContent = messages.getMessage('stam:classroom-copied');
+        setTimeout(() => {
+          copyUrlBtn.textContent = originalText;
+        }, 2000);
+      });
+      
+      // Create hidden file input for icon selection
       const fileInput = document.createElement('input');
       fileInput.type = 'file';
-      fileInput.accept = '.png,.jpg,.jpeg,image/png,image/jpeg';
-      fileInput.style = 'display:none;';
-      iconCol.appendChild(fileInput);
-      uploadBtn.onclick = () => fileInput.click();
-      fileInput.onchange = (e) => {
-        if (fileInput.files && fileInput.files[0]) {
-          const file = fileInput.files[0];
-          if (!file.type.match(/image\/(png|jpeg)/)) return;
-          const reader = new FileReader();
-          reader.onload = (ev) => {
-            iconPreview.src = ev.target.result;
-            iconFile = file;
-            iconChangedByUser = true;
+      fileInput.accept = 'image/*';
+      fileInput.style.display = 'none';
+      document.body.appendChild(fileInput);
+      
+      // Make fileInput accessible to drag and drop handlers
+      iconPlaceholder.fileInput = fileInput;
+      
+      // Also allow clicking on the icon to open file picker
+      iconPlaceholder.addEventListener('click', () => {
+        fileInput.click();
+      });
+      
+      // Handle icon change
+      changeIconBtn.addEventListener('click', () => {
+        // Trigger file selection dialog
+        fileInput.click();
+      });
+      
+      // Handle file selection
+      fileInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        // Check file type
+        if (!file.type.match('image.*')) {
+          this.root.messageBar.showErrorMessage(messages.getMessage('stam:invalid-image-type'));
+          return;
+        }
+        
+        // Check file size (max 2MB)
+        const maxSize = 2 * 1024 * 1024; // 2MB
+        if (file.size > maxSize) {
+          this.root.messageBar.showErrorMessage(messages.getMessage('stam:image-too-large'));
+          return;
+        }
+        
+        // Create a FileReader to read the image file
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const iconPreview = content.querySelector('.icon-preview .icon-placeholder');
+          // Clear existing content
+          iconPreview.innerHTML = '';
+          // Create and append img element
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          img.alt = 'Classroom Icon';
+          img.style = 'width: 100%; height: 100%; object-fit: contain;';
+          img.onerror = () => { 
+            // Fallback to default icon if loading fails
+            setDefaultIcon(iconPreview);
+            this.root.messageBar.showErrorMessage(messages.getMessage('stam:error-loading-image'));
           };
-          reader.readAsDataURL(file);
-        }
-      };
-      // Drag and drop
-      iconPreview.ondragover = (e) => { e.preventDefault(); iconPreview.style.borderColor = '#007bff'; };
-      iconPreview.ondragleave = (e) => { iconPreview.style.borderColor = '#666'; };
-      iconPreview.ondrop = (e) => {
-        e.preventDefault();
-        iconPreview.style.borderColor = '#666';
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-          const file = e.dataTransfer.files[0];
-          if (!file.type.match(/image\/(png|jpeg)/)) return;
-          const reader = new FileReader();
-          reader.onload = (ev) => {
-            iconPreview.src = ev.target.result;
-            iconFile = file;
-            iconChangedByUser = true;
-          };
-          reader.readAsDataURL(file);
-        }
-      };
-
-      // --- Project Title ---
-      const projectTitleLabel = document.createElement('label');
-      projectTitleLabel.textContent = this.root.messages.getMessage('stam:classroom-project');
-      projectTitleLabel.style = 'color:#eee;display:block;margin-top:16px;margin-bottom:4px;margin-top:8px;';
-      dialog.appendChild(projectTitleLabel);
-      // --- Mode/Project Section ---
-      const projectSection = document.createElement('div');
-      projectSection.style = 'border:1px solid #333;padding:10px 15px 10px 15px;margin-bottom:12px;border-radius:7px;background:#232323;display:flex;flex-direction:column;gap:2px;';
-      dialog.appendChild(projectSection);
-      // Mode combo
-      // Mode row (label + select)
-      const modeRow = document.createElement('div');
-      modeRow.style = 'display:flex;flex-direction:row;align-items:center;gap:8px;margin-bottom:4px;';
-      const modeLabel = document.createElement('label');
-      modeLabel.textContent = this.root.messages.getMessage('stam:classroom-mode');
-      modeRow.appendChild(modeLabel);
-      const modeSelect = document.createElement('select');
-      modeSelect.style = 'min-width:120px;font-size:1em;';
-      const modes = this.root.possibleModes || [];
-      for (const mode of modes) {
-        const opt = document.createElement('option');
-        opt.value = mode.value;
-        opt.textContent = mode.text;
-        if (mode.value === this.root.currentMode) opt.selected = true;
-        modeSelect.appendChild(opt);
-      }
-      modeRow.appendChild(modeSelect);
-      projectSection.appendChild(modeRow);
-      // Radio buttons for new/load project
-      const radioRow1 = document.createElement('div');
-      radioRow1.style = 'display:flex;flex-direction:row;align-items:center;margin-bottom:2px;';
-      const radioNew = document.createElement('input');
-      radioNew.type = 'radio';
-      radioNew.name = 'project-type';
-      radioNew.id = 'radio-new';
-      radioNew.checked = true;
-      const radioNewLabel = document.createElement('label');
-      radioNewLabel.htmlFor = 'radio-new';
-      radioNewLabel.textContent = this.root.messages.getMessage('stam:classroom-radio-new');
-      radioNewLabel.style = 'margin-left:6px;';
-      radioRow1.appendChild(radioNew);
-      radioRow1.appendChild(radioNewLabel);
-      projectSection.appendChild(radioRow1);
-      const radioRow2 = document.createElement('div');
-      radioRow2.style = 'display:flex;flex-direction:row;align-items:center;margin-bottom:8px;';
-      const radioLoad = document.createElement('input');
-      radioLoad.type = 'radio';
-      radioLoad.name = 'project-type';
-      radioLoad.id = 'radio-load';
-      radioLoad.style = 'margin-left:0px;';
-      const radioLoadLabel = document.createElement('label');
-      radioLoadLabel.htmlFor = 'radio-load';
-      radioLoadLabel.textContent = this.root.messages.getMessage('stam:classroom-radio-load');
-      radioLoadLabel.style = 'margin-left:6px;';
-      radioRow2.appendChild(radioLoad);
-      radioRow2.appendChild(radioLoadLabel);
-      projectSection.appendChild(radioRow2);
-      // Project name row with Choose button
-      const projectNameRow = document.createElement('div');
-      projectNameRow.style = 'display:flex;flex-direction:row;align-items:center;margin-top:6px;margin-bottom:2px;justify-content:space-between;';
-      const projectNameLabel = document.createElement('span');
-      projectNameLabel.textContent = this.root.messages.getMessage('stam:classroom-project-name');
-      projectNameLabel.style = 'font-size:1em;font-weight:bold;margin-right:8px;';
-      const projectNameValue = document.createElement('span');
-      projectNameValue.textContent = 'None';
-      projectNameValue.style = 'font-size:1em;font-weight:normal;flex-grow:1;text-align:left;';
-      projectNameRow.appendChild(projectNameLabel);
-      projectNameRow.appendChild(projectNameValue);
-      // Choose button
-      const chooseBtn = document.createElement('button');
-      chooseBtn.textContent = 'Choose';
-      chooseBtn.style = 'margin-left:18px;margin-bottom:0px;align-self:center;';
-      projectNameRow.appendChild(chooseBtn);
-      projectSection.appendChild(projectNameRow);
-      // Project icon update logic
-      let projectIconUrl = '';
-      let selectedProjectName = '';
-      let projectTemplate = [];
-      let projectList = [];
-
-      // --- Take Control Checkbox (inside project area) ---
-      const controlDiv = document.createElement('div');
-      controlDiv.style = 'margin-bottom:6px;margin-top:10px;';
-      const controlCheckbox = document.createElement('input');
-      controlCheckbox.type = 'checkbox';
-      controlCheckbox.id = 'take-control-checkbox';
-      controlCheckbox.checked = true;
-      controlDiv.appendChild(controlCheckbox);
-      const controlLabel = document.createElement('label');
-      controlLabel.htmlFor = 'take-control-checkbox';
-      controlLabel.textContent = this.root.messages.getMessage('stam:classroom-take-control');
-      controlDiv.appendChild(controlLabel);
-      projectSection.appendChild(controlDiv);
-      // --- Project Global Checkbox (inside project area) ---
-      const globalDiv = document.createElement('div');
-      globalDiv.style = 'margin-bottom:6px;';
-      const globalCheckbox = document.createElement('input');
-      globalCheckbox.type = 'checkbox';
-      globalCheckbox.id = 'project-global-checkbox';
-      globalCheckbox.checked = false;
-      globalDiv.appendChild(globalCheckbox);
-      const globalLabel = document.createElement('label');
-      globalLabel.htmlFor = 'project-global-checkbox';
-      globalLabel.textContent = this.root.messages.getMessage('stam:classroom-project-global');
-      globalDiv.appendChild(globalLabel);
-      projectSection.appendChild(globalDiv);
-      // Choose button logic
-      chooseBtn.onclick = async () => {
-        if (radioNew.checked) {
-          // Get templates
-          // Hide dialog while waiting for response
-          dialog.hide();
-          projectTemplate = await this.root.project.sendRequestTo(this.root.project.componentId, 'PROJECT_GET_TEMPLATE', {});
-          dialog.show();
-          // For now, just pick the first template (mockup)
-          if (projectTemplate) {
-            selectedProjectName = projectTemplate.projectName;
-            projectNameValue.textContent = selectedProjectName;
-            if (!iconChangedByUser && projectTemplate.iconUrl) {
-              iconPreview.src = projectTemplate.iconUrl;
-              projectIconUrl = projectTemplate.iconUrl;
-            }
-          }
-        } else {
-          // Get project list
-          projectList = await this.root.project.sendRequestTo(this.root.project.componentId, 'PROJECT_GET_PROJECT', {});
-          if (projectList && projectList.length > 0) {
-            // Hide dialog while waiting for response
-            dialog.hide();
-            selectedProjectName = projectList[0].name || projectList[0].title || projectList[0];
-            dialog.show();
-            projectNameValue.textContent = selectedProjectName;
-            if (!iconChangedByUser && projectList[0].iconUrl) {
-              iconPreview.src = projectList[0].iconUrl;
-              projectIconUrl = projectList[0].iconUrl;
-            }
-          }
-        }
-      };
-
-
-      // --- URL Section ---
-      const urlDiv = document.createElement('div');
-      urlDiv.style = 'margin-bottom:12px;display:flex;align-items:center;gap:8px;';
-      const urlLabel = document.createElement('label');
-      urlLabel.textContent = this.root.messages.getMessage('stam:classroom-url');
-      urlDiv.appendChild(urlLabel);
-      const urlInput = document.createElement('input');
-      urlInput.type = 'text';
-      urlInput.readOnly = true;
-      urlInput.value = window.location.origin + '/?classroom=XXXX';
-      urlInput.style = 'flex:1 1 0;width:100%;margin-left:8px;background:#222;border:1px solid #444;color:#eee;border-radius:3px;padding:4px 8px;';
-      urlDiv.appendChild(urlInput);
-      // Copy button
-      const copyBtn = document.createElement('button');
-      copyBtn.textContent = this.root.messages.getMessage('stam:classroom-copy-url');
-      copyBtn.style = 'margin-left:4px;padding:4px 10px;font-size:0.95em;background:#333;color:#eee;border:1px solid #444;border-radius:4px;cursor:pointer;';
-      copyBtn.onclick = () => {
-        navigator.clipboard.writeText(urlInput.value).then(() => {
-          const oldText = copyBtn.textContent;
-          copyBtn.textContent = this.root.messages.getMessage('stam:classroom-copied');
-          setTimeout(() => { copyBtn.textContent = oldText; }, 1000);
-        });
-      };
-      urlDiv.appendChild(copyBtn);
-      dialog.appendChild(urlDiv);
-
-      // --- OK/Cancel Buttons ---
-      const btnRow = document.createElement('div');
-      btnRow.style = 'display:flex;justify-content:flex-end;gap:16px;margin-top:10px;';
-      const okBtn = document.createElement('button');
-      okBtn.textContent = this.root.messages.getMessage('stam:ok');
-      okBtn.style = 'min-width:80px;font-size:1.1em;';
-      const cancelBtn = document.createElement('button');
-      cancelBtn.textContent = this.root.messages.getMessage('stam:cancel');
-      cancelBtn.style = 'min-width:80px;font-size:1.1em;';
-      btnRow.appendChild(cancelBtn);
-      btnRow.appendChild(okBtn);
-      dialog.appendChild(btnRow);
-
-      // --- Button Actions ---
-      cancelBtn.onclick = () => {
-        document.body.removeChild(overlay);
-        resolve(null);
-      };
-      okBtn.onclick = () => {
-        // Collect all data
-        const data = {
-          name: titleInput.value,
-          description: descInput.value,
-          iconUrl: iconFile || iconPreview.src,
-          takeControl: controlCheckbox.checked,
-          mode: modeSelect.value,
-          projectType: radioNew.checked ? this.root.messages.getMessage('stam:classroom-radio-new') : this.root.messages.getMessage('stam:classroom-radio-load'),
-          projectName: selectedProjectName,
-          projectGlobal: globalCheckbox.checked,
-          url: urlInput.value,
-          createdBy: this.root.userName
+          iconPreview.appendChild(img);
+          
+          // Store the file data for later use when creating the classroom
+          loadedIcon = e.target.result;
         };
-        document.body.removeChild(overlay);
-        resolve(data);
-      };
-      // Show dialog
-      document.body.appendChild(overlay);
-      titleInput.focus();
+        
+        reader.onerror = () => {
+          this.root.messageBar.showErrorMessage(messages.getMessage('stam:error-reading-file'));
+        };
+        
+        reader.readAsDataURL(file);
+      });
+      
+      // Open the dialog
+      dialog.open();
     });
   }
 

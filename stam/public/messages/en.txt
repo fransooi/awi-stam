@@ -29,6 +29,7 @@ stam:classroom-microphone                 Microphone
 stam:classroom-audio-output               Audio Output
 stam:new-project                          New Project
 stam:project-name                         Project name
+stam:project-required                     Please choose or create a project associated with this classroom
 stam:overwrite-existing-project           Overwrite existing project
 stam:select-template-for-new-project      Select a template for your new project
 stam:no-templates-available               No templates available
@@ -45,6 +46,7 @@ stam:open-file                            Open File
 stam:filter                               Filter
 stam:no-files-available                   No files available
 stam:save-file                            Save File
+stam:file-exists-overwrite                File already exists, overwrite?
 stam:filename                             Filename
 stam:location                             Location
 stam:no-directories-available             No directories available
@@ -153,6 +155,11 @@ stam:preferences-save                       Save
 stam:preferences-cancel                     Cancel
 stam:theme-copy-of                          Copy of
 stam:theme-name-exists                     A theme with this name already exists
+stam:choose-template                       Choose a Template
+stam:choose                                Choose
+stam:classroom-project-new                 Create a new project
+stam:classroom-project-existing            Use an existing project
+stam:classroom-name                        Classroom name
 
 // Theme related messages
 stam:theme-current                         Current Theme
