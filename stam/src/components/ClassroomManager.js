@@ -565,224 +565,314 @@ class ClassroomManager extends BaseComponent {
       updateOkButton();
     });
   }
+  /**
+   * Shows a dialog to join a classroom with the given list of classrooms.
+   * @param {Array} classroomInfoList - List of classroom information objects
+   * @param {string} userName - Current user's username
+   * @returns {Promise<Object|null>} Resolves with join info or null if cancelled
+   */
   async showJoinClassroomDialog(classroomInfoList, userName) {
     return new Promise((resolve) => {
-      // Overlay
-      const overlay = document.createElement('div');
-      overlay.className = 'classroom-dialog-overlay';
-      overlay.style = `position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:10000;background:rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;`;
-
-      // Dialog
-      const dialog = document.createElement('div');
-      dialog.className = 'classroom-dialog';
-      dialog.style = `background:#23232a;max-width:640px;width:96vw;padding:26px 32px 18px 32px;border-radius:5px;box-shadow:0 4px 8px rgba(0,0,0,0.32);font-family:sans-serif;position:relative;border:1px solid #444;color:#eee;`;
-      overlay.appendChild(dialog);
-      dialog.hide = function() { overlay.style.display = 'none'; };
-      dialog.show = function() { overlay.style.display = 'flex'; };
-      overlay.style.display = 'flex';
-
-      // Title
-      const title = document.createElement('h2');
-      title.textContent = this.root.messages.getMessage('stam:join-classroom');
-      title.style = 'color:#eee;margin-bottom:12px;';
-      dialog.appendChild(title);
+      const messages = this.root.messages;
+      const theme = this.root.preferences.getCurrentTheme();
+      
+      // Selection state
+      let selectedClassroom = null;
+      let nameInput = null;
+      
+      // Create dialog content container
+      const content = document.createElement('div');
+      content.className = 'join-classroom-dialog';
+      content.style.display = 'flex';
+      content.style.flexDirection = 'column';
+      content.style.gap = '16px';
+      content.style.minWidth = '500px';
+      content.style.maxWidth = '800px';
+      content.style.maxHeight = '70vh';
+      content.style.overflow = 'hidden';
 
       // Display name input
       const nameRow = document.createElement('div');
-      nameRow.style = 'margin-bottom:10px;display:flex;align-items:center;gap:8px;';
+      nameRow.style.display = 'flex';
+      nameRow.style.alignItems = 'center';
+      nameRow.style.gap = '10px';
+      nameRow.style.marginBottom = '8px';
+      
       const nameLabel = document.createElement('label');
-      nameLabel.textContent = this.root.messages.getMessage('stam:display-name');
-      nameLabel.style = 'min-width:110px;color:#eee;';
-      nameLabel.htmlFor = 'join-classroom-displayname';
-      nameRow.appendChild(nameLabel);
-      const nameInput = document.createElement('input');
+      nameLabel.textContent = messages.getMessage('stam:display-name');
+      nameLabel.style.minWidth = '120px';
+      nameLabel.style.fontWeight = '500';
+      
+      nameInput = document.createElement('input');
       nameInput.type = 'text';
-      nameInput.id = 'join-classroom-displayname';
+      nameInput.className = 'form-control';
+      nameInput.style.flex = '1';
+      nameInput.style.padding = '8px 12px';
+      nameInput.style.borderRadius = '4px';
+      nameInput.style.border = '1px solid var(--border-color, #444)';
+      nameInput.style.background = 'var(--container-background, #2a2a32)';
+      nameInput.style.color = 'var(--text-primary, #eee)';
+      nameInput.style.boxSizing = 'border-box';
       nameInput.value = userName || '';
-      nameInput.style = 'flex:1 1 0;padding:5px 10px;font-size:1.08em;background:#222;border:1px solid #444;color:#eee;border-radius:3px;';
+      
+      nameRow.appendChild(nameLabel);
       nameRow.appendChild(nameInput);
-      dialog.appendChild(nameRow);
+      content.appendChild(nameRow);
 
-      // Scrollable classroom list
+      // Classroom list container
       const listContainer = document.createElement('div');
-      listContainer.style = 'max-height:260px;overflow-y:auto;margin-bottom:12px;border:1px solid #333;border-radius:4px;background:#19191e;';
-      dialog.appendChild(listContainer);
-
+      listContainer.style.flex = '1';
+      listContainer.style.overflowY = 'auto';
+      listContainer.style.padding = '4px';
+      listContainer.style.border = '1px solid var(--border-color, #333)';
+      listContainer.style.borderRadius = '6px';
+      listContainer.style.background = 'var(--list-background, #1e1e24)';
+      
       // Helper for classroom icon
-      function classroomIcon(iconUrl) {
+      const classroomIcon = (iconUrl) => {
         const img = document.createElement('img');
         img.src = iconUrl || '/classroom.png?v=' + Date.now();
-        img.alt = 'Icon';
-        img.onerror = function(){ this.src='/classroom.png?v=' + Date.now(); };
-        img.style = 'width:48px;height:48px;object-fit:cover;border-radius:8px;background:#222;border:1px solid #444;';
+        img.alt = '';
+        img.onerror = function() { this.src = '/classroom.png?v=' + Date.now(); };
+        img.style.width = '80px';
+        img.style.height = '80px';
+        img.style.objectFit = 'cover';
+        img.style.borderRadius = '8px';
+        img.style.background = 'var(--icon-background, #2a2a32)';
+        img.style.border = '1px solid var(--border-color, #444)';
         return img;
-      }
+      };
 
-      // Selection state
-      let selectedIdx = -1;
-      let selectedClassroom = null;
       // Render classroom list
-      classroomInfoList.forEach((info, idx) => {
+      classroomInfoList.forEach((classroom) => {
         const item = document.createElement('div');
-        item.className = 'classroom-list-item';
-        item.style = `
-          display: flex;
-          align-items: stretch;
-          gap: 18px;
-          padding: 0 0 0 0;
-          margin: 0 0 8px 0;
-          background: #23233a;
-          border-radius: 12px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.09);
-          cursor: pointer;
-          transition: background 0.18s, box-shadow 0.18s;
-          border: 1.5px solid #2d2d46;
-          min-height: 104px;
-          overflow: hidden;
-        `;
+        item.className = 'classroom-item';
+        item.style.display = 'flex';
+        item.style.alignItems = 'center';
+        item.style.padding = '12px';
+        item.style.marginBottom = '8px';
+        item.style.borderRadius = '8px';
+        item.style.background = 'var(--container-background, #2a2a32)';
+        item.style.border = '1px solid var(--border-color, #333)';
+        item.style.cursor = 'pointer';
+        item.style.transition = 'all 0.2s ease';
+        
+        // Hover effects
         item.onmouseover = () => {
-          item.style.background = '#2a3452';
-          item.style.boxShadow = '0 4px 16px rgba(40,70,150,0.11)';
+          item.style.background = 'var(--item-hover-background, #3a3a42)';
+          item.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
         };
         item.onmouseout = () => {
-          item.style.background = '#23233a';
-          item.style.boxShadow = '0 2px 8px rgba(0,0,0,0.09)';
+          item.style.background = 'var(--container-background, #2a2a32)';
+          item.style.boxShadow = 'none';
         };
+        
         // Icon
-        const icon = classroomIcon(info.iconUrl);
-        icon.style.width = '104px';
-        icon.style.height = '104px';
-        icon.style.objectFit = 'cover';
-        icon.style.borderRadius = '12px 0 0 12px';
-        icon.style.background = '#222';
-        icon.style.border = 'none';
-        icon.style.flex = '0 0 104px';
-        icon.style.alignSelf = 'stretch';
-        icon.style.display = 'block';
-        item.appendChild(icon);
-        // Info
+        const iconCol = document.createElement('div');
+        iconCol.style.marginRight = '16px';
+        iconCol.appendChild(classroomIcon(classroom.iconUrl));
+        item.appendChild(iconCol);
+        
+        // Info column
         const infoCol = document.createElement('div');
-        infoCol.style = 'flex:1 1 0;min-width:0;padding:16px 18px;display:flex;flex-direction:column;justify-content:center;';
+        infoCol.style.flex = '1';
+        infoCol.style.minWidth = '0';
+        
         // Title
         const title = document.createElement('div');
-        title.textContent = info.title || info.name || this.root.messages.getMessage('stam:untitled-classroom');
-        title.style = 'color:#eee;font-size:1.22em;font-weight:700;line-height:1.15;margin-bottom:3px;word-break:break-word;letter-spacing:0.01em;';
-        infoCol.appendChild(title);
+        title.className = 'classroom-title';
+        title.textContent = classroom.title || classroom.name || messages.getMessage('stam:untitled-classroom');
+        title.style.fontWeight = '600';
+        title.style.fontSize = '1.1em';
+        title.style.marginBottom = '4px';
+        title.style.color = 'var(--text-primary, #eee)';
+        title.style.whiteSpace = 'nowrap';
+        title.style.overflow = 'hidden';
+        title.style.textOverflow = 'ellipsis';
+        
         // Description
         const desc = document.createElement('div');
-        desc.textContent = info.description || this.root.messages.getMessage('stam:classroom-description');
-        desc.style = 'color:#bbb;font-size:1.01em;line-height:1.23;white-space:pre-line;word-break:break-word;margin-bottom:2px;';
-        infoCol.appendChild(desc);
+        desc.className = 'classroom-desc';
+        desc.textContent = classroom.description || messages.getMessage('stam:classroom-description');
+        desc.style.color = 'var(--text-secondary, #bbb)';
+        desc.style.fontSize = '0.9em';
+        desc.style.marginBottom = '4px';
+        desc.style.display = '-webkit-box';
+        desc.style.WebkitLineClamp = '2';
+        desc.style.WebkitBoxOrient = 'vertical';
+        desc.style.overflow = 'hidden';
+        desc.style.textOverflow = 'ellipsis';
+        
         // Creator
         const creator = document.createElement('div');
-        creator.textContent = info.createdBy ? `Created by: ${info.createdBy}` : '';
-        creator.style = 'color:#8ea0c4;font-size:0.97em;margin-top:2px;';
+        creator.className = 'classroom-creator';
+        creator.textContent = classroom.createdBy ? `${messages.getMessage('stam:created-by')} ${classroom.createdBy}` : '';
+        creator.style.color = 'var(--text-tertiary, #8a8a8a)';
+        creator.style.fontSize = '0.85em';
+        creator.style.fontStyle = 'italic';
+        
+        infoCol.appendChild(title);
+        infoCol.appendChild(desc);
         infoCol.appendChild(creator);
         item.appendChild(infoCol);
-
-        // Select logic
+        
+        // Selection indicator
+        const selectedIndicator = document.createElement('div');
+        selectedIndicator.className = 'selected-indicator';
+        selectedIndicator.innerHTML = '✓';
+        selectedIndicator.style.display = 'none';
+        selectedIndicator.style.width = '24px';
+        selectedIndicator.style.height = '24px';
+        selectedIndicator.style.borderRadius = '50%';
+        selectedIndicator.style.background = 'var(--accent-color, #4a90e2)';
+        selectedIndicator.style.color = 'white';
+        selectedIndicator.style.display = 'flex';
+        selectedIndicator.style.alignItems = 'center';
+        selectedIndicator.style.justifyContent = 'center';
+        selectedIndicator.style.marginLeft = '12px';
+        selectedIndicator.style.opacity = '0';
+        selectedIndicator.style.transition = 'opacity 0.2s';
+        item.appendChild(selectedIndicator);
+        
+        // Click handler
         item.onclick = () => {
-          // Unselect all
-          [...listContainer.children].forEach(c => c.style.background = 'transparent');
-          item.style.background = '#2a3a5a';
-          selectedIdx = idx;
-          selectedClassroom = info;
+          // Update selection
+          const wasSelected = selectedClassroom === classroom;
+          
+          // Update all items
+          const items = listContainer.querySelectorAll('.classroom-item');
+          items.forEach(i => {
+            i.style.background = 'var(--container-background, #2a2a32)';
+            i.style.borderColor = 'var(--border-color, #333)';
+            i.querySelector('.selected-indicator').style.opacity = '0';
+          });
+          
+          if (!wasSelected) {
+            selectedClassroom = classroom;
+            item.style.background = 'var(--item-selected-background, #3a3a42)';
+            item.style.borderColor = 'var(--accent-color, #4a90e2)';
+            selectedIndicator.style.opacity = '1';
+          } else {
+            selectedClassroom = null;
+          }
+          
           updateJoinButtons();
         };
-        // Double-click = join as student if allowed
+        
+        // Double-click to join as student
         item.ondblclick = () => {
-          if (canJoinStudent()) okStudent.click();
+          if (canJoinStudent()) {
+            handleJoinAsStudent();
+          }
         };
+        
         listContainer.appendChild(item);
       });
-
-      // --- Buttons ---
-      const btnRow = document.createElement('div');
-      btnRow.style = 'display:flex;justify-content:flex-end;gap:14px;margin-top:10px;';
-      // Join as Teacher
-      const okTeacher = document.createElement('button');
-      okTeacher.textContent = this.root.messages.getMessage('stam:join-as-teacher');
-      okTeacher.style = 'min-width:110px;font-size:1.08em;';
-      // Join as Student
-      const okStudent = document.createElement('button');
-      okStudent.textContent = this.root.messages.getMessage('stam:join-as-student');
-      okStudent.style = 'min-width:110px;font-size:1.08em;';
-      // Cancel
-      const cancelBtn = document.createElement('button');
-      cancelBtn.textContent = 'Cancel';
-      cancelBtn.style = 'min-width:80px;font-size:1.08em;';
-      btnRow.appendChild(cancelBtn);
-      btnRow.appendChild(okTeacher);
-      btnRow.appendChild(okStudent);
-      dialog.appendChild(btnRow);
-
-      // --- Button logic ---
-      function canJoinTeacher() {
-        return selectedClassroom && selectedClassroom.createdBy === userName;
-      }
-      function canJoinStudent() {
-        return true;
-      }
-      function updateJoinButtons() {
-        if (!selectedClassroom) {
-          okTeacher.disabled = true; okTeacher.style.opacity = '0.6';
-          okStudent.disabled = true; okStudent.style.opacity = '0.6';
-          return;
-        }
-        // Only creator can join as teacher
-        if (canJoinTeacher()) {
-          okTeacher.disabled = false; okTeacher.style.opacity = '1';
-        } else {
-          okTeacher.disabled = true; okTeacher.style.opacity = '0.6';
-        }
-        // Only non-creator can join as student
-        if (canJoinStudent()) {
-          okStudent.disabled = false; okStudent.style.opacity = '1';
-        } else {
-          okStudent.disabled = true; okStudent.style.opacity = '0.6';
-        }
-      }
-      nameInput.oninput = updateJoinButtons;
-
-      // Cancel action
-      cancelBtn.onclick = () => {
-        document.body.removeChild(overlay);
+      
+      content.appendChild(listContainer);
+      
+      // Button handlers
+      const handleCancel = () => {
+        dialog.close();
         resolve(null);
       };
-      // Join as Teacher
-      okTeacher.onclick = () => {
+      
+      const handleJoinAsTeacher = () => {
         if (!canJoinTeacher()) return;
-        document.body.removeChild(overlay);
+        dialog.close();
         resolve({
           classroomType: 'teacher',
           classroomId: selectedClassroom.classroomId,
-          displayName: nameInput.value
+          displayName: nameInput.value.trim()
         });
       };
-      // Join as Student
-      okStudent.onclick = () => {
+      
+      const handleJoinAsStudent = () => {
         if (!canJoinStudent()) return;
-        document.body.removeChild(overlay);
+        dialog.close();
         resolve({
           classroomType: 'student',
           classroomId: selectedClassroom.classroomId,
-          displayName: nameInput.value
+          displayName: nameInput.value.trim()
         });
       };
-      // Keyboard: Enter/ESC
-      dialog.onkeydown = (e) => {
-        if (e.key === 'Escape') { cancelBtn.click(); }
-        if (e.key === 'Enter') {
-          if (canJoinTeacher() && document.activeElement === okTeacher) okTeacher.click();
-          else if (canJoinStudent() && document.activeElement === okStudent) okStudent.click();
-        }
+      
+      // Permission checkers
+      const canJoinTeacher = () => {
+        return selectedClassroom && selectedClassroom.createdBy === userName;
       };
-      // Focus management
-      setTimeout(() => { nameInput.focus(); }, 100);
-      // Add to DOM
-      document.body.appendChild(overlay);
-      // Initial state
-      updateJoinButtons();
+      
+      const canJoinStudent = () => {
+        return true; // Any user can join as student
+      };
+      
+      // Create dialog with buttons
+      const dialog = new Dialog({
+        title: this.root.messages.getMessage('stam:join-classroom'),
+        content: content,
+        buttons: [
+          {
+            label: this.root.messages.getMessage('stam:cancel'),
+            className: 'btn-neutral',
+            onClick: handleCancel
+          },
+          {
+            label: this.root.messages.getMessage('stam:join-as-teacher'),
+            className: 'btn-negative',
+            disabled: true,
+            onClick: handleJoinAsTeacher
+          },
+          {
+            label: this.root.messages.getMessage('stam:join-as-student'),
+            className: 'btn-positive',
+            disabled: true,
+            onClick: handleJoinAsStudent
+          }
+        ]
+      });
+      
+      // Button state management
+      const updateJoinButtons = () => {
+        const hasSelection = selectedClassroom !== null;
+        const hasName = nameInput.value.trim().length > 0;
+        
+        const canJoinT = hasSelection && hasName && canJoinTeacher();
+        dialog.setButtonState(1, !canJoinT);
+        
+        const canJoinS = hasSelection && hasName && canJoinStudent();
+        dialog.setButtonState(2, !canJoinS);
+      };
+      
+      
+      // Set up event listeners
+      nameInput.addEventListener('input', updateJoinButtons);
+      
+      // Keyboard navigation
+      dialog.content.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          handleCancel();
+        } else if (e.key === 'Enter') {
+          if (!dialog.getButtonElement(2).disabled && document.activeElement === dialog.getButtonElement(2)) {
+            handleJoinAsStudent();
+          } else if (!dialog.getButtonElement(1).disabled && document.activeElement === dialog.getButtonElement(1)) {
+            handleJoinAsTeacher();
+          } else if (selectedClassroom && !dialog.getButtonElement(2).disabled) {
+            // If an item is selected and student join is available, use that as default
+            handleJoinAsStudent();
+          }
+        }
+      });
+      
+      // Initial focus
+      dialog.onShow = () => {
+        nameInput.focus();
+        nameInput.select();
+      };
+      
+      // Show the dialog
+      dialog.open();
+      dialog.setButtonState(1, true);
+      dialog.setButtonState(2, true);
     });
   }  
 
@@ -800,7 +890,7 @@ class ClassroomManager extends BaseComponent {
       content.style.display = 'flex';
       content.style.flexDirection = 'column';
       content.style.gap = '0px';
-      content.style.padding = '16px 24px';
+      content.style.padding = '0px';
 
       // Classroom name
       const nameGroup = document.createElement('div');
@@ -931,8 +1021,8 @@ class ClassroomManager extends BaseComponent {
 
       const changeIconBtn = document.createElement('button');
       changeIconBtn.id = 'change-icon';
-      changeIconBtn.className = 'secondary-button';
-      changeIconBtn.style.marginTop = '8px';
+      changeIconBtn.className = 'btn btn-neutral';
+      changeIconBtn.style.marginTop = '0px';
       changeIconBtn.textContent = messages.getMessage('stam:classroom-choose');
 
       iconPreview.appendChild(iconPlaceholder);
@@ -1064,12 +1154,12 @@ class ClassroomManager extends BaseComponent {
         buttons: [
           {
             label: messages.getMessage('stam:cancel'),
-            className: 'secondary',
+            className: 'btn btn-neutral',
             onClick: () => { resolve(null); dialog.close(); }
           },
           {
             label: messages.getMessage('stam:create'),
-            className: 'primary',
+            className: 'btn btn-positive',
             onClick: () => {
               const name = document.getElementById('classroom-name').value.trim();
               const description = document.getElementById('classroom-description').value.trim();
@@ -1095,6 +1185,7 @@ class ClassroomManager extends BaseComponent {
                 iconUrl: iconUrl,               
                 createProject: document.getElementById('project-type-new').checked,
                 project: selectedProject,
+                createdBy: this.root.userName,
               });
               dialog.close();
             }

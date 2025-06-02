@@ -160,8 +160,8 @@ stam:choose                                Choose
 stam:classroom-project-new                 Create a new project
 stam:classroom-project-existing            Use an existing project
 stam:classroom-name                        Classroom name
-
-// Theme related messages
+stam:join-classroom                        Join Classroom
+stam:display-name                          Display Name
 stam:theme-current                         Current Theme
 stam:theme-choose                         Choose Theme
 stam:theme-create                         Create Theme
@@ -216,3 +216,7 @@ stam:font-picker-cancel                   Cancel
 stam:font-picker-use                      Use
 stam:font-picker-recent                   Recently Used
 stam:font-picker-loading                  Loading fonts...
+stam:theme-sidetitle-bg                   Side Window Title Background
+stam:theme-sidetitle-text                 Side Window Title Text
+stam:theme-side-border                    Side Window Border
+stam:theme-side-resize                    Side Window Resize Handle

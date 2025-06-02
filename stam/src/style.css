@@ -7,6 +7,7 @@
   --button-negative: #dc3545;
   --button-neutral: #6c757d;
   --list-background: #3a3a3a;
+  --list-item-background: #2a2a2a;
   --popup-background: #333333;
   --text-primary: #e0e0e0;
   --text-secondary: #b0b0b0;
@@ -277,20 +278,6 @@ input, button, textarea, select {
   font-size: 1.2em;
 }
 
-.close-button {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  font-size: 1.5em;
-  cursor: pointer;
-  padding: 0 5px;
-  line-height: 1;
-}
-
-.close-button:hover {
-  color: var(--text-primary);
-}
-
 .dialog-body {
   padding: 0;
   margin: 0;
@@ -304,7 +291,7 @@ input, button, textarea, select {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 20px;
+  margin-top: 2px;
   padding-top: 10px;
   border-top: 1px solid var(--border-color);
 }
@@ -365,22 +352,31 @@ select.form-control option {
   font-family: var(--font-menu);
 }
 
-.btn-primary {
+.btn-positive {
   background: var(--button-positive);
   color: var(--text-positive);
 }
 
-.btn-primary:hover {
+.btn-positive:hover {
   background: color-mix(in srgb, var(--button-positive), black 15%);
 }
 
-.btn-secondary {
+.btn-neutral {
   background: var(--button-neutral);
   color: var(--text-neutral);
 }
 
-.btn-secondary:hover {
+.btn-neutral:hover {
   background: color-mix(in srgb, var(--button-neutral), black 15%);
+}
+
+.btn-negative {
+  background: var(--button-negative);
+  color: var(--text-negative);
+}
+
+.btn-negative:hover {
+  background: color-mix(in srgb, var(--button-negative), black 15%);
 }
 
 /* Main content area */
@@ -821,7 +817,7 @@ select.form-control option {
 
 .cm-editor .cm-activeLine {
   background-color: color-mix(in srgb, var(--list-background), transparent 60%);
-}
+} 
 
 .cm-editor .cm-activeLineGutter {
   background-color: color-mix(in srgb, var(--list-background), transparent 40%);
@@ -1290,7 +1286,7 @@ select.form-control option {
 
 .new-project-dialog .template-item:hover,
 .new-project-dialog .template-item.selected {
-  background-color: var(--list-background-hover, #3a3a3a);
+  background-color: var(--list-item-background-hover, #3a3a3a);
 }
 
 .new-project-dialog .template-icon {
@@ -1371,7 +1367,7 @@ select.form-control option {
 
 .dialog-list-item:hover,
 .dialog-list-item.selected {
-  background-color: var(--list-background-hover, #3a3a3a);
+  background-color: var(--list-item-background-hover, #3a3a3a);
 }
 
 .dialog-list-item-icon {
@@ -1473,7 +1469,7 @@ select.form-control option {
 .new-project-dialog .template-item.selected,
 .new-project-dialog .template-item.dialog-list-item:hover,
 .new-project-dialog .template-item.dialog-list-item.selected {
-  background-color: var(--list-background-hover, #3a3a3a);
+  background-color: var(--list-item-background-hover, #3a3a3a);
 }
 
 .new-project-dialog .template-icon,

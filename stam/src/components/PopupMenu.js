@@ -117,7 +117,7 @@ export default class PopupMenu extends BaseComponent {
       }
       
       .popup-menu-item:hover {
-        background-color: var(--list-background, #3a3a3a);
+        background-color: var(--list-item-background-hover, #3a3a3a);
       }
       
       .popup-menu-separator {

@@ -1,6 +1,23 @@
-/**
- * A reusable dialog component with theming support
- */
+/** --------------------------------------------------------------------------  
+*   ______ _______ _______ _______   _ 
+*  / _____|_______|_______|_______) | |   
+* ( (____     _    _______ _  _  _  | |
+*  \____ \   | |  |  ___  | ||_|| | |_|
+*  _____) )  | |  | |   | | |   | |  _
+* (______/   |_|  |_|   |_|_|   |_| |_|   The Multi-Editor
+*
+* This file is open-source under the conditions contained in the
+* license file located at the root of this project.
+*
+* ----------------------------------------------------------------------------
+* @file Dialog.js
+* @author FL (Francois Lionet)
+* @version 0.5
+*
+* @short This component manages the project
+* @description
+* This class manages all things related to preferences.
+*/
 export class Dialog {
   /**
    * Create a new Dialog
@@ -90,6 +107,11 @@ export class Dialog {
           gap: 8px;
           border-top: 1px solid var(--border-color, #444);
         }
+        .dialog-content {
+          padding: 8px 12px;
+          overflow: auto;
+          flex-grow: 1;
+        }
       `;
       document.head.appendChild(style);
     }
@@ -104,6 +126,7 @@ export class Dialog {
     this.dialog.setAttribute('role', 'dialog');
     this.dialog.setAttribute('aria-modal', 'true');
     this.dialog.setAttribute('aria-labelledby', 'dialog-title');
+    this.dialogElement = this.dialog;
     
     // Apply theme
     this.applyTheme();
@@ -134,6 +157,7 @@ export class Dialog {
     const footerEl = this.dialog.querySelector('.dialog-footer');
     this.buttons.forEach(button => {
       const btn = document.createElement('button');
+      button.element = btn;
       btn.textContent = button.label;
       btn.className = `dialog-button ${button.className || ''}`.trim();
       btn.onclick = button.onClick;
@@ -141,7 +165,7 @@ export class Dialog {
       // Add keyboard accessibility
       btn.setAttribute('role', 'button');
       btn.setAttribute('tabindex', '0');
-      
+
       footerEl.appendChild(btn);
     });
     
@@ -169,6 +193,18 @@ export class Dialog {
     });
   }
 
+  getButtonElement(index) {
+    if (index < 0 || index >= this.buttons.length) return null;
+    return this.buttons[index].element;
+  }
+  setButtonState(index, disabled) {
+    if (index < 0 || index >= this.buttons.length) return;
+    this.buttons[index].disabled = disabled;
+    this.buttons[index].element.disabled = disabled;
+    this.buttons[index].element.style.opacity = disabled ? '0.6' : '1';
+    //disabled buttons should not react to the mouse
+    this.buttons[index].element.style.pointerEvents = disabled ? 'none' : 'auto';
+  }
   /**
    * Close the dialog
    */

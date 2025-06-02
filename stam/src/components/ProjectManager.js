@@ -501,7 +501,7 @@ class ProjectManager extends BaseComponent {
           </div>
         </div>
         
-        <div style="flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 2px 24px 8px 24px; width: 100%; box-sizing: border-box;">
+        <div style="flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 2px 24px 2px 24px; width: 100%; box-sizing: border-box;">
           <div class="dialog-label">${this.root.messages.getMessage('stam:template')}</div>
           <div class="dialog-description" style="margin-bottom: 8px;">${this.root.messages.getMessage('stam:select-template-for-new-project')}</div>
           <div class="template-list">
@@ -526,9 +526,7 @@ class ProjectManager extends BaseComponent {
           item.classList.add('selected');
           
           // Update project name if it's still the default
-          if (nameInput.value === projectName) {
-            nameInput.value = selectedTemplate.name;
-          }
+          nameInput.value = selectedTemplate.name;
         });
       });
       
@@ -540,12 +538,12 @@ class ProjectManager extends BaseComponent {
         buttons: [
           {
             label: this.root.messages.getMessage('stam:cancel'),
-            className: 'secondary',
+            className: 'btn btn-neutral',
             onClick: () => {resolve({}); dialog.close();}
           },
           {
             label: this.root.messages.getMessage(chooseTemplate?'stam:choose':'stam:create'),
-            className: 'primary',
+            className: 'btn btn-positive',
             onClick: () => {
               if (selectedTemplate) {
                 resolve({
@@ -613,7 +611,7 @@ class ProjectManager extends BaseComponent {
       
       // Create content HTML
       content.innerHTML = `
-        <div style="padding: 0 24px 16px 24px; width: 100%; box-sizing: border-box;">
+        <div style="padding: 0 24px 2px 24px; width: 100%; box-sizing: border-box;">
           <div class="form-group">
             <div class="dialog-label">${this.root.messages.getMessage('stam:select-project-to-open')}</div>
           </div>
@@ -660,12 +658,12 @@ class ProjectManager extends BaseComponent {
         buttons: [
           {
             label: this.root.messages.getMessage('stam:cancel'),
-            className: 'secondary',
+            className: 'btn btn-neutral',
             onClick: () => {resolve(null); dialog.close();}
           },
           {
             label: this.root.messages.getMessage('stam:open'),
-            className: 'primary',
+            className: 'btn btn-positive',
             onClick: () => {
               if (selectedProject) {
                 resolve(selectedProject);
@@ -828,7 +826,7 @@ class ProjectManager extends BaseComponent {
         buttons: [
           {
             label: this.root.messages.getMessage('stam:cancel'),
-            className: 'secondary',
+            className: 'btn btn-neutral',
             onClick: () => {
               resolve(null);
               dialog.close();
@@ -836,7 +834,7 @@ class ProjectManager extends BaseComponent {
           },
           {
             label: this.root.messages.getMessage('stam:open'),
-            className: 'primary',
+            className: 'btn btn-positive',
             disabled: true, // Initially disabled until a file is selected
             onClick: () => {
               if (selectedFile) {
@@ -1082,7 +1080,7 @@ class ProjectManager extends BaseComponent {
         buttons: [
           {
             label: this.root.messages.getMessage('stam:cancel'),
-            className: 'secondary',
+            className: 'btn btn-neutral',
             onClick: () => {
               resolve(null);
               dialog.close();
@@ -1090,7 +1088,7 @@ class ProjectManager extends BaseComponent {
           },
           {
             label: this.root.messages.getMessage('stam:save'),
-            className: 'primary',
+            className: 'btn btn-positive',
             disabled: !fileName.trim(),
             onClick: () => {
               const fullPath = currentPath ? `${currentPath}/${fileName}` : fileName;
