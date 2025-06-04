@@ -288,7 +288,7 @@ class EditPlaylistDialog {
   savePlaylist() {
     const nameInput = document.getElementById('playlist-edit-name');
     if (!nameInput || !nameInput.value.trim()) {
-      alert(this.root.messages.getMessage('stam:playlist-name-required'));
+      this.root.alert.showWarning('stam:playlist-name-required');
       return;
     }
     
@@ -296,7 +296,7 @@ class EditPlaylistDialog {
     const validClips = this.clipItems.filter(clip => clip.url && clip.url.trim() !== '');
     
     if (validClips.length === 0) {
-      alert(this.root.messages.getMessage('stam:playlist-must-contain-at-least-one-clip'));
+      this.root.alert.showWarning('stam:playlist-must-contain-at-least-one-clip');
       return;
     }
     

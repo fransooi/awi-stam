@@ -1316,8 +1316,7 @@ class SocketSideWindow extends SideWindow {
         }
         
         if (!isValid) {
-          // Show error message
-          alert(errorMessage);
+          this.root.alert.showError(errorMessage);
           return;
         }
         

@@ -539,7 +539,8 @@ class ProjectManager extends BaseComponent {
           {
             label: this.root.messages.getMessage('stam:cancel'),
             className: 'btn btn-neutral',
-            onClick: () => {resolve({}); dialog.close();}
+            onClick: () => {
+              resolve({}); dialog.close();}
           },
           {
             label: this.root.messages.getMessage(chooseTemplate?'stam:choose':'stam:create'),
@@ -553,7 +554,7 @@ class ProjectManager extends BaseComponent {
                 });
                 dialog.close();
               } else {
-                alert(this.root.messages.getMessage('stam:please-select-a-template'));
+                this.root.alert.showWarning('stam:please-select-a-template');
                 return false;
               }
             }
@@ -669,7 +670,7 @@ class ProjectManager extends BaseComponent {
                 resolve(selectedProject);
                 dialog.close();
               } else {
-                alert(this.root.messages.getMessage('stam:please-select-a-project'));
+                this.root.alert.showWarning('stam:please-select-a-project');
                 dialog.close();
                 return false;
               }

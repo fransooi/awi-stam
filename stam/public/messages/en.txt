@@ -10,6 +10,13 @@ stam:close                                Close
 stam:delete                               Delete
 stam:yes                                  Yes
 stam:no                                   No
+stam:abort                                Abort
+stam:alert                                Alert
+stam:information                          Information
+stam:warning                              Warning
+stam:error                                Error
+stam:success                              Success
+stam:alert_message                        Message
 stam:create-classroom                     Create Classroom
 stam:classroom-mode                       Mode
 stam:classroom-icon                       Icon

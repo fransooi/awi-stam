@@ -38,6 +38,7 @@ import IconBar from './components/IconBar.js';
 import SideBar from './components/SideBar.js';  
 import RightBar from './components/RightBar.js';
 import BaseComponent from './utils/BaseComponent.js';
+import Alerts from './components/Alerts.js';
 
 // Main application class
 class StamApp extends BaseComponent {
@@ -66,6 +67,7 @@ class StamApp extends BaseComponent {
 
     // Initialize managers
     this.utilities = new Utilities();
+    this.alert = new Alerts(this.componentId);
     this.messages = new MessageManager(this.componentId);
     this.server = new ServerManager(this.componentId);
     this.project = new ProjectManager(this.componentId);
@@ -101,6 +103,7 @@ class StamApp extends BaseComponent {
 
     // Initialize managers first
     await this.preferences.init({});
+    await this.alert.init({});
     await this.messages.init({});
     await this.server.init({});
     await this.project.init({});
