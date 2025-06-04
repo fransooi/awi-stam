@@ -263,11 +263,12 @@ class PreferenceManager extends BaseComponent {
     var response = await this.showPreferencesDialog(currentPrefs);    
     if (response)
     {
-      if ( response.theme)
+      if (response.theme)
         this.currentPrefs.themeId = response.themeId;
       this.applyTheme(true);
-      this.root.messages.sendRequestTo(this.root.messages.componentId, MESSAGESCOMMANDS.SET_LANGUAGE, { language: response.language });
       this.savePreferences();
+      this.root.alert.showSuccess('stam:preferences-saved');
+      this.root.messages.sendRequestTo(this.root.messages.componentId, MESSAGESCOMMANDS.SET_LANGUAGE, { language: response.language });
     }
     return true;
   }

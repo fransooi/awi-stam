@@ -44,6 +44,8 @@ export const CLASSROOMCOMMANDS = {
   STUDENT_DISCONNECTED: 'STUDENT_DISCONNECTED',
   GET_CAMERA_SETTINGS: 'GET_CAMERA_SETTINGS',
   TEACHER_VIEW_CONNECT: 'TEACHER_VIEW_CONNECT',
+  CLASSROOM_JOINED: 'CLASSROOM_JOINED',
+  CLASSROOM_LEFT: 'CLASSROOM_LEFT',
 };
 
 class ClassroomManager extends BaseComponent {
@@ -93,7 +95,7 @@ class ClassroomManager extends BaseComponent {
       {
         var response = await this.root.server.createClassroom({classroomInfo});
         if (response.error)
-          this.root.messageBar.showErrorMessage(response.error);
+          this.root.alert.showError(response.error);
       }
     }
   }
@@ -121,10 +123,11 @@ class ClassroomManager extends BaseComponent {
             this.teacherHandle = response.teacherHandle;
             this.teacherName = response.teacherName;
             this.sendMessageTo('class:SideBar', MESSAGES.ADD_SIDE_WINDOW, { type: 'TeacherSideWindow', height: 400 }); 
+            this.broadcast(CLASSROOMCOMMANDS.CLASSROOM_JOINED, { classroomId: this.teacherClassroomId, teacherHandle: this.teacherHandle });
           }
           else
           {
-            this.root.messageBar.showErrorMessage(response.error);
+            this.root.alert.showError(response.error);
           }
         }
         else{
@@ -142,19 +145,20 @@ class ClassroomManager extends BaseComponent {
             this.studentHandle = response.studentHandle;
             this.studentName = response.studentName;
             await this.sendMessageTo('class:SideBar', MESSAGES.ADD_SIDE_WINDOW, { type: 'TeacherViewSideWindow', height: 400 }); 
+            this.broadcast(CLASSROOMCOMMANDS.CLASSROOM_JOINED, { classroomId: this.studentClassroomId, studentHandle: this.studentHandle });
             if (this.teacherConnected)
               await this.sendMessageTo('class:TeacherViewSideWindow', CLASSROOMCOMMANDS.TEACHER_VIEW_CONNECT, { classroomId: this.studentClassroomId, studentHandle: this.studentHandle });
           }
           else
           {
-            this.root.messageBar.showErrorMessage(response.error);
+            this.root.alert.showError(response.error);
           }
         }
       }        
     }
     else
     {
-      this.root.messageBar.showErrorMessage(response.error);
+      this.root.alert.showError(response.error);
     }
   }
   async handleDeleteClassroom(data, senderId) {
@@ -172,17 +176,17 @@ class ClassroomManager extends BaseComponent {
         var response = await this.root.server.deleteClassroom({classroomId: response.classroomId});
         if (!response.error)
         {
-          this.root.messageBar.showSuccessMessage(this.root.messages.getMessage('stam:classroom-deleted-successfully'));
+          this.root.alert.showSuccess('stam:classroom-deleted-successfully');
         }
         else
         {
-          this.root.messageBar.showErrorMessage(response.error);
+          this.root.alert.showError(response.error);
         }
       }
     }
     else
     {
-      this.root.messageBar.showErrorMessage(response.error);
+      this.root.alert.showError(response.error);
     }
   }
   async handleLeaveClassroom(data,senderId){
@@ -205,7 +209,8 @@ class ClassroomManager extends BaseComponent {
       this.teacherHandle = null;
       this.teacherName = null;
       if (!data.fromTeacher)
-      await this.sendMessageTo('class:SideBar', MESSAGES.REMOVE_SIDE_WINDOW, { name: 'TeacherSideWindow' });
+        this.sendMessageTo('class:SideBar', MESSAGES.REMOVE_SIDE_WINDOW, { name: 'TeacherSideWindow' });
+      this.broadcast(CLASSROOMCOMMANDS.CLASSROOM_LEFT, {});
     }
   }
 
@@ -225,7 +230,8 @@ class ClassroomManager extends BaseComponent {
       this.studentHandle = null;
       this.studentName = null;
       if (!data.fromStudent)
-        await this.sendMessageTo('class:SideBar', MESSAGES.REMOVE_SIDE_WINDOW, { name: 'TeacherViewSideWindow' });
+        this.sendMessageTo('class:SideBar', MESSAGES.REMOVE_SIDE_WINDOW, { name: 'TeacherViewSideWindow' });
+      this.broadcast(CLASSROOMCOMMANDS.CLASSROOM_LEFT, {});
     }
   }
 

@@ -75,6 +75,8 @@ class MenuBar extends BaseComponent {
     this.messageMap[MESSAGES.MODE_CHANGE] = this.handleModeChange;
     this.messageMap[SOCKETMESSAGES.CONNECTED] = this.handleConnected;
     this.messageMap[SOCKETMESSAGES.DISCONNECTED] = this.handleDisconnected;
+    this.messageMap[CLASSROOMCOMMANDS.CLASSROOM_JOINED] = this.handleClassroomJoined;
+    this.messageMap[CLASSROOMCOMMANDS.CLASSROOM_LEFT] = this.handleClassroomLeft;
   }
 
   async init(options={}) {
@@ -100,6 +102,10 @@ class MenuBar extends BaseComponent {
     if (this.loginButtonContainer) {
       this.parentContainer.removeChild(this.loginButtonContainer);
       this.loginButtonContainer=null;
+    }
+    if (this.classroomButtonContainer) {
+      this.parentContainer.removeChild(this.classroomButtonContainer);
+      this.classroomButtonContainer=null;
     }
     if (this.rightContainer) {
       this.parentContainer.removeChild(this.rightContainer);
@@ -156,25 +162,23 @@ class MenuBar extends BaseComponent {
     this.rightContainer.style.display = 'flex';
     this.rightContainer.style.flexDirection = 'row';
     this.rightContainer.style.alignItems = 'center';
+
+    // Create classroom button container
+    this.classroomButtonContainer = document.createElement('div');
+    this.classroomButtonContainer.className = 'classroom-button-container';
+    this.createClassroomButton(this.classroomButtonContainer);
+    this.rightContainer.appendChild(this.classroomButtonContainer);
     
     // Create login button container
     this.loginButtonContainer = document.createElement('div');
     this.loginButtonContainer.className = 'login-button-container';
-    
-    // Create and add login button
     this.createLoginButton(this.loginButtonContainer);
-    
-    // Add login button container to the right container
     this.rightContainer.appendChild(this.loginButtonContainer);
 
     // Create mode selector container
     this.modeSelectorContainer = document.createElement('div');
     this.modeSelectorContainer.className = 'mode-selector-container';
-    
-    // Create and add mode selector
     this.createModeSelector(this.modeSelectorContainer);
-    
-    // Add mode selector container to the right container
     this.rightContainer.appendChild(this.modeSelectorContainer);
     
     // Add the right container to the main container
@@ -217,6 +221,56 @@ class MenuBar extends BaseComponent {
   }
   
   /**
+   * Create the classroom button in the menu bar
+   * @param {HTMLElement} container - The container to add the button to
+   */
+  createClassroomButton(container) {
+    const classroomButton = document.createElement('button');
+    classroomButton.id = 'classroom-button';
+    classroomButton.className = 'classroom-button';
+    classroomButton.title = this.root.messages.getMessage('stam:join-classroom');
+    
+    // Apply styles to match the menu bar height and appearance using theme variables
+    classroomButton.style.backgroundColor = 'var(--button-positive, #1a73e8)';
+    classroomButton.style.color = 'var(--text-positive, #ffffff)';
+    classroomButton.style.border = '1px solid var(--button-positive, #1a73e8)';
+    classroomButton.style.borderRadius = '4px';
+    classroomButton.style.padding = '4px 12px';
+    classroomButton.style.margin = '0 4px';
+    classroomButton.style.fontSize = '12px';
+    classroomButton.style.fontWeight = '500';
+    classroomButton.style.cursor = 'pointer';
+    classroomButton.style.transition = 'all 0.2s ease';
+    classroomButton.style.display = 'flex';
+    classroomButton.style.alignItems = 'center';
+    classroomButton.style.height = '24px';
+    classroomButton.style.justifyContent = 'center';
+    classroomButton.style.transition = 'all 0.2s ease';
+    classroomButton.style.height = 'calc(100% - 10px)';
+    
+    // Create icon element
+    const icon = document.createElement('i');
+    icon.className = 'fas fa-sign-in-alt';
+    icon.style.marginRight = '5px';
+    classroomButton.appendChild(icon);
+    
+    // Add text
+    const text = document.createElement('span');
+    text.textContent = this.root.messages.getMessage('stam:join-classroom');
+    classroomButton.appendChild(text);
+
+    // Add hover and active effects using the shared method
+    this.addButtonEffects(classroomButton,true);
+    
+    // Add click event listener to send button action to root
+    classroomButton.addEventListener('click', () => {
+      this.broadcast(CLASSROOMCOMMANDS.JOIN_CLASSROOM);
+    });
+    
+    container.appendChild(classroomButton);
+  }
+  
+  /**
    * Create the login button in the menu bar
    * @param {HTMLElement} container - The container to add the button to
    */
@@ -256,7 +310,7 @@ class MenuBar extends BaseComponent {
     loginButton.appendChild(text);
     
     // Add hover and active effects using the shared method
-    this.addLoginButtonEffects(loginButton);
+    this.addButtonEffects(loginButton,true);
     
     // Add click event listener to send button action to root
     loginButton.addEventListener('click', () => {
@@ -416,6 +470,73 @@ class MenuBar extends BaseComponent {
     return false;
   }
 
+  async handleClassroomJoined(data, sender) {
+    // Update classroom button to show "Leave Classroom" state
+    const classroomButton = document.getElementById('classroom-button');
+    if (classroomButton) {
+      // Clone the button to remove all event listeners
+      const newClassroomButton = classroomButton.cloneNode(true);
+      classroomButton.parentNode.replaceChild(newClassroomButton, classroomButton);
+      
+      // Update button title and text
+      newClassroomButton.title = this.root.messages.getMessage('stam:menu-leave-classroom');
+      
+      // Update icon
+      const icon = newClassroomButton.querySelector('i');  
+      if (icon) {
+        icon.className = 'fas fa-sign-out-alt';
+      }
+      
+      // Update text
+      const text = newClassroomButton.querySelector('span');
+      if (text) {
+        text.textContent = this.root.messages.getMessage('stam:menu-leave-classroom');
+      }
+      
+      // Update click handler
+      newClassroomButton.addEventListener('click', () => {
+        this.broadcast(CLASSROOMCOMMANDS.LEAVE_CLASSROOM);
+      });
+      
+      // Update button colors for leave classroom state
+      this.addButtonEffects(newClassroomButton,false);
+    }
+    return true;
+  }
+
+  async handleClassroomLeft(data, sender) {
+    // Update classroom button to show "Join Classroom" state
+    const classroomButton = document.getElementById('classroom-button');
+    if (classroomButton) {
+      // Clone the button to remove all event listeners
+      const newClassroomButton = classroomButton.cloneNode(true);
+      classroomButton.parentNode.replaceChild(newClassroomButton, classroomButton);
+      
+      // Update button title and text
+      newClassroomButton.title = this.root.messages.getMessage('stam:menu-join-classroom');
+      
+      // Update icon
+      const icon = newClassroomButton.querySelector('i');  
+      if (icon) {
+        icon.className = 'fas fa-sign-in-alt';
+      }
+      
+      // Update text
+      const text = newClassroomButton.querySelector('span');
+      if (text) {
+        text.textContent = this.root.messages.getMessage('stam:menu-join-classroom');
+      }
+      
+      // Update click handler
+      newClassroomButton.addEventListener('click', () => {
+        this.broadcast(CLASSROOMCOMMANDS.JOIN_CLASSROOM);
+      });
+      
+      // Update button colors for join classroom state
+      this.addButtonEffects(newClassroomButton,true);
+    }
+    return true;
+  }
   /**
    * Handle connected event from socket
    * @param {Object} data - Connection data
@@ -451,7 +572,7 @@ class MenuBar extends BaseComponent {
       });
       
       // Update button colors for logout state
-      this.addLoginButtonEffects(newLoginButton);
+      this.addButtonEffects(newLoginButton, false);
     }
     return true;
   }
@@ -491,7 +612,7 @@ class MenuBar extends BaseComponent {
       });
       
       // Update button colors for login state
-      this.addLoginButtonEffects(newLoginButton);
+      this.addButtonEffects(newLoginButton,true);
     }
     return true;
   }
@@ -500,11 +621,9 @@ class MenuBar extends BaseComponent {
    * Add hover and click effects to the login button
    * @param {HTMLElement} button - The login button element
    */
-  addLoginButtonEffects(button) {
-    const isLoginButton = button.textContent.includes(this.root.messages.getMessage('stam:menu-log-in'));
-  
+  addButtonEffects(button,isPositive) {
     // Set initial colors based on button state
-    if (isLoginButton) {
+    if (isPositive) {
       button.style.backgroundColor = 'var(--button-positive, #1a73e8)';
       button.style.borderColor = 'var(--button-positive, #1a73e8)';
       button.style.color = 'var(--text-positive, #ffffff)';

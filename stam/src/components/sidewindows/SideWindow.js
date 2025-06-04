@@ -95,17 +95,13 @@ class SideWindow extends BaseComponent {
    * Set up drag handling for the window
    */
   setupDragHandling() {
-    console.log('Setting up drag handling for window:', this.id);
-    
     if (!this.header) {
-      console.error('Header element not found for window:', this.id);
       return;
     }
     
     // Get wrapper element once
     const wrapper = this.container.closest('.side-window-wrapper');
     if (!wrapper) {
-      console.error('Wrapper element not found for window:', this.id);
       return;
     }
     
@@ -256,9 +252,7 @@ class SideWindow extends BaseComponent {
     this.header.addEventListener('selectstart', (e) => {
       e.preventDefault();
       return false;
-    });
-    
-    console.log('Drag handling setup complete for window:', this.id);
+    });    
   }
 
   async render() {

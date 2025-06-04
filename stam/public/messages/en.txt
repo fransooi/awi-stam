@@ -16,6 +16,7 @@ stam:information                          Information
 stam:warning                              Warning
 stam:error                                Error
 stam:success                              Success
+stam:preferences-saved                    Preferences saved...
 stam:alert_message                        Message
 stam:create-classroom                     Create Classroom
 stam:classroom-mode                       Mode
@@ -168,6 +169,7 @@ stam:classroom-project-new                 Create a new project
 stam:classroom-project-existing            Use an existing project
 stam:classroom-name                        Classroom name
 stam:join-classroom                        Join Classroom
+stam:leave-classroom                       Leave Classroom
 stam:display-name                          Display Name
 stam:theme-current                         Current Theme
 stam:theme-choose                         Choose Theme
