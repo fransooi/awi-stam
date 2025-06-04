@@ -23,10 +23,12 @@
 import BaseComponent from '../utils/BaseComponent.js';
 import { MENUCOMMANDS } from './MenuBar.js';
 import { Dialog } from '../utils/Dialog.js';
+import { MESSAGESCOMMANDS } from './MessageManager.js';
 
 // Default theme definition
 const DEFAULT_THEME = {
   name: 'Dark',
+  id: 'default-dark',
   colors: {
     'background': '#1e1e1e',                  // UI Background color
     'dialog-background': '#2d2d2d',           // Dialog Background color
@@ -66,6 +68,7 @@ const THEMES = {
   'default-dark': { ...DEFAULT_THEME },
   'default-light': {
     name: 'Light',
+    id: 'default-light',
     colors: {
       'background': '#f5f5f5',
       'dialog-background': '#ffffff',
@@ -101,6 +104,7 @@ const THEMES = {
   },
   'default-red': {
     name: 'Red',
+    id: 'default-red',
     colors: {
       'background': '#f50000',
       'dialog-background': '#ff0000',
@@ -145,22 +149,80 @@ class PreferenceManager extends BaseComponent {
   constructor(parentId = null, containerId) {
     super('PreferenceManager', parentId, containerId);      
     this.messageMap[MENUCOMMANDS.PREFERENCES] = this.handleShowPreferences;
-    this.currentThemeId = 'default-dark';
+    this.defaultThemeId = 'default-dark';
     this.themes = { ...THEMES };
+    this.currentPrefs = {
+      language: 'en',
+      themeId: this.defaultThemeId
+    };
   }
 
+  async init(options = {}) {
+    if (await super.init(options))
+      return;
+    
+    this.loadPreferences();
+    this.applyTheme();
+    return true;
+  }
+  async setLanguage(language) {
+    if (language && language != this.currentPrefs.language)
+      this.currentPrefs.language = language;
+    await this.sendRequestTo('class:MessageManager', MESSAGESCOMMANDS.SET_LANGUAGE, { language: this.currentPrefs.language });
+    return true;
+  }
+  async destroy() {
+    await super.destroy();
+    return true;
+  }
+  
+  /**
+   * Load preferences
+   */
+  loadPreferences() {
+    // Get all themes from localStorage or use default themes
+    try {
+      const savedPrefs = JSON.parse(localStorage.getItem('stam-preferences'));
+      if (savedPrefs){
+        for ( var t in savedPrefs.themes)
+          this.themes[t] = savedPrefs.themes[t];
+        delete savedPrefs.themes;
+        this.currentPrefs = savedPrefs;
+      }
+    } catch (error) {
+      console.error('Error loading preferences:', error);
+    }
+  }
+
+  savePreferences() {
+    // Save preference
+    var toSave = this.root.utilities.copyObject(this.currentPrefs);
+    toSave.themes = {};
+    for (var t in this.themes) 
+    {
+      if (this.themes[t].id.indexOf('default') < 0)
+        toSave.themes[this.themes[t].id] = this.themes[t];
+    }
+    localStorage.setItem('stam-preferences', JSON.stringify(toSave));
+    return true;
+  }
+        
   /**
    * Get the current theme
    * @returns {Object} Current theme object
    */
   getCurrentTheme() {
-    return this.themes[this.currentThemeId] || { ...DEFAULT_THEME };
+    return this.getTheme(this.currentPrefs.themeId);
   }
-
-  /**
-   * Apply the current theme to the document
-   */
-  applyTheme() {
+  getTheme(themeId) {
+    for (var t in this.themes){
+      if (this.themes[t].id === themeId)
+        return this.themes[t];
+    }
+    console.log('Theme not found:', themeId);
+    return { ...DEFAULT_THEME };
+  }
+  applyTheme(refresh = false) {
     const theme = this.getCurrentTheme();
     
     // Remove any existing theme styles
@@ -191,10 +253,190 @@ class PreferenceManager extends BaseComponent {
     document.head.appendChild(style);
     
     // Force a reflow to ensure styles are applied
-    document.documentElement.getBoundingClientRect();
+    if (refresh)
+    {
+      document.documentElement.getBoundingClientRect();    
+    }
+  }
+
+  async handleShowPreferences(currentPrefs = {}) {
+    var response = await this.showPreferencesDialog(currentPrefs);    
+    if (response)
+    {
+      if ( response.theme)
+        this.currentPrefs.themeId = response.themeId;
+      this.applyTheme(true);
+      this.root.messages.sendRequestTo(this.root.messages.componentId, MESSAGESCOMMANDS.SET_LANGUAGE, { language: response.language });
+      this.savePreferences();
+    }
+    return true;
+  }
+
+
+  async showPreferencesDialog(currentPrefs = {}) {
+    // Request available languages from the root component
+    const availableLangs = await this.sendRequestTo(this.root.messages.componentId, 'GET_AVAILABLE_LANGUAGES');
     
-    // Save theme preference
-    localStorage.setItem('stam-theme', this.currentThemeId);
+    // Get current theme
+    const currentThemeId = this.currentPrefs.themeId;
+    const currentTheme = this.getTheme(currentThemeId);
+    let selectedThemeId = currentThemeId;
+    let dialogClosed = false;
+    let dialogAnswer = null;
+    
+    // Create dialog content container
+    const content = document.createElement('div');
+    content.className = 'preferences-dialog-content';
+    
+    // Create language selection
+    const langGroup = document.createElement('div');
+    langGroup.className = 'form-group';
+    const currentLanguage = (currentPrefs?.language || this.currentPrefs.language);
+    langGroup.innerHTML = `
+      <label for="language-select">${this.root.messages.getMessage('stam:preferences-language')}</label>
+      <select id="language-select" class="form-control">
+        ${availableLangs.map(lang => 
+          `<option value="${lang.language}" ${currentLanguage === lang.language ? 'selected' : ''}>
+            ${lang.country} (${lang.language})
+          </option>`
+        ).join('')}
+      </select>
+    `;
+    content.appendChild(langGroup);
+    
+    // Create theme selection
+    const themeGroup = document.createElement('div');
+    themeGroup.className = 'form-group';
+    themeGroup.innerHTML = `
+      <label>${this.root.messages.getMessage('stam:theme-current')}</label>
+      <div style="display: flex; gap: 10px; margin-top: 5px;">
+        <div id="current-theme-name" style="flex: 1; padding: 10px; border: 1px solid var(--border-color, #444); border-radius: 4px; display: flex; align-items: center;">
+          ${currentTheme.name}
+        </div>
+        <button id="choose-theme" class="btn btn-neutral" type="button">
+          ${this.root.messages.getMessage('stam:theme-choose')}
+        </button>
+        <button id="create-theme" class="btn btn-neutral" type="button">
+          ${this.root.messages.getMessage('stam:theme-create')}
+        </button>
+      </div>
+    `;
+    content.appendChild(themeGroup);
+    
+    // Create dialog buttons
+    const buttons = [
+      {
+        label: this.root.messages.getMessage('stam:preferences-cancel'),
+        className: 'btn-neutral',
+        onClick: function(){
+          dialog.close();
+          dialogClosed = true;
+          dialogAnswer = null;
+        }
+      },
+      {
+        label: this.root.messages.getMessage('stam:preferences-save'),
+        className: 'btn-positive',
+        onClick: () => {
+          const language = content.querySelector('#language-select').value;
+          dialog.close();
+          dialogClosed = true;
+          dialogAnswer = {
+            language,
+            themeId: selectedThemeId,
+            theme: this.getTheme(selectedThemeId)
+          };
+        }
+      }
+    ];
+    
+    // Create and show the dialog
+    const dialog = new Dialog({
+      title: this.root.messages.getMessage('stam:preferences'),
+      content: content,
+      buttons: buttons,
+      theme: this.getCurrentTheme()
+    });
+    
+    // Get references to interactive elements
+    const chooseThemeBtn = content.querySelector('#choose-theme');
+    const createThemeBtn = content.querySelector('#create-theme');
+    
+    // Handle theme selection
+    chooseThemeBtn.addEventListener('click', async () => {
+      const selectedTheme = await this.showThemeSelectionDialog();
+      if (selectedTheme) {
+        selectedThemeId = selectedTheme.id;
+        content.querySelector('#current-theme-name').textContent = selectedTheme.name;
+      }
+    });
+    
+    // Handle theme creation
+    createThemeBtn.addEventListener('click', async () => {
+      const currentTheme = this.getCurrentTheme();
+      const newTheme = await this.showThemeEditorDialog(currentTheme);
+      if (newTheme) {
+        this.themes[newTheme.id] = newTheme;
+        selectedThemeId = newTheme.id;
+        content.querySelector('#current-theme-name').textContent = newTheme.name;
+      }
+    });
+    
+    // Show the dialog and return the promise
+    dialog.open();
+
+    return new Promise(async (resolve) => {
+      while(true)
+      {
+        await this.root.utilities.sleep(10);
+        if (dialogClosed)
+          break;
+      }
+      resolve(dialogAnswer);
+    });
+  }
+  
+  /**
+   * Handle keyboard navigation for dialogs
+   * @param {HTMLElement} dialog - The dialog element to set up keyboard navigation for
+   */
+  _setupDialogKeyboardNavigation(dialog) {
+    const focusableSelector = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+    const focusableElements = dialog.querySelectorAll(focusableSelector);
+    const firstFocusableElement = focusableElements[0];
+    const lastFocusableElement = focusableElements[focusableElements.length - 1];
+    
+    const handleTabKey = (e) => {
+      if (e.key === 'Tab') {
+        const currentFocus = document.activeElement;
+        
+        // If there's only one focusable element, prevent tabbing out of the dialog
+        if (focusableElements.length === 1) {
+          e.preventDefault();
+          firstFocusableElement.focus();
+          return;
+        }
+        
+        // If shift + tab on first element, move to last element
+        if (e.shiftKey && currentFocus === firstFocusableElement) {
+          e.preventDefault();
+          lastFocusableElement.focus();
+        } 
+        // If tab on last element, move to first element
+        else if (!e.shiftKey && currentFocus === lastFocusableElement) {
+          e.preventDefault();
+          firstFocusableElement.focus();
+        }
+      }
+    };
+    
+    // Add event listener for tab key
+    dialog.addEventListener('keydown', handleTabKey);
+    
+    // Clean up function to remove event listener
+    return () => {
+      dialog.removeEventListener('keydown', handleTabKey);
+    };
   }
 
   /**
@@ -202,10 +444,6 @@ class PreferenceManager extends BaseComponent {
    * @returns {Promise} Resolves with the selected theme ID or null if cancelled
    */
   async showThemeSelectionDialog() {
-    const themeItems = Object.entries(this.themes).map(([id, theme]) => ({
-      id,
-      ...theme
-    }));
 
     // Create dialog content
     const content = document.createElement('div');
@@ -222,10 +460,10 @@ class PreferenceManager extends BaseComponent {
     themeList.style.gap = '15px';
     
     // Create theme items
-    themeItems.forEach(theme => {
+    Object.entries(this.themes).forEach(([themeId, theme]) => {
       const themeItem = document.createElement('div');
       themeItem.className = 'theme-item';
-      themeItem.dataset.themeId = theme.id;
+      themeItem.dataset.themeId = themeId;
       themeItem.style.cursor = 'pointer';
       themeItem.style.transition = 'transform 0.2s';
       
@@ -235,7 +473,7 @@ class PreferenceManager extends BaseComponent {
                     color: ${theme.colors['text-primary']};
                     padding: 15px;
                     border-radius: 6px;
-                    border: 2px solid ${theme.id === this.currentThemeId ? theme.colors['button-positive'] : 'transparent'};
+                    border: 2px solid ${theme.id === this.currentPrefs.themeId ? theme.colors['button-positive'] : 'transparent'};
                     transition: border-color 0.2s;
                     height: 100%;">
           <div style="font-weight: bold; margin-bottom: 12px; font-size: 1.1em;">${theme.name}</div>
@@ -263,19 +501,28 @@ class PreferenceManager extends BaseComponent {
     
     content.appendChild(themeList);
     
+    let selectedThemeId = null;
+    let selectedTheme = null;
+    let dialogClosed = false;
+    
+    function closeDialog() {
+      dialog.close();
+      dialogClosed = true;
+    }
+
     // Create dialog buttons
     const buttons = [
       {
         label: this.root.messages.getMessage('stam:theme-cancel'),
         className: 'btn-neutral',
-        onClick: () => dialog.close(null)
+        onClick: () => closeDialog()
       },
       {
         label: this.root.messages.getMessage('stam:theme-use'),
         className: 'btn-positive',
         id: 'theme-use',
         disabled: true,
-        onClick: () => dialog.close(selectedThemeId)
+        onClick: () => closeDialog()
       }
     ];
     
@@ -287,8 +534,9 @@ class PreferenceManager extends BaseComponent {
       theme: this.getCurrentTheme(),
       style: { maxWidth: '800px' }
     });
-    
-    let selectedThemeId = null;
+
+    // Show the dialog
+    dialog.open();
     
     // Handle theme selection
     const themeItemsElements = content.querySelectorAll('.theme-item');
@@ -302,9 +550,9 @@ class PreferenceManager extends BaseComponent {
         
         // Select clicked item
         selectedThemeId = item.dataset.themeId;
-        const theme = this.themes[selectedThemeId];
+        selectedTheme = this.getTheme(selectedThemeId);
         item.querySelector('.theme-preview').style.borderColor = 
-          theme?.colors.buttonPositive || '#1a73e8';
+          selectedTheme?.colors.buttonPositive || '#1a73e8';
         item.style.transform = 'translateY(-3px)';
         
         // Enable the Use button
@@ -324,10 +572,17 @@ class PreferenceManager extends BaseComponent {
           item.style.transform = 'none';
         }
       });
-    });
+    }); 
     
-    // Show the dialog and return the promise
-    return dialog.open();
+    return new Promise(async (resolve) => {
+      while(true)
+      {
+        await this.root.utilities.sleep(10);
+        if (dialogClosed)
+          break;
+      }
+      resolve(selectedTheme);
+    });
   }
   
   /**
@@ -341,7 +596,7 @@ class PreferenceManager extends BaseComponent {
     const theme = JSON.parse(JSON.stringify(currentTheme));
     
     // Reset ID and update name for the new theme
-    delete theme.id;
+    theme.id = this.root.utilities.getUniqueIdentifier(this.themes, 'theme');
     theme.name = this.root.messages.getMessage('stam:theme-copy-of') + ' ' + 
                 (currentTheme.name || this.root.messages.getMessage('stam:theme'));
 
@@ -693,7 +948,7 @@ class PreferenceManager extends BaseComponent {
     // Update theme when inputs change
     const updateThemeFromInputs = () => {
       // Update colors
-      dialog.querySelectorAll('.theme-color-input').forEach(input => {
+      dialog.dialog.querySelectorAll('.theme-color-input').forEach(input => {
         const property = input.getAttribute('data-theme-property');
         const [category, key] = property.split('.');
         if (category && key && theme[category]) {
@@ -702,7 +957,7 @@ class PreferenceManager extends BaseComponent {
       });
       
       // Update fonts
-      dialog.querySelectorAll('input[data-theme-property^="fonts."]').forEach(input => {
+      dialog.dialog.querySelectorAll('input[data-theme-property^="fonts."]').forEach(input => {
         const property = input.getAttribute('data-theme-property');
         const [category, key] = property.split('.');
         if (category && key && theme[category]) {
@@ -711,7 +966,7 @@ class PreferenceManager extends BaseComponent {
       });
       
       // Update preview if it's visible
-      if (dialog.querySelector('#preview-tab').style.display === 'block') {
+      if (dialog.dialog.querySelector('#preview-tab').style.display === 'block') {
         updatePreview();
       }
     };
@@ -788,25 +1043,8 @@ class PreferenceManager extends BaseComponent {
           // Always create a new theme with a unique ID
           const newTheme = { ...theme };
           newTheme.name = themeName;
-          newTheme.id = `theme-${Date.now()}`;
-          
-          // Check if a theme with this name already exists (case insensitive)
-          const existingThemes = this.getThemes();
-          const nameExists = existingThemes.some(t => {
-            // Skip the current theme if it exists (being edited)
-            if (theme.id && t.id === theme.id) return false;
-            // For default themes, check both id and name since they might not have ids
-            const isDefaultTheme = !t.id || t.id.startsWith('default-');
-            const isSameName = t.name.toLowerCase() === themeName.toLowerCase();
-            return isSameName && (isDefaultTheme || t.id !== theme.id);
-          });
-          
-          if (nameExists) {
-            // Show alert to user
-            alert(this.root.messages.getMessage('stam:theme-name-exists'));
-            return;
-          }
-          
+          newTheme.id = this.root.utilities.getUniqueIdentifier(this.themes, 'theme');
+                    
           // Close the dialog and return the new theme
           closeDialog(newTheme);
         } catch (error) {
@@ -833,51 +1071,6 @@ class PreferenceManager extends BaseComponent {
     }).finally(() => {
       if (dialog._cleanup) dialog._cleanup();
     });
-  }
-
-  async init(options = {}) {
-    if (await super.init(options))
-      return;
-    
-    // Load saved theme if exists
-    const savedThemeId = localStorage.getItem('stam-theme');
-    if (savedThemeId && this.themes[savedThemeId]) {
-      this.currentThemeId = savedThemeId;
-    }
-    
-    // Apply the theme
-    this.applyTheme();
-    return true;
-  }
-  
-  async destroy() {
-    await super.destroy();
-    return true;
-  }
-  
-  async handleShowPreferences(currentPrefs = {}) {
-    await this.showPreferencesDialog(currentPrefs);    
-  }
-
-  /**
-   * Get all available themes
-   * @returns {Array} Array of theme objects
-   */
-  getThemes() {
-    // Get all themes from localStorage or use default themes
-    try {
-      const savedThemes = JSON.parse(localStorage.getItem('stam-themes') || '[]');
-      // Combine with default themes, giving priority to saved themes
-      return [
-        ...savedThemes,
-        ...Object.values(THEMES).filter(theme => 
-          !savedThemes.some(t => t.id === theme.id)
-        )
-      ];
-    } catch (error) {
-      console.error('Error loading themes:', error);
-      return Object.values(THEMES);
-    }
   }
 
   /**
@@ -1332,152 +1525,5 @@ class PreferenceManager extends BaseComponent {
     
   }
   
-  async showPreferencesDialog(currentPrefs = {}) {
-    // Request available languages from the root component
-    const availableLangs = await this.sendRequestTo(this.root.messages.componentId, 'GET_AVAILABLE_LANGUAGES');
-    
-    // Get current theme
-    const currentTheme = this.getCurrentTheme();
-    
-    // Create dialog content container
-    const content = document.createElement('div');
-    content.className = 'preferences-dialog-content';
-    
-    // Create language selection
-    const langGroup = document.createElement('div');
-    langGroup.className = 'form-group';
-    langGroup.innerHTML = `
-      <label for="language-select">${this.root.messages.getMessage('stam:preferences-language')}</label>
-      <select id="language-select" class="form-control">
-        ${availableLangs.map(lang => 
-          `<option value="${lang.language}" ${currentPrefs?.language === lang.language ? 'selected' : ''}>
-            ${lang.country} (${lang.language})
-          </option>`
-        ).join('')}
-      </select>
-    `;
-    content.appendChild(langGroup);
-    
-    // Create theme selection
-    const themeGroup = document.createElement('div');
-    themeGroup.className = 'form-group';
-    themeGroup.innerHTML = `
-      <label>${this.root.messages.getMessage('stam:theme-current')}</label>
-      <div style="display: flex; gap: 10px; margin-top: 5px;">
-        <div id="current-theme-name" style="flex: 1; padding: 10px; border: 1px solid var(--border-color, #444); border-radius: 4px; display: flex; align-items: center;">
-          ${currentTheme.name}
-        </div>
-        <button id="choose-theme" class="btn btn-neutral" type="button">
-          ${this.root.messages.getMessage('stam:theme-choose')}
-        </button>
-        <button id="create-theme" class="btn btn-neutral" type="button">
-          ${this.root.messages.getMessage('stam:theme-create')}
-        </button>
-      </div>
-    `;
-    content.appendChild(themeGroup);
-    
-    // Create dialog buttons
-    const buttons = [
-      {
-        label: this.root.messages.getMessage('stam:preferences-cancel'),
-        className: 'btn-neutral',
-        onClick: () => dialog.close(null)
-      },
-      {
-        label: this.root.messages.getMessage('stam:preferences-save'),
-        className: 'btn-positive',
-        onClick: () => {
-          const language = content.querySelector('#language-select').value;
-          this.applyTheme();
-          dialog.close({
-            language,
-            theme: this.currentThemeId
-          });
-        }
-      }
-    ];
-    
-    // Create and show the dialog
-    const dialog = new Dialog({
-      title: this.root.messages.getMessage('stam:preferences'),
-      content: content,
-      buttons: buttons,
-      theme: this.getCurrentTheme()
-    });
-    
-    // Get references to interactive elements
-    const chooseThemeBtn = content.querySelector('#choose-theme');
-    const createThemeBtn = content.querySelector('#create-theme');
-    
-    // Handle theme selection
-    chooseThemeBtn.addEventListener('click', async () => {
-      const selectedThemeId = await this.showThemeSelectionDialog();
-      if (selectedThemeId) {
-        this.currentThemeId = selectedThemeId;
-        const theme = this.getCurrentTheme();
-        content.querySelector('#current-theme-name').textContent = theme.name;
-      }
-    });
-    
-    // Handle theme creation
-    createThemeBtn.addEventListener('click', async () => {
-      const currentTheme = this.getCurrentTheme();
-      const newTheme = await this.showThemeEditorDialog(JSON.parse(JSON.stringify(currentTheme)));
-      if (newTheme) {
-        const newThemeId = `custom-${Date.now()}`;
-        newTheme.id = newThemeId;
-        this.themes[newThemeId] = newTheme;
-        this.currentThemeId = newThemeId;
-        content.querySelector('#current-theme-name').textContent = newTheme.name;
-      }
-    });
-    
-    // Show the dialog and return the promise
-    return dialog.open();
-  }
-  
-  /**
-   * Handle keyboard navigation for dialogs
-   * @param {HTMLElement} dialog - The dialog element to set up keyboard navigation for
-   */
-  _setupDialogKeyboardNavigation(dialog) {
-    const focusableSelector = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
-    const focusableElements = dialog.querySelectorAll(focusableSelector);
-    const firstFocusableElement = focusableElements[0];
-    const lastFocusableElement = focusableElements[focusableElements.length - 1];
-    
-    const handleTabKey = (e) => {
-      if (e.key === 'Tab') {
-        const currentFocus = document.activeElement;
-        
-        // If there's only one focusable element, prevent tabbing out of the dialog
-        if (focusableElements.length === 1) {
-          e.preventDefault();
-          firstFocusableElement.focus();
-          return;
-        }
-        
-        // If shift + tab on first element, move to last element
-        if (e.shiftKey && currentFocus === firstFocusableElement) {
-          e.preventDefault();
-          lastFocusableElement.focus();
-        } 
-        // If tab on last element, move to first element
-        else if (!e.shiftKey && currentFocus === lastFocusableElement) {
-          e.preventDefault();
-          firstFocusableElement.focus();
-        }
-      }
-    };
-    
-    // Add event listener for tab key
-    dialog.addEventListener('keydown', handleTabKey);
-    
-    // Clean up function to remove event listener
-    return () => {
-      dialog.removeEventListener('keydown', handleTabKey);
-    };
-  }
 }
 export default PreferenceManager;

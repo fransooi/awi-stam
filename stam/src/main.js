@@ -105,6 +105,7 @@ class StamApp extends BaseComponent {
     await this.server.init({});
     await this.project.init({});
     await this.classroom.init({});
+    await this.preferences.setLanguage();
 
     const layoutData=this.utilities.loadStorage('stam-layout');  
     let layout;    

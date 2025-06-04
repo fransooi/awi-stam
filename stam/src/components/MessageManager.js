@@ -33,7 +33,7 @@ class MessageManager extends BaseComponent {
    */
   constructor(parentId = null,containerId) {
     super('Messages', parentId,containerId);      
-    this.language = null;
+    this.currentLanguage = '';
     this.messages = {};
     this.countries = {};
     this.english = {};
@@ -80,12 +80,14 @@ class MessageManager extends BaseComponent {
 
   // Set the current language
   async handleSetLanguage(data, senderId) {
+    if (data.language==this.currentLanguage)
+      return true;
+
     // Load texts
     var path = this.messagesPath + '/' + data.language + '.txt';
     var answer = await this.root.utilities.readFile( path, 'text' );
     if ( !answer.error )
     {
-      this.language = data.language;
       answer = answer.replace(/\r\n/g, '\n');
       answer = answer.replace(/\n\n/g, '\n');
       var lines = answer.split( '\n' );
@@ -103,6 +105,7 @@ class MessageManager extends BaseComponent {
           this.messages[ lines[l].substring(0,endId) ] = lines[l].substring(startText);
         }
       }
+      this.currentLanguage = data.language;
       return true;
     }
     return false;
