@@ -33,112 +33,48 @@ const DEFAULT_THEME = {
     'background': '#1e1e1e',                  // UI Background color
     'dialog-background': '#2d2d2d',           // Dialog Background color
     'container-background': '#252526',        // Container Background color
+    'borders': '#444',                        // Border color
     'list-background': '#3a3a3a',             // List Background color
     'list-item-background': '#2a2a2a',        // List Item Background color
     'list-item-background-hover': '#252526',  // List Item Background color
-    'popup-background': '#333333',            // Popup Background color
+    'menu-background': '#252526',             // Menu Background color
+    'menu-background-hover': '#353535',       // Menu Hover Background color
+    'menu-text': '#e0e0e0',                   // Menu Text color
+    'menu-text-hover': '#ffffff',             // Menu Hover Text color
+    'popup-border': '#444444',                // Popup Border color
+    'button-positive': '#1a73e8',             // Button Positive color
+    'button-negative': '#dc3545',             // Button Negative color
+    'button-neutral': '#6c757d',              // Button Neutral color
     'text-primary': '#e0e0e0',                // Text Primary color
     'text-secondary': '#b0b0b0',              // Text Secondary color
     'text-positive': '#ffffff',               // Text Positive color
     'text-negative': '#ffffff',               // Text Negative color
     'text-neutral': '#ffffff',                // Text Neutral color
-    'popup-text': '#ffffff',                  // Popup Text color
-    'button-positive': '#1a73e8',             // Button Positive color
-    'button-negative': '#dc3545',             // Button Negative color
-    'button-neutral': '#6c757d',              // Button Neutral color
     'side-title-background': '#333333',       // Side Title Background color
+    'side-title-background-hover': '#3d3d3d', // Side Title Background Hover color
     'side-title-text': '#ffffff',             // Side Title Text color
+    'side-title-button-hover': '#ffff00',     // Side Title Button Hover color
     'side-border': '#444444',                 // Side Border color
     'side-resize': '#555555',                 // Side Resize color
-    'side-title-background-hover': '#3d3d3d', // Side Title Background Hover color
     'slider-background': '#444',              // Slider Background color
     'slider-track': '#666',                   // Slider Track color
     'slider-thumb': '#888',                   // Slider Thumb color
-    'border-color': '#444',                   // Border color
   },
   fonts: {
     'menu': 'Inter, system-ui, sans-serif', // Menu Font
     'side-window': 'Inter, system-ui, sans-serif', // Side Window Font
     'status-bar': 'Consolas, monospace' // Status Bar Font
+  },
+  fontSizes: {
+    'menu': '12px', // Menu Font Size
+    'side-window': '12px', // Side Window Font Size
+    'status-bar': '12px' // Status Bar Font Size
   }
 };
 
 // Available themes
 const THEMES = {
   'default-dark': { ...DEFAULT_THEME },
-  'default-light': {
-    name: 'Light',
-    id: 'default-light',
-    colors: {
-      'background': '#f5f5f5',
-      'dialog-background': '#ffffff',
-      'container-background': '#f0f0f0',
-      'list-background': '#ffffff',
-      'list-item-background': '#e0e0e0',
-      'list-item-background-hover': '#c0c0c0',
-      'popup-background': '#ffffff',
-      'button-positive': '#1a73e8',
-      'button-negative': '#dc3545',
-      'button-neutral': '#6c757d',
-      'text-primary': '#000000',
-      'text-secondary': '#666666',
-      'text-positive': '#ffffff',
-      'text-negative': '#ffffff',
-      'text-neutral': '#ffffff',
-      'popup-text': '#333333',
-      'side-title-background': '#e0e0e0',
-      'side-title-text': '#000000',
-      'side-border': '#cccccc',
-      'side-resize': '#999999',
-      'side-title-background-hover': '#d0d0d0',
-      'slider-background': '#444',
-      'slider-track': '#666',
-      'slider-thumb': '#888',
-      'border-color': '#ddd',
-    },
-    fonts: {
-      'menu': 'Inter, system-ui, sans-serif',
-      'side-window': 'Inter, system-ui, sans-serif',
-      'status-bar': 'Consolas, monospace'
-    }
-  },
-  'default-red': {
-    name: 'Red',
-    id: 'default-red',
-    colors: {
-      'background': '#f50000',
-      'dialog-background': '#ff0000',
-      'container-background': '#f00000',
-      'list-background': '#ff0000',
-      'list-item-background': '#e00000',
-      'list-item-background-hover': '#c00000',
-      'popup-background': '#ff0000',
-      'button-positive': '#ffff00',
-      'button-negative': '#dc3500',
-      'button-neutral': '#6c7500',
-      'text-primary': '#ffffff',
-      'text-secondary': '#cccccc',
-      'text-positive': '#888888',
-      'text-negative': '#ffffff',
-      'text-neutral': '#ffffff',
-      'popup-text': '#333333',
-      'side-title-background': '#e0e0e0',
-      'side-title-text': '#000000',
-      'side-border': '#cccccc',
-      'side-resize': '#999999',
-      'side-title-background-hover': '#d0d0d0',
-      'slider-background': '#444',
-      'slider-track': '#666',
-      'slider-thumb': '#888',
-      'border-color': '#ddd',
-    },
-    fonts: {
-      'menu': 'Inter, system-ui, sans-serif',
-      'side-window': 'Inter, system-ui, sans-serif',
-      'status-bar': 'Consolas, monospace'
-    }
-  }
-
 };
 
 class PreferenceManager extends BaseComponent {
@@ -694,36 +630,16 @@ class PreferenceManager extends BaseComponent {
     colorsTab.id = 'colors-tab';
     colorsTab.className = 'tab-pane active';
     
-    const colorsHeader = document.createElement('h4');
+    /*const colorsHeader = document.createElement('h4');
     colorsHeader.textContent = this.root.messages.getMessage('stam:theme-colors');
     colorsHeader.style.marginTop = '0';
-    colorsHeader.style.color = 'var(--text-primary, #e0e0e0)';
-    
+    colorsHeader.style.color = 'var(--text-primary, #e0e0e0)';    
     colorsTab.appendChild(colorsHeader);
-    
+    */
     // Create color inputs
-    const colorGroups = {
-      'stam:theme-background': 'background',
-      'stam:theme-dialog-bg': 'dialog-background',
-      'stam:theme-container-bg': 'container-background',
-      'stam:theme-list-bg': 'list-background',
-      'stam:theme-list-bg-hover': 'list-item-background-hover',
-      'stam:theme-list-bg-selected': 'list-item-background',
-      'stam:theme-button-positive': 'button-positive',
-      'stam:theme-button-negative': 'button-negative',
-      'stam:theme-button-neutral': 'button-neutral',
-      'stam:theme-text-primary': 'text-primary',
-      'stam:theme-text-secondary': 'text-secondary',
-      'stam:theme-text-positive': 'text-positive',
-      'stam:theme-text-negative': 'text-negative',
-      'stam:theme-text-neutral': 'text-neutral',
-      'stam:theme-popup-bg': 'popup-background',
-      'stam:theme-popup-text': 'popup-text',
-      'stam:theme-sidetitle-bg': 'side-title-background',
-      'stam:theme-sidetitle-text': 'side-title-text',
-      'stam:theme-side-border': 'side-border',
-      'stam:theme-side-resize': 'side-resize'
-    };
+    let colorGroups = {};
+    for ( var c in currentTheme.colors )
+      colorGroups['stam:theme-' + c] = c;
     
     Object.entries(colorGroups).forEach(([labelKey, colorKey]) => {
       const formGroup = document.createElement('div');
@@ -763,17 +679,22 @@ class PreferenceManager extends BaseComponent {
     fontsTab.className = 'tab-pane';
     
     fontsTab.innerHTML = `
-    <h4>${this.root.messages.getMessage('stam:theme-fonts')}</h4>
     ${Object.entries({
-      menu: this.root.messages.getMessage('stam:theme-font-menu'),
-      sideWindow: this.root.messages.getMessage('stam:theme-font-sidewindow'),
-      statusBar: this.root.messages.getMessage('stam:theme-font-statusbar')
-    }).map(([key, label]) => `
+      'menu': this.root.messages.getMessage('stam:theme-font-menu'),
+      'side-window': this.root.messages.getMessage('stam:theme-font-side-window'),
+      'status-bar': this.root.messages.getMessage('stam:theme-font-status-bar')
+    }).map(([key, label]) => {
+      const currentFont = theme.fonts[key] || '';
+      const currentSize = (theme.fontSizes && theme.fontSizes[key]) || '12px';
+      
+      return `
       <div class="form-group" style="margin-bottom: 15px;" data-font-field="${key}">
-        <label for="font-${key}" style="display: block; margin-bottom: 5px; color: var(--text-primary, #e0e0e0);">${label}</label>
+        <label for="font-${key}" style="display: block; margin-bottom: 5px; color: var(--text-primary, #e0e0e0);">
+          ${label} <span style="color: var(--text-secondary, #b0b0b0); font-size: 0.9em;">(${currentSize})</span>
+        </label>
         <div style="display: flex; gap: 8px;">
           <input type="text" id="font-${key}" class="form-control" data-theme-property="fonts.${key}"
-                 value="${theme.fonts[key] || ''}" style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color, #444);
+                 value="${currentFont}" style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color, #444);
                         background: var(--container-background, #252526); color: var(--text-primary, #e0e0e0);"
                  readonly>
           <button class="btn btn-secondary choose-font" data-font-field="${key}" 
@@ -782,19 +703,18 @@ class PreferenceManager extends BaseComponent {
           </button>
         </div>
       </div>
-    `).join('')}
+    `;}).join('')}
     `;
+    
     tabContent.appendChild(fontsTab);
     
     const previewTab = document.createElement('div');
     previewTab.id = 'preview-tab';
     previewTab.className = 'tab-pane';
     previewTab.innerHTML = `
-    <h4 style="color: var(--text-primary, #e0e0e0); margin-bottom: 15px;">${this.root.messages.getMessage('stam:theme-preview')}</h4>
     <div id="theme-preview" style="padding: 20px; border: 1px solid var(--border-color, #444); border-radius: 4px; margin-top: 10px;
                               background: var(--background, #1e1e1e); color: var(--text-primary, #e0e0e0);">
       <div style="margin-bottom: 20px;">
-        <h3 style="color: var(--text-primary, #e0e0e0);">${this.root.messages.getMessage('stam:theme-preview-title')}</h3>
         <p style="color: var(--text-secondary, #b0b0b0);">${this.root.messages.getMessage('stam:theme-preview-description')}</p>
       </div>
       <div style="display: flex; gap: 10px; margin-bottom: 20px;">
@@ -918,30 +838,11 @@ class PreferenceManager extends BaseComponent {
       if (!preview) return;
       
       // Update preview styles
-      const style = {
-        '--background': theme.colors.background || '#1e1e1e',
-        '--dialog-background': theme.colors.dialogBackground || '#2d2d2d',
-        '--container-background': theme.colors.containerBackground || '#252526',
-        '--button-positive': theme.colors.buttonPositive || '#1a73e8',
-        '--button-negative': theme.colors.buttonNegative || '#dc3545',
-        '--button-neutral': theme.colors.buttonNeutral || '#6c757d',
-        '--list-background': theme.colors.listBackground || '#3a3a3a',
-        '--popup-background': theme.colors.popupBackground || '#333333',
-        '--text-primary': theme.colors.textPrimary || '#e0e0e0',
-        '--text-secondary': theme.colors.textSecondary || '#b0b0b0',
-        '--text-positive': theme.colors.textPositive || '#ffffff',
-        '--text-negative': theme.colors.textNegative || '#ffffff',
-        '--text-neutral': theme.colors.textNeutral || '#ffffff',
-        '--popup-text': theme.colors.popupText || '#ffffff',
-        '--sidetitle-background': theme.colors.sidetitleBackground || '#333333',
-        '--sidetitle-text': theme.colors.sidetitleText || '#ffffff',
-        '--side-border': theme.colors.sideBorder || '#444444',
-        '--side-resize': theme.colors.sideResize || '#555555',
-        '--border-color': '#444',
-        'font-family': theme.fonts.menu || 'Inter, system-ui, sans-serif'
-      };
+      let styles = {};
+      for ( var c in theme.colors )
+        styles['--' + c] = theme.colors[c];
       
-      Object.entries(style).forEach(([key, value]) => {
+      Object.entries(styles).forEach(([key, value]) => {
         preview.style.setProperty(key, value);
       });
     };
@@ -987,11 +888,26 @@ class PreferenceManager extends BaseComponent {
         if (!input) return;
         
         const currentFont = input.value;
-        const selectedFont = await this.showFontPicker(currentFont);
+        const result = await this.showFontPicker(currentFont);
         
-        if (selectedFont) {
-          input.value = selectedFont;
-          theme.fonts[fontField] = selectedFont;
+        if (result) {
+          // Update font family
+          input.value = result.font;
+          theme.fonts[fontField] = result.font;
+          
+          // Update font size if provided
+          if (result.size) {
+            if (!theme.fontSizes) theme.fontSizes = {};
+            theme.fontSizes[fontField] = result.size;
+            
+            // Update the displayed size in the label
+            const label = input.closest('.form-group').querySelector('label');
+            const sizeSpan = label.querySelector('span');
+            if (sizeSpan) {
+              sizeSpan.textContent = `(${result.size})`;
+            }
+          }
+          
           updatePreview();
         }
       }
@@ -1182,13 +1098,14 @@ class PreferenceManager extends BaseComponent {
     searchSection.appendChild(categoriesContainer);
     content.appendChild(searchSection);
 
-    // Create font list container
+    // Create font list container with reduced height
     const fontList = document.createElement('div');
     fontList.id = 'font-list';
-    fontList.style.flex = '1';
+    fontList.style.flex = '0 0 60%';
     fontList.style.overflowY = 'auto';
-    fontList.style.padding = '10px 15px 15px';
-    
+    fontList.style.padding = '15px';
+    fontList.style.maxHeight = '300px';  
+
     const loadingDiv = document.createElement('div');
     loadingDiv.className = 'loading';
     loadingDiv.style.padding = '20px';
@@ -1196,8 +1113,61 @@ class PreferenceManager extends BaseComponent {
     loadingDiv.textContent = this.root.messages.getMessage('stam:font-picker-loading');
     
     fontList.appendChild(loadingDiv);
+
+    // Create font size controls container
+    const sizeContainer = document.createElement('div');
+    sizeContainer.style.padding = '15px';
+    sizeContainer.style.borderTop = '1px solid var(--border-color, #444)';
+  
+    // Font size controls
+    sizeContainer.innerHTML = `
+      <div style="margin-bottom: 10px; font-weight: 500; color: var(--text-primary, #e0e0e0);">
+        ${this.root.messages.getMessage('stam:font-picker-size')}
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <button id="decrease-size" class="btn btn-neutral" style="padding: 4px 8px; min-width: 32px;">-</button>
+        <input type="text" id="font-size" class="form-control" 
+               value="12" 
+               style="width: 60px; text-align: center;"
+               inputmode="numeric" pattern="[0-9]*">
+        <span style="color: var(--text-secondary, #b0b0b0);">px</span>
+        <button id="increase-size" class="btn btn-neutral" style="padding: 4px 8px; min-width: 32px;">+</button>
+      </div>
+    `;
+
     content.appendChild(fontList);
-    
+    content.appendChild(sizeContainer);
+
+    // Initialize font size value if provided
+    const sizeInput = sizeContainer.querySelector('#font-size');
+    const currentSize = currentFont.match(/(\d+)px/);
+    if (currentSize && currentSize[1]) {
+      sizeInput.value = currentSize[1];
+    }
+
+    // Add event listeners for size controls
+    sizeContainer.querySelector('#decrease-size').addEventListener('click', () => {
+      const current = parseInt(sizeInput.value) || 12;
+      if (current > 6) sizeInput.value = current - 1;
+    });
+
+    sizeContainer.querySelector('#increase-size').addEventListener('click', () => {
+      const current = parseInt(sizeInput.value) || 12;
+      if (current < 72) sizeInput.value = current + 1;
+    });
+
+    // Validate size input
+    sizeInput.addEventListener('input', (e) => {
+      const value = e.target.value;
+      if (!/^\d*$/.test(value)) {
+        e.target.value = value.replace(/[^\d]/g, '');
+      } else if (value) {
+        const size = parseInt(value);
+        if (size < 6) e.target.value = '6';
+        if (size > 72) e.target.value = '72';
+      }
+    });
+
     // Add event delegation for font item clicks
     fontList.addEventListener('click', (e) => {
       const fontItem = e.target.closest('.font-item');
@@ -1519,8 +1489,15 @@ class PreferenceManager extends BaseComponent {
           originalOnClose();
         }
         
-        // Resolve with the selected font or null if cancelled
-        resolve(selectedFont || currentFont || null);
+        // Get selected size
+        const selectedSize = sizeInput.value || '12';
+        
+        // Resolve with selected font and size
+        resolve({
+          font: selectedFont,
+          size: selectedSize + 'px'
+        });
+        dialog.close();
       };
     });
     

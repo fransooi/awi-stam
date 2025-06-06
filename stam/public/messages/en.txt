@@ -178,23 +178,6 @@ stam:theme-edit                           Edit Theme
 stam:theme-name                           Theme Name
 stam:theme-colors                         Colors
 stam:theme-fonts                          Fonts
-stam:theme-background                     Background
-stam:theme-dialog-bg                      Dialog Background
-stam:theme-container-bg                   Container Background
-stam:theme-button-positive                Positive Button
-stam:theme-button-negative                Negative Button
-stam:theme-button-neutral                 Neutral Button
-stam:theme-list-bg                        List Background
-stam:theme-popup-bg                       Popup Background
-stam:theme-text-primary                   Primary Text
-stam:theme-text-secondary                 Secondary Text
-stam:theme-text-positive                  Positive Text
-stam:theme-text-negative                  Negative Text
-stam:theme-text-neutral                   Neutral Text
-stam:theme-popup-text                     Popup Text
-stam:theme-font-menu                      Menu Font
-stam:theme-font-sidewindow                Side Window Font
-stam:theme-font-statusbar                 Status Bar Font
 stam:theme-preview                        Preview
 stam:theme-preview-text                   The quick brown fox jumps over the lazy dog
 stam:theme-preview-title                  Theme Preview
@@ -225,7 +208,35 @@ stam:font-picker-cancel                   Cancel
 stam:font-picker-use                      Use
 stam:font-picker-recent                   Recently Used
 stam:font-picker-loading                  Loading fonts...
-stam:theme-sidetitle-bg                   Side Window Title Background
-stam:theme-sidetitle-text                 Side Window Title Text
-stam:theme-side-border                    Side Window Border
-stam:theme-side-resize                    Side Window Resize Handle
+stam:theme-background                     Background
+stam:theme-dialog-background              Dialog Background
+stam:theme-container-background           Container Background
+stam:theme-borders                        Borders
+stam:theme-list-background                List Background
+stam:theme-list-item-background           List Item Background
+stam:theme-list-item-background-hover     List Item Background Hover
+stam:theme-menu-background                Menu Background
+stam:theme-menu-background-hover          Menu Background Hover
+stam:theme-menu-text                      Menu Text
+stam:theme-menu-text-hover                Menu Text Hover
+stam:theme-popup-border                   Popup Border
+stam:theme-button-positive                Button Positive
+stam:theme-button-negative                Button Negative
+stam:theme-button-neutral                 Button Neutral
+stam:theme-text-primary                   Text Primary
+stam:theme-text-secondary                 Text Secondary
+stam:theme-text-positive                  Text Positive
+stam:theme-text-negative                  Text Negative
+stam:theme-text-neutral                   Text Neutral
+stam:theme-side-title-background          Side Title Background
+stam:theme-side-title-background-hover    Side Title Background Hover
+stam:theme-side-title-text                Side Title Text
+stam:theme-side-title-button-hover        Side Title Button Hover
+stam:theme-side-border                    Side Border
+stam:theme-side-resize                    Side Resize
+stam:theme-slider-background              Slider Background
+stam:theme-slider-track                   Slider Track
+stam:theme-slider-thumb                   Slider Thumb
+stam:theme-font-menu                      Menu Font
+stam:theme-font-side-window               Side Window Font
+stam:theme-font-status-bar                Status Bar Font

@@ -3,20 +3,33 @@
   --background: #1e1e1e;
   --dialog-background: #2d2d2d;
   --container-background: #252526;
+  --borders: #444;
+  --list-background: #3a3a3a;
+  --list-item-background: #2a2a2a;
+  --list-item-background-hover: #252526;
+  --menu-background: #252526;
+  --menu-background-hover: #353535;
+  --menu-text: #e0e0e0;
+  --menu-text-hover: #ffffff;
+  --popup-border: #444444;
   --button-positive: #1a73e8;
   --button-negative: #dc3545;
   --button-neutral: #6c757d;
-  --list-background: #3a3a3a;
-  --list-item-background: #2a2a2a;
-  --popup-background: #333333;
   --text-primary: #e0e0e0;
   --text-secondary: #b0b0b0;
   --text-positive: #ffffff;
   --text-negative: #ffffff;
   --text-neutral: #ffffff;
-  --popup-text: #ffffff;
-  --border-color: #444;
-  
+  --side-title-background: '#333333',
+  --side-title-background-hover: '#3d3d3d',
+  --side-title-text: '#ffffff',
+  --side-title-button-hover: '#ffff00',
+  --side-border: '#444444',
+  --side-resize: '#555555',
+  --slider-background: '#444',
+  --slider-track: '#666',
+  --slider-thumb: '#888',
+
   /* Fonts */
   --font-menu: 'Inter', system-ui, sans-serif;
   --font-side-window: 'Inter', system-ui, sans-serif;
@@ -129,10 +142,10 @@ input, button, textarea, select {
 #menu-bar {
   --menu-height: 30px;
   --menu-padding: 0 8px;
-  --menu-bg: var(--background, #1e1e1e);
-  --menu-text: var(--text-primary, #e0e0e0);
-  --menu-hover-bg: var(--button-positive, #1a73e8);
-  --menu-hover-text: var(--text-positive, #ffffff);
+  --menu-bg: var(--menu-background, #1e1e1e);
+  --menu-text: var(--menu-text, #e0e0e0);
+  --menu-hover-bg: var(--menu-background-hover, #1a73e8);
+  --menu-hover-text: var(--menu-text-hover, #ffffff);
   
   background-color: var(--menu-bg);
   color: var(--menu-text);
@@ -1107,11 +1120,11 @@ select.form-control option {
    Popup Menu
    ====================== */
 .popup-menu {
-  --popup-bg: var(--popup-background, #2d2d2d);
-  --popup-text: var(--text-primary, #e0e0e0);
-  --popup-hover-bg: var(--menu-hover-bg, #1a73e8);
-  --popup-hover-text: var(--menu-hover-text, #ffffff);
-  --popup-border: var(--border-color, #444);
+  --popup-bg: var(--menu-background, #2d2d2d);
+  --popup-text: var(--menu-text, #e0e0e0);
+  --popup-hover-bg: var(--menu-background-hover, #1a73e8);
+  --popup-hover-text: var(--menu-text-hover, #ffffff);
+  --popup-border: var(--menu-border, #444);
   
   position: absolute;
   background-color: var(--popup-bg);

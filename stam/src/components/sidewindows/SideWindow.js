@@ -592,6 +592,8 @@ class SideWindow extends BaseComponent {
    * Create the enlarged dialog
    */
   createEnlargedDialog() {
+    //var theme = this.root.preferences.getCurrentTheme();
+
     // Create the dialog overlay
     this.enlargedDialog = document.createElement('div');
     this.enlargedDialog.className = 'side-window-enlarged-overlay';
