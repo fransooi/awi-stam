@@ -240,3 +240,4 @@ stam:theme-slider-thumb                   Slider Thumb
 stam:theme-font-menu                      Menu Font
 stam:theme-font-side-window               Side Window Font
 stam:theme-font-status-bar                Status Bar Font
+stam:theme-font-editor                    Editor Font

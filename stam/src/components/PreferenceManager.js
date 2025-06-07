@@ -28,6 +28,7 @@ import { MESSAGESCOMMANDS } from './MessageManager.js';
 // Default theme definition
 const DEFAULT_THEME = {
   name: 'Dark',
+  description: 'The default STAM dark theme...',
   id: 'default-dark',
   colors: {
     'background': '#1e1e1e',                  // UI Background color
@@ -45,6 +46,9 @@ const DEFAULT_THEME = {
     'button-positive': '#1a73e8',             // Button Positive color
     'button-negative': '#dc3545',             // Button Negative color
     'button-neutral': '#6c757d',              // Button Neutral color
+    'button-positive-hover': '#2a83f8',       // Button Positive color hover
+    'button-negative-hover': '#ec4555',       // Button Negative color hover
+    'button-neutral-hover': '#7c858d',        // Button Neutral color hover
     'text-primary': '#e0e0e0',                // Text Primary color
     'text-secondary': '#b0b0b0',              // Text Secondary color
     'text-positive': '#ffffff',               // Text Positive color
@@ -63,18 +67,71 @@ const DEFAULT_THEME = {
   fonts: {
     'menu': 'Inter, system-ui, sans-serif', // Menu Font
     'side-window': 'Inter, system-ui, sans-serif', // Side Window Font
-    'status-bar': 'Consolas, monospace' // Status Bar Font
+    'status-bar': 'Consolas, monospace', // Status Bar Font
+    'editor': 'Inter, system-ui, sans-serif', // Editor Font
   },
   fontSizes: {
     'menu': '12px', // Menu Font Size
     'side-window': '12px', // Side Window Font Size
-    'status-bar': '12px' // Status Bar Font Size
+    'status-bar': '12px', // Status Bar Font Size
+    'editor': '12px' // Editor Font Size
   }
 };
 
 // Available themes
 const THEMES = {
   'default-dark': { ...DEFAULT_THEME },
+  'default-light': {
+    name: 'Light',
+    description: 'The default STAM light theme...',
+    id: 'default-light',
+    colors: {
+      'background': '#ffffff',                  // UI Background color
+      'dialog-background': '#f3f3f3',           // Dialog Background color
+      'container-background': '#e3e3e3',        // Container Background color
+      'borders': '#c3c3c3',                        // Border color
+      'list-background': '#e3e3e3',             // List Background color
+      'list-item-background': '#d3d3d3',        // List Item Background color
+      'list-item-background-hover': '#a3a3a3',  // List Item Background color
+      'menu-background': '#f3f3f3',             // Menu Background color
+      'menu-background-hover': '#a3a3a3',       // Menu Hover Background color
+      'menu-text': '#000000',                   // Menu Text color
+      'menu-text-hover': '#000000',             // Menu Hover Text color
+      'popup-border': '#c3c3c3',                // Popup Border color
+      'button-positive': '#05aff2',             // Button Positive color
+      'button-negative': '#d9580d',             // Button Negative color
+      'button-neutral': '#a3a3a3',              // Button Neutral color
+      'button-positive-hover': '#04bfe2',       // Button Positive color hover
+      'button-negative-hover': '#c94800',       // Button Negative color hover
+      'button-neutral-hover': '#939393',        // Button Neutral color hover
+      'text-primary': '#000000',                // Text Primary color
+      'text-secondary': '#202020',              // Text Secondary color
+      'text-positive': '#000000',               // Text Positive color
+      'text-negative': '#000000',               // Text Negative color
+      'text-neutral': '#000000',                // Text Neutral color
+      'side-title-background': '#e4e6f1',       // Side Title Background color
+      'side-title-background-hover': '#d4d6f1', // Side Title Background Hover color
+      'side-title-text': '#000000',             // Side Title Text color
+      'side-title-button-hover': '#f0cc90',     // Side Title Button Hover color
+      'side-border': '#c3c3c3',                 // Side Border color
+      'side-resize': '#b3b3b3',                 // Side Resize color
+      'slider-background': '#c3c3c3',              // Slider Background color
+      'slider-track': '#b3b3b3',                   // Slider Track color
+      'slider-thumb': '#a3a3a3',                   // Slider Thumb color
+    },
+    fonts: {
+      'menu': 'Inter, system-ui, sans-serif', // Menu Font
+      'side-window': 'Inter, system-ui, sans-serif', // Side Window Font
+      'status-bar': 'Consolas, monospace', // Status Bar Font
+      'editor': 'Inter, system-ui, sans-serif', // Editor Font
+    },
+    fontSizes: {
+      'menu': '12px', // Menu Font Size
+      'side-window': '12px', // Side Window Font Size
+      'status-bar': '12px', // Status Bar Font Size
+      'editor': '12px' // Editor Font Size
+    }
+  },
 };
 
 class PreferenceManager extends BaseComponent {
@@ -677,13 +734,12 @@ class PreferenceManager extends BaseComponent {
     const fontsTab = document.createElement('div');
     fontsTab.id = 'fonts-tab';
     fontsTab.className = 'tab-pane';
-    
+        
+    var fontList = {};
+    for ( var f in theme.fonts )
+      fontList[f] = this.root.messages.getMessage('stam:theme-font-' + f);
     fontsTab.innerHTML = `
-    ${Object.entries({
-      'menu': this.root.messages.getMessage('stam:theme-font-menu'),
-      'side-window': this.root.messages.getMessage('stam:theme-font-side-window'),
-      'status-bar': this.root.messages.getMessage('stam:theme-font-status-bar')
-    }).map(([key, label]) => {
+    ${Object.entries(fontList).map(([key, label]) => {
       const currentFont = theme.fonts[key] || '';
       const currentSize = (theme.fontSizes && theme.fontSizes[key]) || '12px';
       
@@ -1275,7 +1331,7 @@ class PreferenceManager extends BaseComponent {
           display: 'flex',
           flexDirection: 'column'
         }
-  });
+    });
     
     // Load available fonts
     const loadFonts = async (category = 'all', search = '') => {
@@ -1499,9 +1555,7 @@ class PreferenceManager extends BaseComponent {
         });
         dialog.close();
       };
-    });
-    
+    });    
   }
-  
 }
 export default PreferenceManager;

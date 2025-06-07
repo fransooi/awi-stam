@@ -68,7 +68,7 @@ export default class PopupMenu extends BaseComponent {
   create() {
     // Create menu container
     this.element = document.createElement('div');
-    this.element.className = `popup-menu ${this.className}`;
+    this.element.className = `popup-menu-container`;
     this.element.style.position = 'absolute';
     this.element.style.display = 'none';
     this.element.style.zIndex = this.level === 'main' ? '1000' : '1001';
@@ -79,60 +79,6 @@ export default class PopupMenu extends BaseComponent {
     
     // Add to DOM
     document.body.appendChild(this.element);
-    
-    // Add default styles if not already present
-    this.addStyles();
-  }
-  
-  /**
-   * Add default styles for popup menus
-   */
-  addStyles() {
-    if (document.getElementById('popup-menu-styles')) {
-      return;
-    }
-    
-    const style = document.createElement('style');
-    style.id = 'popup-menu-styles';
-    style.textContent = `
-      .popup-menu {
-        background-color: var(--dialog-background, #2a2a2a);
-        border: 1px solid var(--text-secondary, #444);
-        border-radius: 4px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        min-width: 150px;
-        overflow: hidden;
-        padding: 4px 0;
-      }
-      
-      .popup-menu-item {
-        color: var(--text-primary, #e0e0e0);
-        cursor: pointer;
-        display: flex;
-        justify-content: space-between;
-        padding: 8px 12px;
-        transition: background-color 0.2s;
-        user-select: none;
-        font-family: var(--font-menu, Arial, sans-serif);
-      }
-      
-      .popup-menu-item:hover {
-        background-color: var(--list-item-background-hover, #3a3a3a);
-      }
-      
-      .popup-menu-separator {
-        background-color: var(--text-secondary, #444);
-        height: 1px;
-        margin: 4px 0;
-      }
-      
-      .popup-menu-submenu-indicator {
-        color: var(--text-secondary, #888);
-        margin-left: 8px;
-      }
-    `;
-    
-    document.head.appendChild(style);
   }
   
   /**
@@ -168,21 +114,10 @@ export default class PopupMenu extends BaseComponent {
       return this.createSubmenuItem(item, item.items, item.name);
     }
     
-    // Handle legacy format for menu item with submenu
-    if (typeof item === 'object' && item.submenu) {
-      return this.createSubmenuItem(item, item.submenu, item.label);
-    }
-    
     // Handle simple menu item
     const menuItem = document.createElement('div');
-    menuItem.className = 'popup-menu-item';
-    
-    // Support both old and new menu item formats
-    const itemText = typeof item === 'object' 
-      ? (item.name || item.label || 'Unnamed Item')
-      : item;
-    
-    menuItem.textContent = itemText;
+    menuItem.className = 'popup-menu-item';    
+    menuItem.textContent = item.name;
     
     // Add click handler
     menuItem.addEventListener('click', (e) => {
@@ -368,13 +303,13 @@ export default class PopupMenu extends BaseComponent {
     
     // If this is a submenu, don't destroy it immediately
     // to prevent issues with rapid mouse movements
-    if (this.level === 'sub') {
+    //if (this.level === 'sub') {
       setTimeout(() => {
         if (!this.isVisible) {
           this.destroy();
         }
       }, 100);
-    }
+    //}
   }
   
   /**
@@ -401,9 +336,9 @@ export default class PopupMenu extends BaseComponent {
       this.hide();
       
       // If this is a main menu, destroy it
-      if (this.level === 'main') {
-        this.destroy();
-      }
+      //if (this.level === 'main') {
+      //this.destroy();
+      //}
     }
   }
   
@@ -437,7 +372,10 @@ export default class PopupMenu extends BaseComponent {
     super.destroy();
     
     // Remove event listener
-    document.removeEventListener('click', this.handleDocumentClick);
+    if ( this.handleDocumentClick ) {
+      document.removeEventListener('click', this.handleDocumentClick);
+      this.handleDocumentClick = null;
+    }
     
     // Close any submenus
     this.closeSubmenus();
