@@ -36,7 +36,7 @@
 /* Volume Popup Styles */
 .side-window-volume-popup {
   background: var(--popup-background, #232323);
-  border: 1px solid var(--border-color, #333);
+  border: 1px solid var(--borders, #333);
   border-radius: 10px;
   box-shadow: 0 4px 24px rgba(0,0,0,0.45);
   padding: 24px 32px;
@@ -127,7 +127,7 @@
   height: 100%;
   overflow: hidden;
   background-color: var(--background, #1a1a1a);
-  border-right: 1px solid var(--border-color, #333);
+  border-right: 1px solid var(--borders, #333);
 }
 
 /* Windows Container */
@@ -172,7 +172,7 @@
   margin-top: auto; /* Push to the bottom */
   min-height: 180px;
   max-height: 180px;
-  border-top: 1px solid var(--border-color, #333);
+  border-top: 1px solid var(--borders, #333);
 }
 
 .output-content {
@@ -397,7 +397,7 @@
 /* Resize Separator */
 .resize-separator {
   height: 6px;
-  background-color: var(--border-color, #333);
+  background-color: var(--borders, #333);
   cursor: ns-resize;
   position: absolute;
   bottom: 0;
@@ -420,7 +420,7 @@
   transform: translate(-50%, -50%);
   width: 30px;
   height: 2px;
-  background-color: var(--border-color, #666);
+  background-color: var(--borders, #666);
 }
 
 .resize-separator:hover::after, 
@@ -549,7 +549,7 @@
 
 .clip-selector-separator {
   height: 1px;
-  background-color: var(--border-color, #444);
+  background-color: var(--borders, #444);
   margin: 5px 0;
 }
 
@@ -589,7 +589,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid var(--border-color, #444);
+  border-bottom: 1px solid var(--borders, #444);
 }
 
 .playlist-dialog-close {
@@ -608,12 +608,12 @@
   padding: 10px 15px;
   display: flex;
   justify-content: flex-end;
-  border-top: 1px solid var(--border-color, #444);
+  border-top: 1px solid var(--borders, #444);
 }
 
 .playlist-dialog-buttons button {
   background-color: var(--background, #333);
-  border: 1px solid var(--border-color, #444);
+  border: 1px solid var(--borders, #444);
   color: #fff;
   padding: 5px 15px;
   margin-left: 10px;
@@ -643,7 +643,7 @@
   width: 100%;
   padding: 8px;
   background-color: var(--background, #333);
-  border: 1px solid var(--border-color, #444);
+  border: 1px solid var(--borders, #444);
   color: var(--text-primary, #fff);
   border-radius: 3px;
 }
@@ -666,7 +666,7 @@
 .playlist-list {
   flex: 1;
   overflow-y: auto;
-  border: 1px solid var(--border-color, #444);
+  border: 1px solid var(--borders, #444);
   border-radius: 3px;
   margin-bottom: 10px;
   background-color: var(--background, #1a1a1a);
@@ -674,7 +674,7 @@
 
 .playlist-item {
   padding: 10px;
-  border-bottom: 1px solid var(--border-color, #333);
+  border-bottom: 1px solid var(--borders, #333);
   cursor: pointer;
   display: flex;
   justify-content: space-between;
@@ -710,7 +710,7 @@
 
 .playlist-action-button {
   background-color: var(--background, #333);
-  border: 1px solid var(--border-color, #444);
+  border: 1px solid var(--borders, #444);
   color: var(--text-primary, #fff);
   width: 30px;
   height: 30px;
@@ -751,14 +751,14 @@
 .playlist-clips-container {
   max-height: 250px;
   overflow-y: auto;
-  border: 1px solid var(--border-color, #444);
+  border: 1px solid var(--borders, #444);
   border-radius: 3px;
   background-color: var(--background, #1a1a1a);
 }
 
 .playlist-clip-item {
   padding: 10px;
-  border-bottom: 1px solid var(--border-color, #333);
+  border-bottom: 1px solid var(--borders, #333);
   display: flex;
   align-items: center;
   gap: 5px;
@@ -772,7 +772,7 @@
   width: 100px;
   padding: 5px;
   background-color: var(--background, #333);
-  border: 1px solid var(--border-color, #444);
+  border: 1px solid var(--borders, #444);
   color: var(--text-primary, #fff);
   border-radius: 3px;
 }
@@ -781,7 +781,7 @@
   flex: 1;
   padding: 5px;
   background-color: var(--background, #333);
-  border: 1px solid var(--border-color, #444);
+  border: 1px solid var(--borders, #444);
   color: var(--text-primary, #fff);
   border-radius: 3px;
 }
@@ -789,7 +789,7 @@
 .playlist-clip-move,
 .playlist-clip-remove {
   background-color: var(--background, #333);
-  border: 1px solid var(--border-color, #444);
+  border: 1px solid var(--borders, #444);
   color: var(--text-primary, #fff);
   width: 24px;
   height: 24px;
@@ -864,7 +864,7 @@
 
 .playlist-confirm-buttons button {
   background-color: var(--background, #333);
-  border: 1px solid var(--border-color, #444);
+  border: 1px solid var(--borders, #444);
   color: var(--text-primary, #fff);
   padding: 8px 20px;
   border-radius: 3px;
@@ -890,7 +890,7 @@
   align-items: center;
   padding: 5px;
   background-color: var(--background, #222);
-  border-top: 1px solid var(--border-color, #333);
+  border-top: 1px solid var(--borders, #333);
   position: absolute;
   bottom: 0;
   left: 0;
@@ -951,7 +951,7 @@
   background-color: var(--background, #2a2a2a);
   color: var(--text-primary, #FFFFFF);
   font-weight: bold;
-  border-bottom: 1px solid var(--border-color, #333);
+  border-bottom: 1px solid var(--borders, #333);
 }
 
 .url-modal-close {
@@ -982,7 +982,7 @@
 .url-modal input[type="url"] {
   padding: 8px 12px;
   border-radius: 4px;
-  border: 1px solid var(--border-color, #333);
+  border: 1px solid var(--borders, #333);
   background-color: var(--background, #2a2a2a);
   color: var(--text-primary, #FFFFFF);
   font-size: 14px;

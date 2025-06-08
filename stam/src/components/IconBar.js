@@ -114,7 +114,7 @@ class IconBar extends BaseComponent {
   async handleModeChange(data, sender) {
     await this.setMode(data.mode);
     await this.sendMessageTo(this.modeSpecificIcons.componentId, MESSAGES.RENDER, {});
-    return true;
+    return true;  
   }
 
   /**

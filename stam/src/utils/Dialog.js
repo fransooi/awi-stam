@@ -90,7 +90,7 @@ export class Dialog {
           justify-content: space-between;
           align-items: center;
           padding: 16px 24px;
-          border-bottom: 1px solid var(--border-color, #444);
+          border-bottom: 1px solid var(--borders, #444);
           flex-shrink: 0;
         }
         .dialog-header h2 {
@@ -105,7 +105,7 @@ export class Dialog {
           display: flex;
           justify-content: flex-end;
           gap: 8px;
-          border-top: 1px solid var(--border-color, #444);
+          border-top: 1px solid var(--borders, #444);
         }
         .dialog-content {
           padding: 8px 12px;

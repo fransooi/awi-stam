@@ -966,20 +966,20 @@ class ProjectManager extends BaseComponent {
           </div>
           <input type="text" class="file-name-input" value="${defaultFileName}" 
                  style="width: 100%; padding: 8px; margin-bottom: 16px; background: var(--container-background, #252526); 
-                        border: 1px solid var(--border-color, #444); color: var(--text-primary, #e0e0e0);
+                        border: 1px solid var(--borders, #444); color: var(--text-primary, #e0e0e0);
                         border-radius: 4px; font-size: 14px; outline: none;">
           
           <div style="margin-bottom: 8px; font-size: 14px; color: var(--text-secondary, #b0b0b0);">
             ${this.root.messages.getMessage('stam:location')}:
           </div>
           <div class="current-location" style="margin-bottom: 16px; padding: 8px; background: var(--container-background, #252526); 
-                                          border: 1px solid var(--border-color, #444); color: var(--text-primary, #e0e0e0);
+                                          border: 1px solid var(--borders, #444); color: var(--text-primary, #e0e0e0);
                                           border-radius: 4px; font-size: 14px; min-height: 16px;">
             ${currentPath ? `/${currentPath}` : '/'}
           </div>
         </div>
         
-        <div class="file-list-container" style="flex: 1; overflow: auto; border: 1px solid var(--border-color, #444);">
+        <div class="file-list-container" style="flex: 1; overflow: auto; border: 1px solid var(--borders, #444);">
           <div class="file-list">
             ${this._renderFileList(this.project?.files || [])}
           </div>

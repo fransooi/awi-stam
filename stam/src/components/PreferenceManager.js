@@ -34,7 +34,7 @@ const DEFAULT_THEME = {
     'background': '#1e1e1e',                  // UI Background color
     'dialog-background': '#2d2d2d',           // Dialog Background color
     'container-background': '#252526',        // Container Background color
-    'borders': '#444',                        // Border color
+    'borders': '#808080',                     // Border color
     'list-background': '#3a3a3a',             // List Background color
     'list-item-background': '#2a2a2a',        // List Item Background color
     'list-item-background-hover': '#252526',  // List Item Background color
@@ -63,6 +63,8 @@ const DEFAULT_THEME = {
     'slider-background': '#444',              // Slider Background color
     'slider-track': '#666',                   // Slider Track color
     'slider-thumb': '#888',                   // Slider Thumb color
+    'icon-button-background': '#2d2d2d',        // Icon Button Background color
+    'icon-button-background-hover': '#4d4d4d',  // Icon Button Background Hover color
   },
   fonts: {
     'menu': 'Inter, system-ui, sans-serif', // Menu Font
@@ -89,7 +91,7 @@ const THEMES = {
       'background': '#ffffff',                  // UI Background color
       'dialog-background': '#f3f3f3',           // Dialog Background color
       'container-background': '#e3e3e3',        // Container Background color
-      'borders': '#c3c3c3',                        // Border color
+      'borders': '#808080',                        // Border color
       'list-background': '#e3e3e3',             // List Background color
       'list-item-background': '#d3d3d3',        // List Item Background color
       'list-item-background-hover': '#a3a3a3',  // List Item Background color
@@ -118,6 +120,8 @@ const THEMES = {
       'slider-background': '#c3c3c3',              // Slider Background color
       'slider-track': '#b3b3b3',                   // Slider Track color
       'slider-thumb': '#a3a3a3',                   // Slider Thumb color
+      'icon-button-background': '#e3e3e3',        // Icon Button Background color
+      'icon-button-background-hover': '#d3d3d3',  // Icon Button Background Hover color
     },
     fonts: {
       'menu': 'Inter, system-ui, sans-serif', // Menu Font
@@ -304,7 +308,7 @@ class PreferenceManager extends BaseComponent {
     themeGroup.innerHTML = `
       <label>${this.root.messages.getMessage('stam:theme-current')}</label>
       <div style="display: flex; gap: 10px; margin-top: 5px;">
-        <div id="current-theme-name" style="flex: 1; padding: 10px; border: 1px solid var(--border-color, #444); border-radius: 4px; display: flex; align-items: center;">
+        <div id="current-theme-name" style="flex: 1; padding: 10px; border: 1px solid var(--borders, #444); border-radius: 4px; display: flex; align-items: center;">
           ${currentTheme.name}
         </div>
         <button id="choose-theme" class="btn btn-neutral" type="button">
@@ -621,7 +625,7 @@ class PreferenceManager extends BaseComponent {
     nameInput.style.width = '100%';
     nameInput.style.padding = '8px';
     nameInput.style.borderRadius = '4px';
-    nameInput.style.border = '1px solid var(--border-color, #444)';
+    nameInput.style.border = '1px solid var(--borders, #444)';
     nameInput.style.backgroundColor = 'var(--container-background, #252526)';
     nameInput.style.color = 'var(--text-primary, #e0e0e0)';
     
@@ -634,7 +638,7 @@ class PreferenceManager extends BaseComponent {
     tabsContainer.className = 'tabs';
     tabsContainer.style.display = 'flex';
     tabsContainer.style.margin = '15px 0';
-    tabsContainer.style.borderBottom = '1px solid var(--border-color, #444)';
+    tabsContainer.style.borderBottom = '1px solid var(--borders, #444)';
     
     // Create tab buttons
     const iTabs = [
@@ -721,7 +725,7 @@ class PreferenceManager extends BaseComponent {
       colorInput.style.width = '60px';
       colorInput.style.height = '30px';
       colorInput.style.padding = '0';
-      colorInput.style.border = '1px solid var(--border-color, #444)';
+      colorInput.style.border = '1px solid var(--borders, #444)';
       colorInput.style.backgroundColor = 'var(--container-background, #252526)';
       colorInput.style.cursor = 'pointer';
       
@@ -750,7 +754,7 @@ class PreferenceManager extends BaseComponent {
         </label>
         <div style="display: flex; gap: 8px;">
           <input type="text" id="font-${key}" class="form-control" data-theme-property="fonts.${key}"
-                 value="${currentFont}" style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color, #444);
+                 value="${currentFont}" style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid var(--borders, #444);
                         background: var(--container-background, #252526); color: var(--text-primary, #e0e0e0);"
                  readonly>
           <button class="btn btn-secondary choose-font" data-font-field="${key}" 
@@ -768,7 +772,7 @@ class PreferenceManager extends BaseComponent {
     previewTab.id = 'preview-tab';
     previewTab.className = 'tab-pane';
     previewTab.innerHTML = `
-    <div id="theme-preview" style="padding: 20px; border: 1px solid var(--border-color, #444); border-radius: 4px; margin-top: 10px;
+    <div id="theme-preview" style="padding: 20px; border: 1px solid var(--borders, #444); border-radius: 4px; margin-top: 10px;
                               background: var(--background, #1e1e1e); color: var(--text-primary, #e0e0e0);">
       <div style="margin-bottom: 20px;">
         <p style="color: var(--text-secondary, #b0b0b0);">${this.root.messages.getMessage('stam:theme-preview-description')}</p>
@@ -1119,7 +1123,7 @@ class PreferenceManager extends BaseComponent {
     // Create search and categories section
     const searchSection = document.createElement('div');
     searchSection.style.padding = '15px';
-    searchSection.style.borderBottom = '1px solid var(--border-color, #444)';
+    searchSection.style.borderBottom = '1px solid var(--borders, #444)';
 
     const searchInput = document.createElement('input');
     searchInput.type = 'text';
@@ -1130,7 +1134,7 @@ class PreferenceManager extends BaseComponent {
     searchInput.style.padding = '8px 12px';
     searchInput.style.marginBottom = '10px';
     searchInput.style.background = 'var(--input-background, #2d2d2d)';
-    searchInput.style.border = '1px solid var(--border-color, #444)';
+    searchInput.style.border = '1px solid var(--borders, #444)';
     searchInput.style.borderRadius = '4px';
     searchInput.style.color = 'var(--text-primary, #e0e0e0)';
 
@@ -1173,7 +1177,7 @@ class PreferenceManager extends BaseComponent {
     // Create font size controls container
     const sizeContainer = document.createElement('div');
     sizeContainer.style.padding = '15px';
-    sizeContainer.style.borderTop = '1px solid var(--border-color, #444)';
+    sizeContainer.style.borderTop = '1px solid var(--borders, #444)';
   
     // Font size controls
     sizeContainer.innerHTML = `

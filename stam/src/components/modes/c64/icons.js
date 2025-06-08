@@ -18,6 +18,7 @@
 */
 import messageBus from '../../../utils/MessageBus.mjs';
 import BaseComponent from '../../../utils/BaseComponent.js';
+import { MENUCOMMANDS } from '../../MenuBar.js';
 
 class C64Icons extends BaseComponent  {
   constructor(parentId,containerId) {
@@ -29,112 +30,168 @@ class C64Icons extends BaseComponent  {
     await super.init(options);
   }
   async destroy() {
-    if (this.parentContainer) {
-      this.buttons.forEach(button => this.parentContainer.removeChild(button));
+    if (this.layoutContainer) {
+      this.buttons.forEach(button => this.layoutContainer.removeChild(button));
     }
+    this.layoutContainer = null;
     this.buttons = [];
+    this.removeStyles();
     await super.destroy();
   }
-  async render(containerId) {    
-    this.parentContainer = await super.render(containerId);
-    this.parentContainer.innerHTML = '';
-    this.layoutContainer=this.parentContainer;
-    
-    // Apply container styles for consistent display
+  async render(containerId) {   
+    if ( this.layoutContainer )
+      return this.layoutContainer;
+
+    this.layoutContainer = await super.render(containerId);
+    this.layoutContainer.innerHTML = '';
+    this.parentContainer=this.layoutContainer;
+    this.addStyles();
+
+    // Apply styles directly to the parent container
     this.parentContainer.style.display = 'flex';
     this.parentContainer.style.flexDirection = 'row';
     this.parentContainer.style.alignItems = 'center';
     this.parentContainer.style.padding = '5px';
-    this.parentContainer.style.backgroundColor = '#4040ff';
+    this.parentContainer.style.backgroundColor = 'var(--background-color)';
     this.parentContainer.style.width = '100%';
     this.parentContainer.style.boxSizing = 'border-box';
-    
-    // Create C64 mode buttons
-    this.addButton('Run', 'run-button');
-    this.addButton('Stop', 'stop-button');
-    this.addButton('Reset', 'reset-button');
-    this.addButton('Load', 'load-button');
-    this.addButton('Save', 'save-button');
-    
-    // Add custom styles for C64 buttons
-    const style = document.createElement('style');
-    style.textContent = `
-      .c64-button {
-        background-color: #7B68EE;
-        color: white;
-        border: 2px solid #9370DB;
-        padding: 4px 8px;
-        margin: 0 4px;
-        cursor: pointer;
-        font-family: 'C64', 'Courier New', monospace;
-      }
-      .c64-button:hover {
-        background-color: #9370DB;
-      }
-      .run-button {
-        background-color: #4CAF50;
-        border-color: #388E3C;
-      }
-      .run-button:hover {
-        background-color: #388E3C;
-      }
-      .stop-button {
-        background-color: #F44336;
-        border-color: #D32F2F;
-      }
-      .stop-button:hover {
-        background-color: #D32F2F;
-      }
-      .reset-button {
-        background-color: #FF9800;
-        border-color: #F57C00;
-      }
-      .reset-button:hover {
-        background-color: #F57C00;
-      }
-    `;
-    document.head.appendChild(style);
-    
+    this.parentContainer.style.overflowX = 'auto';
+    this.parentContainer.style.minHeight = '60px';
+  
+    // Create c64 mode buttons with Font Awesome icons
+    this.addButton('New', MENUCOMMANDS.NEW_FILE, 'new', 'fa-file');
+    this.addButton('Open', MENUCOMMANDS.OPEN_FILE, 'open', 'fa-folder-open');
+    this.addButton('Save', MENUCOMMANDS.SAVE_FILE, 'save', 'fa-save');
+    this.addButton('Run', MENUCOMMANDS.RUN_PROGRAM, 'run', 'fa-play');
+    this.addButton('Debug', MENUCOMMANDS.DEBUG_PROGRAM, 'debug', 'fa-bug');
+    this.addButton('Share', MENUCOMMANDS.SHARE_PROGRAM, 'share', 'fa-share-alt');
+    this.addButton('Help', MENUCOMMANDS.HELP, 'help', 'fa-question-circle');
+  
     return this.parentContainer;
   }
 
-  addButton(text, className) {
+  addButton(text, action,className, iconClass) {
     const button = document.createElement('button');
-    button.className = `icon-button c64-button ${className}`;
-    button.textContent = text;
-    button.addEventListener('click', () => this.handleButtonClick(text));
-    this.parentContainer.appendChild(button);
+    button.className = `c64-button c64-button-${className}`;
+    button.title = text;
+    button.action=action;
+
+    // Create icon element with black border effect
+    const icon = document.createElement('i');
+    icon.className = `fas ${iconClass} c64-icon`;
+    icon.style.fontSize = '24px'; // Double size icons
+    button.appendChild(icon);
+    
+    // No text span anymore, just the icon    
+    button.addEventListener('click', () => this.handleButtonClick(action));
+    this.layoutContainer.appendChild(button);
     this.buttons.push(button);
   }
-  
+
+  // add styles to document if not present
+  addStyles() {
+    const styles = document.querySelectorAll('style[data-c64-style]');
+    if (styles.length > 0) {
+      styles.forEach(style => style.remove());
+    }
+
+    const style = document.createElement('style');
+    style.setAttribute('data-c64-style', true);
+
+    style.textContent = `
+      .c64-button {
+        border: 1px solid var(--borders, #555);
+        border-style: solid !important;
+        border-width: 1px !important;
+        border-radius: 4px;
+        padding: 10px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        transition: all 0.2s ease;
+        background-color: transparent;
+        margin: 0 4px;
+        width: 64px;
+        height: 45px;
+        flex-shrink: 0;
+        box-sizing: border-box;
+      }
+      .c64-button:hover {
+        background-color: var(--icon-button-background-hover);
+      }
+      .c64-button-new {
+        background-color: var(--icon-button-background);
+        color: #90CAF9;
+      }
+      .c64-button-new:hover {
+        background-color: var(--icon-button-background-hover);
+      }
+      .c64-button-open {
+        color: #FFE082;
+      }
+      .c64-button-open:hover {
+        background-color: var(--icon-button-background-hover);
+      }
+      .c64-button-save {
+        color: #A5D6A7;
+      }
+      .c64-button-save:hover {
+        background-color: var(--icon-button-background-hover);
+      }
+      .c64-button-run {
+        color: #81C784;
+      }
+      .c64-button-run:hover {
+        background-color: var(--icon-button-background-hover);
+      }
+      .c64-button-debug {
+        color: #FFB74D;
+      }
+      .c64-button-debug:hover {
+        background-color: var(--icon-button-background-hover);
+      }
+      .c64-button-share {
+        color: #9FA8DA;
+      }
+      .c64-button-share:hover {
+        background-color: var(--icon-button-background-hover);
+      }
+      .c64-button-help {
+        color: #CE93D8;
+      }
+      .c64-button-help:hover {
+        background-color: var(--icon-button-background-hover);
+      }
+      .c64-button-stop {
+        color: #ef4444;
+      }
+      .c64-button-stop:hover {
+        background-color: var(--icon-button-background-hover);
+      }
+      
+      /* Icon border effect */
+      .c64-icon {
+        text-shadow: 
+          -1px -1px 0 #000,
+          1px -1px 0 #000,
+          -1px 1px 0 #000,
+          1px 1px 0 #000;
+        /* Fallback for browsers that don't support text-stroke */
+        -webkit-text-stroke: 0.5px #000;
+        text-stroke: 0.5px #000;
+        paint-order: stroke fill;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  removeStyles() {
+    const styles = document.querySelectorAll('style[data-c64-style]');
+    styles.forEach(style => style.remove());
+  }
+
   handleButtonClick(action) {
-    console.log(`C64 Button clicked: ${action}`);
-    
-    // Call the callback if provided
-    if (typeof this.onIconClickCallback === 'function') {
-      this.onIconClickCallback(action.toLowerCase());
-    }
-    
-    // Handle the action based on button type
-    switch (action.toLowerCase()) {
-      case 'run':
-        this.sendCommandToEmulator('RUN');
-        break;
-      case 'stop':
-        this.sendCommandToEmulator('STOP');
-        break;
-      case 'reset':
-        this.sendCommandToEmulator('RESET');
-        break;
-      case 'load':
-        this.handleLoadAction();
-        break;
-      case 'save':
-        this.handleSaveAction();
-        break;
-      default:
-        console.warn(`Unknown C64 action: ${action}`);
-    }
   }
   
   /**
@@ -145,52 +202,6 @@ class C64Icons extends BaseComponent  {
   sendCommandToEmulator(command, params = {}) {
     // Use the forward method to send the message to all C64OutputSideWindow instances
     messageBus.forward(command, 'C64OutputSideWindow', params);
-  }
-  
-  /**
-   * Handle the Load button action
-   */
-  handleLoadAction() {
-    // Create a file input element
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.prg,.d64,.t64,.s64';
-    fileInput.style.display = 'none';
-    document.body.appendChild(fileInput);
-    
-    // Handle file selection
-    fileInput.addEventListener('change', (event) => {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const data = new Uint8Array(e.target.result);
-          this.sendCommandToEmulator('LOAD_PRG', {
-            data: data,
-            fileName: file.name,
-            autoStart: false
-          });
-        };
-        reader.readAsArrayBuffer(file);
-      }
-      
-      // Remove the file input element
-      document.body.removeChild(fileInput);
-    });
-    
-    // Trigger the file selection dialog
-    fileInput.click();
-  }
-  
-  /**
-   * Handle the Save button action
-   */
-  handleSaveAction() {
-    // For now, just log that this feature is not implemented
-    console.log('C64 Save functionality not implemented yet');
-    
-    // In a future implementation, this could request a snapshot from the emulator
-    // and then offer it as a download to the user
   }
   
   /**

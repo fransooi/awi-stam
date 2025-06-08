@@ -615,7 +615,7 @@ class ClassroomManager extends BaseComponent {
       nameInput.style.flex = '1';
       nameInput.style.padding = '8px 12px';
       nameInput.style.borderRadius = '4px';
-      nameInput.style.border = '1px solid var(--border-color, #444)';
+      nameInput.style.border = '1px solid var(--borders, #444)';
       nameInput.style.background = 'var(--container-background, #2a2a32)';
       nameInput.style.color = 'var(--text-primary, #eee)';
       nameInput.style.boxSizing = 'border-box';
@@ -630,7 +630,7 @@ class ClassroomManager extends BaseComponent {
       listContainer.style.flex = '1';
       listContainer.style.overflowY = 'auto';
       listContainer.style.padding = '4px';
-      listContainer.style.border = '1px solid var(--border-color, #333)';
+      listContainer.style.border = '1px solid var(--borders, #333)';
       listContainer.style.borderRadius = '6px';
       listContainer.style.background = 'var(--list-background, #1e1e24)';
       
@@ -645,7 +645,7 @@ class ClassroomManager extends BaseComponent {
         img.style.objectFit = 'cover';
         img.style.borderRadius = '8px';
         img.style.background = 'var(--icon-background, #2a2a32)';
-        img.style.border = '1px solid var(--border-color, #444)';
+        img.style.border = '1px solid var(--borders, #444)';
         return img;
       };
 
@@ -659,7 +659,7 @@ class ClassroomManager extends BaseComponent {
         item.style.marginBottom = '8px';
         item.style.borderRadius = '8px';
         item.style.background = 'var(--container-background, #2a2a32)';
-        item.style.border = '1px solid var(--border-color, #333)';
+        item.style.border = '1px solid var(--borders, #333)';
         item.style.cursor = 'pointer';
         item.style.transition = 'all 0.2s ease';
         
@@ -749,7 +749,7 @@ class ClassroomManager extends BaseComponent {
           const items = listContainer.querySelectorAll('.classroom-item');
           items.forEach(i => {
             i.style.background = 'var(--container-background, #2a2a32)';
-            i.style.borderColor = 'var(--border-color, #333)';
+            i.style.borderColor = 'var(--borders, #333)';
             i.querySelector('.selected-indicator').style.opacity = '0';
           });
           

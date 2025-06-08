@@ -74,12 +74,14 @@ class AMOS13Icons extends BaseComponent{
       document.removeEventListener('keyup', this.handleKeyUp.bind(this));
       this.parentContainer.removeChild(this.amosIconBar);
       this.amosIconBar=null;
+      this.removeStyles();
     }
   }
   async render(containerId) {
     this.parentContainer=await super.render(containerId);
     this.parentContainer.innerHTML = '';
     this.layoutContainer=this.parentContainer;
+    this.addStyles();
 
     // Create main container for AMOS icon bar
     this.amosIconBar = document.createElement('div');
@@ -151,6 +153,135 @@ class AMOS13Icons extends BaseComponent{
     oldStyles.forEach(style => style.remove());
   }
   
+  // Add AMOS1.3 style to document if not present
+  addStyles() {
+    const styles = document.querySelectorAll('style[data-amos-style]');
+    if (styles.length > 0) {
+      return;
+    }
+
+    const style = document.createElement('style');
+    style.setAttribute('data-amos-style', true);
+
+    /* AMOS 1.3 specific styling */
+    style.textContent = `
+      .amos-icon-bar {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        font-family: 'Topaz', var(--font-status-bar);
+        background-color: var(--background);
+        color: var(--text-primary);
+        box-sizing: border-box;
+        padding: 10px;
+        gap: 10px;
+      }
+
+      .amos-top-section {
+        display: flex;
+        width: 100%;
+      }
+
+      .amos-logo-area {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #000000;
+        border: 3px solid white;
+        font-weight: bold;
+        font-size: 16px;
+        padding: 5px;
+        width: 20%;
+        height: 100%;
+      }
+
+      .amos-logo-image {
+        max-width: 100%;
+        max-height: 100%;
+      }
+
+      .amos-function-keys-container {
+        display: flex;
+        flex-direction: column;
+        background-color: #000000;
+        border: 3px solid white;
+        border-left: none;
+        padding: 5px;
+        width: 80%;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .amos-function-keys-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        margin-bottom: 0;
+      }
+
+      .amos-function-keys-row:last-child {
+        margin-bottom: 0;
+      }
+
+      .amos-info-area {
+        background-color: #000000;
+        border: 3px solid white;
+        border-top: none;
+        padding: 5px;
+        font-size: 14px;
+        text-align: center;
+        width: 100%;
+        margin-top: -10px;
+      }
+
+      .amos-function-key {
+        background-color: #FF4500;
+        color: white;
+        border: none;
+        padding: 2px 4px;
+        text-align: center;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 12px;
+        margin: 0 2px;
+        flex: 1;
+        width: 20%;
+      }
+
+      .amos-function-key:hover {
+        filter: brightness(1.2);
+      }
+
+      .amos-key-text {
+        white-space: nowrap;
+      }
+
+      /* Special styling for specific function keys */
+      .amos-function-key[data-key="F3"] {
+        /* Run key */
+        background-color: #FF0000;
+      }
+
+      .amos-function-key[data-key="F10"] {
+        /* Exit key */
+        background-color: #FF0000;
+      }
+
+      /* When in AMOS mode, change the icon bar background */
+      .amos1_3-mode #icon-area {
+        background-color: var(--background);
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  // Remove AMOS1.3 style from document if present
+  removeStyles() {
+    const styles = document.querySelectorAll('style[data-amos-style]');
+    if (styles.length > 0) {
+      styles.forEach(style => style.remove());
+    }
+  }
   handleKeyDown(event) {
     if (event.key === 'Shift' && !this.shiftPressed) {
       this.shiftPressed = true;

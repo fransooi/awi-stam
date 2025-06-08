@@ -74,6 +74,7 @@ class AMOSProIcons extends BaseComponent {
     {
       this.parentContainer.removeChild(this.iconBar);
       this.iconBar=null;
+      this.removeStyles();
     }
   }
 
@@ -81,7 +82,8 @@ class AMOSProIcons extends BaseComponent {
     this.parentContainer=await super.render(containerId);
     this.parentContainer.innerHTML = '';
     this.layoutContainer=this.parentContainer;
-    
+    this.addStyles();
+
     // Create the main icon bar container
     this.iconBar = document.createElement('div');
     this.iconBar.className = 'amospro-icon-bar';
@@ -134,6 +136,76 @@ class AMOSProIcons extends BaseComponent {
     return this.iconBar;
   }
   
+  // Add styles to document if not present
+  addStyles() {
+    const styles = document.querySelectorAll('style[data-amospro-style]');
+    if (styles.length > 0) {
+      return;
+    }
+    const style = document.createElement('style');
+    style.setAttribute('data-amospro-style', true);
+    style.textContent = `
+      .amospro-icon-bar {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        font-family: 'Topaz', 'Courier New', monospace;
+        background-color: #000000;
+        padding: 0;
+        margin: 0;
+        overflow: hidden;
+      }
+
+      .amospro-button-row {
+        display: flex;
+        width: 100%;
+        padding: 0;
+        margin: 0;
+        font-size: 0; /* Remove any space between inline elements */
+        justify-content: flex-start; /* Align buttons to the left */
+      }
+
+      .amospro-button {
+        padding: 0;
+        margin: 0;
+        border: 0;
+        cursor: pointer;
+        display: block;
+        height: auto;
+        width: auto;
+        max-width: none; /* Allow images to be smaller than their natural size */
+        font-size: 0; /* Ensure no whitespace between buttons */
+      }
+
+      .amospro-status-bar {
+        display: flex;
+        justify-content: space-between;
+        background-color: #000000;
+        color: #FFFFFF;
+        padding: 2px 4px;
+        font-size: 12px;
+        border-top: 1px solid #444444;
+      }
+
+      /* When in AMOS Pro mode, change the icon bar background */
+      .amosPro-mode #icon-area {
+        background-color: var(--background);
+        padding: 0;
+        margin: 0;
+        overflow-x: auto; /* Add horizontal scrolling if needed */
+        width: 100%; /* Ensure it takes full width */
+        max-width: 100%; /* Prevent any max-width limitations */
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // Remove styles from document if not present
+  removeStyles() {
+    const styles = document.querySelectorAll('style[data-amospro-style]');
+    styles.forEach(style => style.remove());
+  }
+
   handleResize() {
     if (!this.parentContainer) return;
 
