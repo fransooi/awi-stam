@@ -146,11 +146,7 @@ class AMOS13Icons extends BaseComponent{
     this.amosIconBar.appendChild(infoArea);
     
     // Add the main container to the DOM
-    this.parentContainer.appendChild(this.amosIconBar);
-    
-    // Remove any inline styles that might have been added previously
-    const oldStyles = document.querySelectorAll('style[data-amos-style]');
-    oldStyles.forEach(style => style.remove());
+    this.parentContainer.appendChild(this.amosIconBar);    
   }
   
   // Add AMOS1.3 style to document if not present
@@ -165,21 +161,27 @@ class AMOS13Icons extends BaseComponent{
 
     /* AMOS 1.3 specific styling */
     style.textContent = `
+    
       .amos-icon-bar {
         display: flex;
         flex-direction: column;
         width: 100%;
-        font-family: 'Topaz', var(--font-status-bar);
-        background-color: var(--background);
-        color: var(--text-primary);
+        min-height: 80px;
+        font-family: 'Topaz', monospace;
+        background-color: #000000;
+        color: #FFFFFF;
         box-sizing: border-box;
-        padding: 10px;
-        gap: 10px;
+        border: 2px solid #FFFFFF;
+        padding: 8px;
+        gap: 8px;
+        margin: 0;
       }
 
       .amos-top-section {
         display: flex;
         width: 100%;
+        height: 60px;
+        border-bottom: 1px solid #FFFFFF;
       }
 
       .amos-logo-area {
@@ -187,90 +189,95 @@ class AMOS13Icons extends BaseComponent{
         align-items: center;
         justify-content: center;
         background-color: #000000;
-        border: 3px solid white;
-        font-weight: bold;
-        font-size: 16px;
-        padding: 5px;
-        width: 20%;
-        height: 100%;
+        border-right: 1px solid #FFFFFF;
+        width: 240px;
+        padding: 0px;
       }
 
       .amos-logo-image {
         max-width: 100%;
         max-height: 100%;
+        object-fit: fill;
+        image-rendering: pixelated;
       }
 
       .amos-function-keys-container {
         display: flex;
         flex-direction: column;
         background-color: #000000;
-        border: 3px solid white;
-        border-left: none;
-        padding: 5px;
-        width: 80%;
-        justify-content: center;
-        gap: 8px;
+        flex: 1;
+        height: 100%;
       }
 
       .amos-function-keys-row {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
+        height: 50%;
         width: 100%;
-        margin-bottom: 0;
+        margin: 0;
+        padding: 0;
       }
 
-      .amos-function-keys-row:last-child {
-        margin-bottom: 0;
+      .amos-function-keys-row:first-child {
+        border-bottom: 1px solid #333333;
       }
 
       .amos-info-area {
         background-color: #000000;
-        border: 3px solid white;
-        border-top: none;
-        padding: 5px;
+        color: #FFFFFF;
+        font-family: 'Topaz', monospace;
         font-size: 14px;
         text-align: center;
+        padding: 4px 0;
         width: 100%;
-        margin-top: -10px;
+        border-top: 1px solid #333333;
       }
 
       .amos-function-key {
-        background-color: #FF4500;
+        background-color: #FF6A00;
         color: white;
         border: none;
+        border-right: 4px solid #000000;
+        border-left: 4px solid #000000;
+        border-top: 0px solid #000000;
+        border-bottom: 4px solid #000000;
         padding: 2px 4px;
         text-align: center;
         cursor: pointer;
-        font-family: inherit;
-        font-size: 12px;
-        margin: 0 2px;
+        font-family: 'Topaz', monospace;
+        font-size: 14px;
+        margin: 0;
         flex: 1;
-        width: 20%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+      }
+
+      .amos-function-key:last-child {
+        border-right: none;
       }
 
       .amos-function-key:hover {
-        filter: brightness(1.2);
+        opacity: 0.7;
       }
 
       .amos-key-text {
-        white-space: nowrap;
-      }
-
-      /* Special styling for specific function keys */
-      .amos-function-key[data-key="F3"] {
-        /* Run key */
-        background-color: #FF0000;
-      }
-
-      .amos-function-key[data-key="F10"] {
-        /* Exit key */
-        background-color: #FF0000;
+        display: block;
+        text-align: center;
+        width: 100%;
+        pointer-events: none;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       /* When in AMOS mode, change the icon bar background */
       .amos1_3-mode #icon-area {
-        background-color: var(--background);
+        background-color: #000000;
+        padding: 0;
+        min-height: 80px;
       }
     `;
     document.head.appendChild(style);

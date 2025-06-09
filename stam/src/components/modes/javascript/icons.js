@@ -17,7 +17,7 @@
 * @short JavaScript Icon Bar component
 */
 import BaseComponent, { MESSAGES } from '../../../utils/BaseComponent.js';
-import { ICONACTIONS } from '../../IconBar.js';
+import { MENUCOMMANDS } from '../../MenuBar.js';
 
 class JavascriptIcons extends BaseComponent {
   constructor(parentId,containerId) {
@@ -59,13 +59,13 @@ class JavascriptIcons extends BaseComponent {
     this.parentContainer.style.minHeight = '60px';
     
     // Create JavaScript mode buttons with Font Awesome icons
-    this.addButton('New', ICONACTIONS.NEW_FILE, 'new', 'fa-file');
-    this.addButton('Open', ICONACTIONS.OPEN_FILE, 'open', 'fa-folder-open');
-    this.addButton('Save', ICONACTIONS.SAVE_FILE, 'save', 'fa-save');
-    this.addButton('Run', ICONACTIONS.RUN_PROGRAM, 'run', 'fa-play');
-    this.addButton('Debug', ICONACTIONS.DEBUG_PROGRAM, 'debug', 'fa-bug');
-    this.addButton('Share', ICONACTIONS.SHARE_PROGRAM, 'share', 'fa-share-alt');
-    this.addButton('Help', ICONACTIONS.HELP, 'help', 'fa-question-circle');
+    this.addButton('stam:new-text', MENUCOMMANDS.NEW_FILE, 'new', 'fa-file');
+    this.addButton('stam:open-text', MENUCOMMANDS.OPEN_FILE, 'open', 'fa-folder-open');
+    this.addButton('stam:save-text', MENUCOMMANDS.SAVE_FILE, 'save', 'fa-save');
+    this.addButton('stam:run-text', MENUCOMMANDS.RUN_PROGRAM, 'run', 'fa-play');
+    this.addButton('stam:debug-text', MENUCOMMANDS.DEBUG_PROGRAM, 'debug', 'fa-bug');
+    this.addButton('stam:share-text', MENUCOMMANDS.SHARE_PROGRAM, 'share', 'fa-share-alt');
+    this.addButton('stam:help-text', MENUCOMMANDS.HELP, 'help', 'fa-question-circle');
     
     return this.parentContainer;
   }
@@ -73,7 +73,7 @@ class JavascriptIcons extends BaseComponent {
   addButton(text, action,className, iconClass) {
     const button = document.createElement('button');
     button.className = `javascript-button javascript-button-${className}`;
-    button.title = text;    
+    button.title = this.root.messages.getMessage(text);    
     button.action=action;
 
     // Create icon element with black border effect

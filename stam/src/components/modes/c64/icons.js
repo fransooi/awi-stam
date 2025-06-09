@@ -59,13 +59,13 @@ class C64Icons extends BaseComponent  {
     this.parentContainer.style.minHeight = '60px';
   
     // Create c64 mode buttons with Font Awesome icons
-    this.addButton('New', MENUCOMMANDS.NEW_FILE, 'new', 'fa-file');
-    this.addButton('Open', MENUCOMMANDS.OPEN_FILE, 'open', 'fa-folder-open');
-    this.addButton('Save', MENUCOMMANDS.SAVE_FILE, 'save', 'fa-save');
-    this.addButton('Run', MENUCOMMANDS.RUN_PROGRAM, 'run', 'fa-play');
-    this.addButton('Debug', MENUCOMMANDS.DEBUG_PROGRAM, 'debug', 'fa-bug');
-    this.addButton('Share', MENUCOMMANDS.SHARE_PROGRAM, 'share', 'fa-share-alt');
-    this.addButton('Help', MENUCOMMANDS.HELP, 'help', 'fa-question-circle');
+    this.addButton('stam:new-text', MENUCOMMANDS.NEW_FILE, 'new', 'fa-file');
+    this.addButton('stam:open-text', MENUCOMMANDS.OPEN_FILE, 'open', 'fa-folder-open');
+    this.addButton('stam:save-text', MENUCOMMANDS.SAVE_FILE, 'save', 'fa-save');
+    this.addButton('stam:run-text', MENUCOMMANDS.RUN_PROGRAM, 'run', 'fa-play');
+    this.addButton('stam:debug-text', MENUCOMMANDS.DEBUG_PROGRAM, 'debug', 'fa-bug');
+    this.addButton('stam:share-text', MENUCOMMANDS.SHARE_PROGRAM, 'share', 'fa-share-alt');
+    this.addButton('stam:help-text', MENUCOMMANDS.HELP, 'help', 'fa-question-circle');
   
     return this.parentContainer;
   }
@@ -73,7 +73,7 @@ class C64Icons extends BaseComponent  {
   addButton(text, action,className, iconClass) {
     const button = document.createElement('button');
     button.className = `c64-button c64-button-${className}`;
-    button.title = text;
+    button.title = this.root.messages.getMessage(text);
     button.action=action;
 
     // Create icon element with black border effect

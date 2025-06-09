@@ -16,6 +16,22 @@ stam:information                          Information
 stam:warning                              Warning
 stam:error                                Error
 stam:success                              Success
+stam:new                                  New
+stam:new-text                             New File
+stam:save                                 Save
+stam:save-text                            Save File
+stam:open                                 Open
+stam:open-text                            Open File
+stam:run                                  Run
+stam:run-text                             Run Application
+stam:debug                                Debug
+stam:debug-text                           Debug Application
+stam:stop                                 Stop
+stam:stop-text                            Stop Application
+stam:share                                Share
+stam:share-text                           Share Application
+stam:help                                 Help
+stam:help-text                            Documentation
 stam:preferences-saved                    Preferences saved...
 stam:alert_message                        Message
 stam:create-classroom                     Create Classroom
@@ -53,13 +69,11 @@ stam:select-file-to-open                  Select a file to open
 stam:open-file                            Open File
 stam:filter                               Filter
 stam:no-files-available                   No files available
-stam:save-file                            Save File
 stam:file-exists-overwrite                File already exists, overwrite?
 stam:filename                             Filename
 stam:location                             Location
 stam:no-directories-available             No directories available
 stam:selected                             Selected
-stam:save                                 Save
 stam:project                              Project
 stam:project-dialog-box                   Project dialog box
 stam:menu-file                            File
