@@ -71,6 +71,8 @@ stam:filter                               Filter
 stam:no-files-available                   No files available
 stam:file-exists-overwrite                File already exists, overwrite?
 stam:filename                             Filename
+stam:save-changes                         Save changes?
+stam:file-modified                        File has been modified, do you want to save the changes?
 stam:location                             Location
 stam:no-directories-available             No directories available
 stam:selected                             Selected

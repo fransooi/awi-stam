@@ -68,7 +68,7 @@ class Alerts extends BaseComponent {
     return await this.showCustom('stam:error', message, ['stam:ok|positive'], 'error');
   }
   async showQuestion(message) {
-    return await this.showCustom('stam:question', message, ['stam:yes|positive', 'stam:no|negative' ], 'question');
+    return await this.showCustom('stam:question', message, ['stam:no|negative', 'stam:yes|positive'], 'question');
   }
   async showSuccess(message) {
     return await this.showCustom('stam:success', message, ['stam:ok|positive'], 'success');
@@ -239,6 +239,36 @@ class Alerts extends BaseComponent {
       }
       resolve(dialogResult);
     });
+  }
+
+  // Show a simple rectangluar area at the location of the mouse, not a dialog!
+  // Delete it when mouse moves out of 32x32 pixels area located at the position of apparition.
+  showHint(message) {
+    const theme = this.root.preferences.getCurrentTheme();
+    const hint = document.createElement('div');
+    hint.style.position = 'absolute';
+    hint.style.backgroundColor = 'var(--dialog-background)';
+    hint.style.color = 'var(--text-primary)';
+    hint.style.padding = '8px';
+    hint.style.borderRadius = '4px';
+    hint.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+    hint.style.zIndex = '1000';
+    hint.textContent = message;
+    document.body.appendChild(hint);
+    
+    // Position the hint at the mouse position
+    const handleMouseMove = (e) => {
+      hint.style.left = e.clientX + 'px';
+      hint.style.top = e.clientY + 'px';
+    };
+    document.addEventListener('mousemove', handleMouseMove);
+    
+    // Remove the hint when the mouse leaves the area
+    const handleMouseLeave = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.body.removeChild(hint);
+    };
+    hint.addEventListener('mouseleave', handleMouseLeave);
   }
 }
 export default Alerts;

@@ -644,6 +644,8 @@ select.form-control option {
   flex-wrap: wrap;
   gap: 0px;
   width: 100%;
+  border-left: 1px solid var(--borders);
+  border-right: 1px solid var(--borders);
 }
 
 .icon-button {
@@ -668,6 +670,8 @@ select.form-control option {
   width: 100%;
   min-width: 0; /* Prevent flex item from overflowing */
   display: flex; /* Use flexbox layout */
+  border-left: 1px solid var(--borders);
+  border-right: 1px solid var(--borders);
 }
 
 /* Status line */
@@ -677,7 +681,7 @@ select.form-control option {
   padding: 4px 8px;
   font-size: 14px;
   font-family: var(--font-status-bar);
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--borders);
 }
 
 /* CodeMirror editor styles */

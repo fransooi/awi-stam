@@ -16,13 +16,11 @@
 *
 * @short Component for single-file code editor
 * @description
-* This class provides a default implementation of the EditorSource component.
-* It extends the BaseComponent class and implements the necessary methods
-* for handling status updates and temporary status messages.
+* Management of the source-editor space
 */
 import { basicSetup } from 'codemirror'
-import { EditorState, StateEffect, StateField } from '@codemirror/state'
-import { EditorView, keymap, rectangularSelection } from '@codemirror/view'
+import { EditorState } from '@codemirror/state'
+import { EditorView, keymap } from '@codemirror/view'
 import { defaultKeymap } from '@codemirror/commands'
 import BaseComponent, { MESSAGES } from '../utils/BaseComponent.js'
 import { PROJECTMESSAGES } from './ProjectManager.js'
@@ -77,8 +75,8 @@ class EditorSource extends BaseComponent {
     this.tabsContainer.style.display = 'flex';
     this.tabsContainer.style.flexDirection = 'row';
     this.tabsContainer.style.overflowX = 'auto';
-    this.tabsContainer.style.backgroundColor = '#1e1e1e';
-    this.tabsContainer.style.borderBottom = '1px solid #333';
+    this.tabsContainer.style.backgroundColor = 'var(--container-background)';
+    this.tabsContainer.style.borderBottom = '1px solid var(--borders)';
     this.tabsContainer.style.minHeight = '30px';
     this.container.appendChild(this.tabsContainer);
     
@@ -90,7 +88,7 @@ class EditorSource extends BaseComponent {
     this.editorContainer.style.minHeight = '300px';
     this.editorContainer.style.width = '100%';
     this.editorContainer.style.minWidth = '0'; // Prevent flex item from overflowing
-    this.editorContainer.style.backgroundColor = '#1e1e1e';
+    this.editorContainer.style.backgroundColor = 'var(--container-background)';
     this.container.appendChild(this.editorContainer);
     
     // Check if the current mode supports multi-file editing
@@ -116,9 +114,7 @@ class EditorSource extends BaseComponent {
         // Fallback to javascript if mode-specific module not found
         try {
           ConfigModule = await import('./modes/javascript/editor.js');
-          console.warn(`Could not load editor config for mode: ${mode}. Falling back to javascript.`, err);
         } catch (fallbackErr) {
-          console.error('Could not load fallback javascript editor config.', fallbackErr);
           throw fallbackErr;
         }
       }
@@ -144,9 +140,14 @@ class EditorSource extends BaseComponent {
         this.tabsContainer.style.display = modeConfig.multi ? 'flex' : 'none';
       }
                         
-      return { editorInstance, modeConfig };
+      // Get tab css from loaded mode
+      let css;
+      if (editorInstance.getTabCss)
+        css = editorInstance.getTabCss();      
+      else
+        css = this.getDefaultTabCss();
+      return { editorInstance, modeConfig, css };
     } catch (error) {
-      console.error(`Error loading configuration for mode ${mode}:`, error);
       if (this.editorContainer) {
         this.editorContainer.innerHTML = `<div class="error-message">Failed to load editor for ${mode} mode</div>`;
       }
@@ -162,11 +163,6 @@ class EditorSource extends BaseComponent {
    */
   async createEditor(tab,content) {
     try {     
-      // If we already have an editor view and the mode hasn't changed, just update content
-      //if (this.editorView && this.currentMode === tab.mode) {
-      //  return this.loadTabState(tab);
-      //}
-      
       // Clear the container first
       this.editorContainer.innerHTML = '';
       this.editorContainer.style.display = 'flex';
@@ -180,10 +176,11 @@ class EditorSource extends BaseComponent {
       // Prepare container if mode requires it
       await this.editorInstance.prepareContainer();
       
+      // Replace tab css styles to document
+      this.replaceStyles(configResult.css);
+      
       // Ensure all nested containers have proper width
-      if (this.editorContainer) {
-        // Apply styles to all direct children of the editor container
-        Array.from(this.editorContainer.children).forEach(child => {
+      Array.from(this.editorContainer.children).forEach(child => {
         child.style.width = '100%';
         child.style.height = '100%';
         child.style.display = 'flex';
@@ -195,8 +192,7 @@ class EditorSource extends BaseComponent {
             grandchild.style.height = '100%';
             grandchild.style.flex = '1';
         });
-        });
-      } 
+      });
 
       // Get the parent element for the editor
       const parent = this.editorInstance.getEditorParent ? 
@@ -255,12 +251,25 @@ class EditorSource extends BaseComponent {
       
       return this.editorView;
     } catch (error) {
-      console.error('Error creating CodeMirror editor:', error);
       this.editorContainer.innerHTML = `<div class="error-message">Failed to create editor: ${error.message}</div>`;
       return null;
     }
   }
   
+  // add styles to document if not present
+  replaceStyles(css) {
+    const styles = document.querySelectorAll('style[data-editorsource-style]');
+    if (styles.length > 0) {
+      styles.forEach(style => style.remove());  
+    }
+
+    const style = document.createElement('style');
+    style.setAttribute('data-editorsource-style', true);
+
+    style.textContent = css;
+    document.head.appendChild(style);
+  }
+
   /**
    * Saves the current state of the editor to the specified tab
    * @param {number} tabIndex - Index of the tab to save state for
@@ -343,7 +352,7 @@ class EditorSource extends BaseComponent {
   async addNewTab(oldTab = {},content='') {
     var state = null;
     if (oldTab.state){
-      state=oldTab.state; //EditorState.fromJSON(oldTab.state.toJSON());
+      state=oldTab.state;
     }
     const tab = {
       id: `tab-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -362,13 +371,8 @@ class EditorSource extends BaseComponent {
     if (this.activeTabIndex !== -1 && this.editorView) 
       this.saveTabState(this.activeTabIndex);      
     this.activeTabIndex = this.tabs.length - 1;      
-    /*
-    if (!this.editorView)
-      this.createEditor(tab,content);
-    else 
-      this.loadTabState(tab,content);
-    */
     await this.createEditor(tab,content);
+
     // Update the tabs UI
     this.renderTabs();    
     setTimeout(() => {
@@ -388,7 +392,7 @@ class EditorSource extends BaseComponent {
       mode: tab.mode,
       modified: tab.modified,
       justLoaded: tab.justLoaded,
-      state: tab.state, //EditorState.fromJSON(tab.state.toJSON()),
+      state: tab.state,
       scrollTop: tab.scrollTop,
       scrollLeft: tab.scrollLeft,
     };
@@ -419,17 +423,15 @@ class EditorSource extends BaseComponent {
       return;
     
     if (!tab.justLoaded && tab.modified) {
-      // Show a confirmation dialog
-      await this.showFileModifiedDialog(tab).then((result) => {
-        if (result === 'save') {
-          this.saveTabState(index);
-          var data = this.getTabData(index);
-          this.sendMessageTo('class:ProjectManager', PROJECTMESSAGES.SAVE_FILE, data);
+      var answer = await this.root.alerts.showCustom('stam:save-changes', 'stam:file-modified', ['stam:no|negative', 'stam:yes|positive'], 'question');
+      if (answer === 1)
+      {
+        this.saveTabState(index);
+        var data = this.getTabData(index);
+        var response = await this.sendRequestTo('class:ProjectManager', PROJECTMESSAGES.SAVE_FILE, data);
+        if (response && !response.error)
           this.closeTab(index);
-        } else if (result === 'discard') {
-          this.closeTab(index);
-        }
-      });
+      }
     } else {
       this.closeTab(index);
     }
@@ -516,42 +518,27 @@ class EditorSource extends BaseComponent {
     
     // Clear existing tabs
     this.tabsContainer.innerHTML = '';
-    
+
     // Create tabs for each open tab
     this.tabs.forEach((tab, index) => {
       const tabElement = document.createElement('div');
-      tabElement.className = 'editor-tab';
+      if (index != this.activeTabIndex) 
+        tabElement.className = 'editor-tab editor-tab-inactive';
+      else
+        tabElement.className = 'editor-tab editor-tab-active';      
       tabElement.dataset.index = index;
-      tabElement.style.padding = '8px 12px';
-      tabElement.style.cursor = 'pointer';
-      tabElement.style.borderRight = '1px solid #333';
-      tabElement.style.display = 'flex';
-      tabElement.style.alignItems = 'center';
-      tabElement.style.gap = '8px';
-      tabElement.title = tab.path || tab.name;
-      
-      // Highlight active tab
-      if (index === this.activeTabIndex) {
-        tabElement.style.backgroundColor = '#2d2d2d';
-        tabElement.style.borderBottom = '2px solid #0078d4';
-      }
-      
-      // Tab name
-      const name = document.createElement('span');
-      name.textContent = tab.name + ((!tab.justLoaded && tab.modified) ? ' *' : '');
-      tabElement.appendChild(name);
+      tabElement.title = tab.path;
+      const nameSpan = document.createElement('span');
+      if (tab.name.length > 20)
+        nameSpan.textContent = '...'+tab.name.slice(tab.name.length-20) + ((!tab.justLoaded && tab.modified) ? ' *' : '');
+      else
+        nameSpan.textContent = tab.name + ((!tab.justLoaded && tab.modified) ? ' *' : '');
+      tabElement.appendChild(nameSpan);
       
       // Close button
       const closeBtn = document.createElement('span');
+      closeBtn.className = 'editor-tab-close';
       closeBtn.textContent = '×';
-      closeBtn.style.fontSize = '14px';
-      closeBtn.style.width = '16px';
-      closeBtn.style.height = '16px';
-      closeBtn.style.lineHeight = '16px';
-      closeBtn.style.textAlign = 'center';
-      closeBtn.style.borderRadius = '50%';
-      closeBtn.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-      closeBtn.style.display = 'inline-block';
       tabElement.appendChild(closeBtn);
       
       // Event listeners
@@ -572,11 +559,77 @@ class EditorSource extends BaseComponent {
     const newTabBtn = document.createElement('div');
     newTabBtn.className = 'editor-new-tab';
     newTabBtn.textContent = '+';
-    newTabBtn.style.padding = '8px 12px';
-    newTabBtn.style.cursor = 'pointer';
-    newTabBtn.style.borderRight = '1px solid #333';
-    newTabBtn.addEventListener('click', () => this.addNewTab({ setActive: true }));
-    this.tabsContainer.appendChild(newTabBtn);
+    newTabBtn.addEventListener('click', () => this.addNewTab({ setActive:true }));
+   this.tabsContainer.appendChild(newTabBtn);
+  }
+
+  getDefaultTabCss() {
+    return `
+      .editor-new-tab {
+        padding: 2px 12px;
+        cursor: pointer;
+        border-right: 1px solid var(--borders);
+      }
+      .editor-tab {
+        padding: 2px 12px;
+        cursor: pointer;
+        background-color: var(--container-background);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-top-right-radius: 4px;
+        border-top-left-radius: 4px;
+        font-size: 12px;
+      }
+      .editor-tab-active {
+        background-color: color-mix(in srgb, var(--dialog-background), white 20%);
+        border-top: 1px solid var(--borders);
+        border-left: 1px solid var(--borders);
+        border-right: 1px solid var(--borders);
+      }
+      .editor-tab-inactive {
+        background-color: var(--container-background);
+        border-top: 0px;
+        border-left: 0px;  
+        border-right: 0px;
+      }
+      .editor-tab-active:hover {
+        background-color: color-mix(in srgb, var(--dialog-background), white 20%);
+      }
+      .editor-tab-inactive:hover {
+        background-color: color-mix(in srgb, var(--container-background), white 20%);
+      }
+      .editor-tab-close {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+        line-height: 16px;
+        text-align: center;
+        border: 50%;
+        background-color: transparent;
+        color: var(--text-primary);
+        display: inline-block;
+      }
+      .editor-tab-close:hover {
+        background-color: color-mix(in srgb, var(--dialog-background), white 40%);
+      }
+      .editor-new-tab {
+        font-size: 16px;
+        width: 36px;
+        text-align: center;
+        border-top-right-radius: 4px;
+        border-top-left-radius: 4px;
+        border-top: 0px solid var(--borders);
+        border-left: 0px solid var(--borders);
+        border-right: 0px solid var(--borders);
+        background-color: var(--container-background);
+        color: var(--text-primary);
+        display: inline-block;
+      }
+      .editor-new-tab:hover {
+        background-color: color-mix(in srgb, var(--dialog-background), white 20%);
+      }
+    `;
   }
   
   /**

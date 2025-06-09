@@ -17,9 +17,7 @@
 *
 * @short Container component that manages the source code editor
 * @description
-* This class provides a default implementation of the Editor component.
-* It extends the BaseComponent class and implements the necessary methods
-* for handling status updates and temporary status messages.
+* Base class for mode-specific editors
 */
 import BaseComponent, { MESSAGES } from '../utils/BaseComponent.js'
 import EditorSource from './EditorSource.js'
@@ -80,9 +78,6 @@ class Editor extends BaseComponent {
     editorContainer.style.flex = '1'; // Take up all available space
     editorContainer.style.display = 'flex'; // Use flexbox layout
     this.container.appendChild(editorContainer);
-    
-    // Render the editor in the container
-    //await this.editor.render(editorContainer.id || 'editor-container');
     
     // Prevent default context menu on the editor area
     this.container.addEventListener('contextmenu', (e) => {
