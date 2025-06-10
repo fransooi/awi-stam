@@ -1,11 +1,11 @@
 {
-  firstName: Francois
-  lastName: Lionet
-  fullName: Francois Lionet
-  userName: fran
-  email: ""
-  country: ""
-  language: ""
+  firstName: fslk;jdh
+  lastName: l;kfdjsh
+  fullName: fslk;jdh l;kfdjsh
+  userName: essai
+  email: fdnjfkj@fhdjfkh.com
+  country: undefined
+  language: en
   persona: awi
   paths:
   {
@@ -132,18 +132,5 @@
       Not more than 50 words in any response.
       '''
   ]
-  tools:
-  {
-    edenai-chat:
-    {
-      group: edenai
-      name: chat
-      key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmZjYzY2YzMtOTNmZi00YjYyLWIxNDgtY2FhZWJkNjhkZjIxIiwidHlwZSI6ImZyb250X2FwaV90b2tlbiJ9.Y73ATnBg_mMIZVj78A1Jf5RH-eCXfVPrihgqxSRT0R0
-      providers: openai/gpt-4o
-      fallback: ""
-      model: ""
-      temperature: 0.5
-      max_tokens: 150
-    }
-  }
+  tools: {}
 }

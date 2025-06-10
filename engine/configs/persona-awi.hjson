@@ -6,7 +6,7 @@
   temperature: 0.1
   prompts:
   {
-    user: ".(wop) "
+    user: ".(essai) "
     awi: ".(°°) "
     result: ".(..) "
     information: ".(oo) "

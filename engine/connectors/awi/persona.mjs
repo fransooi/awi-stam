@@ -219,6 +219,9 @@ export default class ConnectorPersona extends ConnectorBase
         var { userName } = this.awi.getArgs( 'userName', args, basket, [ '' ] );
         if ( !userName )
             return this.newAnswer( this.awi.USER_NOT_FOUND );
+		var config = this.awi.configuration.getConfig( userName );
+		if ( !config )
+            return this.newError( 'user-not-found' );
         this.persona = this.awi.configuration.getPersona( userName );
         return this.newAnswer();
     }

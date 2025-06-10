@@ -101,7 +101,7 @@ class Alerts extends BaseComponent {
     const content = document.createElement('div');
     content.style.display = 'flex';
     content.style.gap = '16px';
-    content.style.alignItems = 'center';  // Changed from flex-start to center
+    content.style.alignItems = 'center';
     content.style.padding = '16px';
     
     // Add icon
@@ -176,6 +176,9 @@ class Alerts extends BaseComponent {
         label: buttonText,
         className: buttonClass,
         onClick: () => {
+          if (dialogContainer.parentNode) {
+            document.body.removeChild(dialogContainer);
+          }
           dialog.close();
           dialogResult = index;
           dialogClosed = true;
@@ -186,12 +189,29 @@ class Alerts extends BaseComponent {
     // Create dialog
     if ( title.startsWith('stam:') )
       title = this.root.messages.getMessage(title);
+    // Create a container for the dialog to ensure it's on top
+    const dialogContainer = document.createElement('div');
+    dialogContainer.style.position = 'fixed';
+    dialogContainer.style.top = '0';
+    dialogContainer.style.left = '0';
+    dialogContainer.style.width = '100%';
+    dialogContainer.style.height = '100%';
+    dialogContainer.style.zIndex = '9999';
+    dialogContainer.style.display = 'flex';
+    dialogContainer.style.justifyContent = 'center';
+    dialogContainer.style.alignItems = 'center';
+    dialogContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    document.body.appendChild(dialogContainer);
+
     const dialog = new Dialog({
       title: title,
       content: content,
       buttons: buttonConfigs,
       theme: theme,
       onClose: () => {
+        if (dialogContainer.parentNode) {
+          document.body.removeChild(dialogContainer);
+        }
         if (dialogResult === null) {
           // If dialog was closed without clicking a button, treat as cancel
           dialogResult = buttons.length > 0 ? buttons.length - 1 : 0;
@@ -240,7 +260,176 @@ class Alerts extends BaseComponent {
       resolve(dialogResult);
     });
   }
+  showCustom(title='stam:alert', message='stam:alert_message', buttons = ['OK|positive'], icon = 'info') {
+    const theme = this.root.preferences.getCurrentTheme();
+    let dialogResult = null;
+    let dialogClosed = false;
+    
+    // Create overlay container
+    const overlay = document.createElement('div');
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100%';
+    overlay.style.height = '100%';
+    overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    overlay.style.zIndex = '2147483647'; // Maximum z-index
+    overlay.style.display = 'flex';
+    overlay.style.justifyContent = 'center';
+    overlay.style.alignItems = 'center';
+    
+    // Create content container
+    const content = document.createElement('div');
+    content.style.display = 'flex';
+    content.style.gap = '16px';
+    content.style.alignItems = 'center';
+    content.style.padding = '16px';
+    content.style.backgroundColor = 'var(--background-secondary, #2d2d2d)';
+    content.style.borderRadius = '8px';
+    content.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+    content.style.maxWidth = '500px';
+    content.style.width = '90%';
+    content.style.maxHeight = '90vh';
+    content.style.overflowY = 'auto';
+    
+    // Rest of the content creation (icon, message, buttons) remains the same
+    const iconElement = document.createElement('div');
+    iconElement.style.flexShrink = '0';
+    iconElement.style.fontSize = '48px';
+    iconElement.style.lineHeight = '1';
+    iconElement.style.color = 'var(--text-primary)';
+    iconElement.style.display = 'flex';
+    iconElement.style.alignItems = 'center';
+    iconElement.style.justifyContent = 'center';
+    iconElement.style.width = '48px';
+    iconElement.style.height = '48px';
+    
+    // Set icon based on type
+    switch(icon.toLowerCase()) {
+      case 'info':
+        iconElement.textContent = 'ℹ️';
+        break;
+      case 'warning':
+        iconElement.textContent = '⚠️';
+        break;
+      case 'error':
+        iconElement.textContent = '❌';
+        break;
+      case 'success':
+        iconElement.textContent = '✅';
+        break;
+      case 'question':
+        iconElement.textContent = '❓';
+        break;
+      default:
+        iconElement.textContent = icon;
+    }
+    
+    // Add message
+    if (message.startsWith('stam:') )
+      message = this.root.messages.getMessage(message);
+    const messageElement = document.createElement('div');
+    messageElement.textContent = message;
+    messageElement.style.flexGrow = '1';
+    messageElement.style.color = 'var(--text-primary)';
+    messageElement.style.wordBreak = 'break-word';
+    messageElement.style.display = 'flex';
+    messageElement.style.alignItems = 'center';
+    messageElement.style.minHeight = '100%';
+    
+    content.appendChild(iconElement);
+    content.appendChild(messageElement);
+        
+    // Process buttons
+    const buttonConfigs = buttons.map((buttonDef, index) => {
+        const [buttonKey, buttonType = 'neutral'] = buttonDef.split('|').map(s => s.trim());
+        const buttonText = buttonKey.startsWith('stam:') 
+            ? this.root.messages.getMessage(buttonKey) || buttonKey 
+            : buttonKey;
+            
+        return {
+            label: buttonText,
+            className: `btn btn-${buttonType}`,
+            onClick: () => {
+                dialogResult = index;
+                dialogClosed = true;
+                document.body.removeChild(overlay);
+            }
+        };
+    });
 
+    // Create dialog content
+    const dialogContent = document.createElement('div');
+    dialogContent.style.position = 'relative';
+    dialogContent.style.backgroundColor = 'var(--background-secondary, #2d2d2d)';
+    dialogContent.style.borderRadius = '8px';
+    dialogContent.style.overflow = 'hidden';
+    dialogContent.style.width = '100%';
+    dialogContent.style.maxWidth = '500px';
+    dialogContent.style.maxHeight = '90vh';
+    dialogContent.style.display = 'flex';
+    dialogContent.style.flexDirection = 'column';
+
+    // Add title
+    const titleElement = document.createElement('div');
+    titleElement.textContent = title.startsWith('stam:') 
+        ? this.root.messages.getMessage(title) 
+        : title;
+    titleElement.style.padding = '16px';
+    titleElement.style.fontSize = '18px';
+    titleElement.style.fontWeight = 'bold';
+    titleElement.style.borderBottom = '1px solid var(--borders, #444)';
+    dialogContent.appendChild(titleElement);
+
+    // Add content
+    const contentWrapper = document.createElement('div');
+    contentWrapper.style.padding = '16px';
+    contentWrapper.style.overflowY = 'auto';
+    contentWrapper.style.flexGrow = '1';
+    contentWrapper.appendChild(content);
+    dialogContent.appendChild(contentWrapper);
+
+    // Add buttons
+    const buttonContainer = document.createElement('div');
+    buttonContainer.style.padding = '12px 16px';
+    buttonContainer.style.display = 'flex';
+    buttonContainer.style.justifyContent = 'flex-end';
+    buttonContainer.style.gap = '8px';
+    buttonContainer.style.borderTop = '1px solid var(--borders, #444)';
+    
+    buttonConfigs.forEach((btn, index) => {
+        const button = document.createElement('button');
+        button.textContent = btn.label;
+        button.className = btn.className;
+        button.onclick = (e) => {
+            e.preventDefault();
+            btn.onClick();
+        };
+        buttonContainer.appendChild(button);
+    });
+    
+    dialogContent.appendChild(buttonContainer);
+    overlay.appendChild(dialogContent);
+    document.body.appendChild(overlay);
+
+    // Focus the first button for better accessibility
+    const firstButton = buttonContainer.querySelector('button');
+    if (firstButton) {
+        firstButton.focus();
+    }
+
+    // Return a promise that resolves when the dialog is closed
+    return new Promise((resolve) => {
+        const checkDialog = () => {
+            if (dialogClosed) {
+                resolve(dialogResult);
+            } else {
+                requestAnimationFrame(checkDialog);
+            }
+        };
+        checkDialog();
+    });
+}
   // Show a simple rectangluar area at the location of the mouse, not a dialog!
   // Delete it when mouse moves out of 32x32 pixels area located at the position of apparition.
   showHint(message) {

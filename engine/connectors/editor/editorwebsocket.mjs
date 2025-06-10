@@ -32,7 +32,6 @@ class EditorWebSocket extends EditorBase
         this.connection = config.connection;
         this.lastMessage = config.lastMessage;
         this.lastMessage.handle = this.handle;
-        this.userName = config.userName;
 
         this.lastLine = '';
         this.inputEnabled = true;
@@ -42,6 +41,10 @@ class EditorWebSocket extends EditorBase
         this.toPrintClean = [];
         this.toReply = {};
         this.callbacks = {};
+        this.templatesUrl = config.templatesUrl;
+        this.projectsUrl = config.projectsUrl;
+        this.runUrl = config.runUrl;
+        this.accounts = {};
         
         // Find all languages available in this server
         this.languageMode='';
@@ -51,16 +54,34 @@ class EditorWebSocket extends EditorBase
     async connect(options, message)
     {
         super.connect( options );
-        this.templatesUrl = options.templatesUrl;
-        this.projectsUrl = options.projectsUrl;
         var answer = await this.awi.callConnectors( [ 'registerEditor', '*', { editor: this } ] );
-        if ( answer.isSuccess() ){
-            this.connectors=answer.data;
-            this.reply( { handle: this.handle, user: this.userName }, message );
-            this.waitForInput();
-            return true;
+        if ( !answer.isSuccess() )
+            return this.replyError( this.newError( 'awi:cannot-register-editor', { value: options.accountInfo.userName } ), message );
+        this.connectors=answer.data;
+
+        var answer = await this.command_checkPassword({userName: options.accountInfo.userName, password: options.password});
+        if (!answer.isSuccess())
+        {
+            if (options.accountInfo.createAccount)
+            {
+                answer = await this.createServerAccount({accountInfo: options.accountInfo, password: options.password});
+                if (answer.isSuccess())
+                    answer = await this.command_checkPassword({userName: options.accountInfo.userName, password: options.password});
+            }
+            if (!answer.isSuccess())
+                return this.replyError( answer, message );
         }
-        return false;
+        this.replySuccess(this.newAnswer({userName: answer.data.accountInfo.userName, handle: this.handle, connectToAwi: answer.data.accountInfo.connectToAwi, key: answer.data.accountInfo.key}), message );
+        this.waitForInput();
+        return true;
+    }
+    async createServerAccount( parameters )
+    {
+        if ( this.accounts[ parameters.accountInfo.userName ] )
+            return this.newError( 'awi:account-already-exist', { value: parameters.accountInfo.userName } );
+        this.accounts[ parameters.accountInfo.userName ] = parameters.accountInfo;
+        this.accounts[ parameters.accountInfo.userName ].password = parameters.password;
+        return this.newAnswer( { userName: parameters.accountInfo.userName } );
     }
     addDataToReply( name, data )
     {
@@ -147,7 +168,8 @@ class EditorWebSocket extends EditorBase
         var errorParameters = { error: 'awi:socket-command-not-found' };
         try
         {
-            var text = 'COMMAND: "' + message.command + '" from user: ' + this.userName;
+            var userName = message.parameters.userName || this.userName;
+            var text = 'COMMAND: "' + message.command + '" from user: ' + userName;
             var parameters = '';
             for ( var key in message.parameters )
                 parameters += '.        ' + key + ': ' + message.parameters[ key ].toString().substring( 0, 60 ) + ', \n';
@@ -224,32 +246,28 @@ class EditorWebSocket extends EditorBase
 			}
 		}
 	}
-    async command_createAccount( parameters, message )
+    async command_createAwiAccount( parameters, message )
     {
-	    if ( this.userName != parameters.userName )
-		    return this.replyError( this.newError( 'awi:illegal-value', { value: parameters.userName } ), message );
-        var config = this.awi.configuration.checkUserConfig( this.userName );
+        var config = this.awi.configuration.checkUserConfig( parameters.accountInfo.userName );
         if ( config )
-            return this.replyError( this.newError( 'awi:account-already-exist', { value: this.userName } ) );
+            return this.replyError( this.newError( 'awi:account-already-exist', { value: parameters.accountInfo.userName } ) );
 
 	    config = this.awi.configuration.getNewUserConfig();
-	    config.firstName = parameters.firstName;
-	    config.lastName = parameters.lastName;
-	    config.fullName = parameters.firstName + ' ' + parameters.lastName;
-        config.userName = parameters.userName;
-        config.email = parameters.email;
-        config.country = parameters.country;
-        config.language = parameters.language;
+	    config.firstName = parameters.accountInfo.firstName;
+	    config.lastName = parameters.accountInfo.lastName;
+	    config.fullName = parameters.accountInfo.firstName + ' ' + parameters.accountInfo.lastName;
+        config.userName = parameters.accountInfo.userName;
+        config.email = parameters.accountInfo.email;
+        config.country = parameters.accountInfo.country;
+        config.language = parameters.accountInfo.language;
         await this.awi.configuration.setNewUserConfig( config.userName.toLowerCase(), config );
         var answer = await this.awi.configuration.saveConfigs();
         if ( answer.isSuccess() )
-            return this.replySuccess( this.newAnswer( { userName: parameters.userName } ), message );
-        return this.replyError( this.newError( 'awi:error-when-creating-user', { value: parameters.userName } ), message );
+            return this.replySuccess( this.newAnswer( { userName: parameters.accountInfo.userName } ), message );
+        return this.replyError( this.newError( 'awi:error-when-creating-user', { value: parameters.accountInfo.userName } ), message );
     }
-    async command_login( parameters, message )
+    async command_loginAwi( parameters, message )
     {
-        if ( this.userName != parameters.userName )
-            return this.replyError( this.newError( 'awi:illegal-value', { value: parameters.userName } ), message );
         var answer = await this.awi.callConnectors( [ 'setUser', '*', { userName: parameters.userName } ], {}, { editor: this } );
         if ( answer.isSuccess() )
         {
@@ -267,5 +285,16 @@ class EditorWebSocket extends EditorBase
             return this.replySuccess( answer, message );
         }
         return this.replyError( this.newError( 'awi:error-when-logging-in', { value: parameters.userName } ), message );
+    }
+    async command_checkPassword( parameters, message )
+    {
+        // Stupid check for the moment
+        var accountInfo = this.accounts[parameters.userName];
+        if (!accountInfo)
+            return this.replyError( this.newError( 'awi:account-not-found', { value: parameters.userName } ), message );
+        if (accountInfo.password != parameters.password)
+            return this.replyError( this.newError( 'awi:wrong-password', { value: parameters.userName } ), message );
+        this.userName = parameters.userName;
+        return this.replySuccess( this.newAnswer( { accountInfo } ), message );
     }
 }

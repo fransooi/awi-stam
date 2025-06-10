@@ -151,8 +151,8 @@ class StamApp extends BaseComponent {
     await this.broadcastUp(MESSAGES.LAYOUT_READY);
 
     // Send CONNECT message to socket
-    if (this.debug)
-      await this.sendMessageTo('class:SocketSideWindow',SOCKETMESSAGES.CONNECT, {userName: 'francois', url: this.webSocketUrl});
+//    if (this.debug)
+//      await this.sendMessageTo('class:SocketSideWindow',SOCKETMESSAGES.CONNECT, {userName: 'francois', url: this.webSocketUrl});
 //    else
 //      await this.sendMessageTo('class:SocketSideWindow',SOCKETMESSAGES.CONNECT_IF_CONNECTED);
 

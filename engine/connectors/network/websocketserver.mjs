@@ -158,9 +158,8 @@ class ConnectorWebSocketServer extends ConnectorBase
                 { name: 'connectors/edenai/translator', config: { priority: 94}, options: {} },
                 { name: 'connectors/editor/editor', config: { priority: 99 }, options: { default: 'websocket', config: { 
                     lastMessage: message,
-                    connection: connection,
+                    connection: connection, 
                     parent: this,
-                    userName: message.parameters.userName,
                     connect: false,
 					templatesUrl: this.templatesUrl,
 					runUrl: this.runUrl,
@@ -174,11 +173,7 @@ class ConnectorWebSocketServer extends ConnectorBase
         {
 			this.awi.editor.print('awi:socket-new-connection', { name: message.parameters.userName, user: 'awi' } );
             this.editors[ awi2.editor.current.handle ] = awi2.editor.current;
-            this.current = awi2.editor.current;
-			message.parameters.templatesUrl = this.templatesUrl;
-			message.parameters.projectsUrl = this.projectsUrl;
-			message.parameters.runUrl = this.runUrl;
-			this.current.connect( message.parameters, message );
+			awi2.editor.current.connect( message.parameters, message );
         }
     }
 }

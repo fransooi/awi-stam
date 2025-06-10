@@ -34,7 +34,7 @@ class WebSocketClient {
   constructor(options = {}) {
     this.socket = null;
     this.isConnected = false;
-    this.loggedIn = false;
+    this.isLoggedIn = false;
     this.tryReconnect = true;
     this.userName = '';
     this.reconnectAttempts = 0;
@@ -64,26 +64,16 @@ class WebSocketClient {
 
   /**
    * Connect to the WebSocket server
-   * @param {Object} options - Optional configuration options
+   * @param {Object} accountInfo - Account information
    * @returns {Promise} - Resolves when connected, rejects on error or timeout
    */
-  connect(options=null) {
-    if ( options ){
-      this.url = options.url || this.url;
-      this.userName = options.userName || '';
-      if ( typeof options.tryReconnect === 'boolean' ){
-        this.tryReconnect = options.tryReconnect;
-      }
-    }
+  connect(url) {
+    this.url = url;
     return new Promise((resolve, reject) => {
       if (this.isConnected) {
         resolve();
         return;
       }
-      if (!this.userName) {
-        reject('User name is required');
-        return;
-      }    
       try {
         this.socket = new WebSocket(this.url);
         
@@ -129,30 +119,21 @@ class WebSocketClient {
   /**
    * Disconnect from the WebSocket server
    */
-  disconnect(tryReconnect = false) {
-    this.tryReconnect = tryReconnect;
+  disconnect() {
+    this.tryReconnect = false;
     if (this.socket) {
       this.socket.close();
     }
   }
 
-  authenticate() {
-    // Send authentication message
-    this.send(SERVERCOMMANDS.CONNECT, {
-      userName: this.userName,
-      debug: this.root.debug
-    });
-  }
-     
   /**
    * Handle WebSocket open event
    * @param {Event} event - WebSocket open event
    * @private
    */
   onOpen(event) {
-    //console.log('WebSocket connection established');
     this.isConnected = true;
-    this.loggedIn = false;
+    this.isLoggedIn = false;
     this.reconnectAttempts = 0;
     
     // Process any queued messages
@@ -172,9 +153,9 @@ class WebSocketClient {
       if (message.responseTo === SERVERCOMMANDS.CONNECT) {
         if (!message.error) {
           this.handle=message.parameters.handle;
-          this.loggedIn = true;
+          this.isLoggedIn = true;
         } else {
-          this.disconnect(message.error);
+          this.disconnect();
         }
       } 
       
@@ -201,6 +182,7 @@ class WebSocketClient {
   onClose(event) {
     console.log(`WebSocket connection closed: ${event.code} ${event.reason}`);
     this.isConnected = false;
+    this.isLoggedIn = false;
     this.socket = null;
     
     // Reject all pending requests
@@ -343,6 +325,9 @@ class WebSocketClient {
    */
   isConnected() {
     return this.isConnected && this.socket && this.socket.readyState === WebSocket.OPEN;
+  }
+  isLogged() {
+    return this.isLoggedIn;
   }
   
   /**

@@ -1,7 +1,8 @@
 export const SERVERCOMMANDS = {
     CONNECT: 'connect',
-    LOGIN: 'login',
+    LOGINAWI: 'loginAwi',
     CREATE_ACCOUNT: 'createAccount',
+    CREATE_AWI_ACCOUNT: 'createAwiAccount',
     PROMPT: 'prompt',
     NEW_PROJECT: 'project:newProject',
     OPEN_PROJECT: 'project:openProject',

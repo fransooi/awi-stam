@@ -146,6 +146,7 @@ class ConnectorConfiguration extends ConnectorBase
 	{
 		if ( name != 'user' && name != 'system' )
 		{
+			config.persona = config.persona || 'awi';
 			this.configs[ name ] = config;
 			var persona = await this.loadConfig( 'persona-' + config.persona );
 			persona.prompts[ 'user' ] = '.(' + name + ') ';
@@ -552,6 +553,8 @@ class ConnectorConfiguration extends ConnectorBase
 	getPersona( name )
 	{
         var config = this.getConfig( name );
+        if ( !config )
+            return null;
 		return this.getConfig( 'persona-' + config.persona );
 	}
 	getUser()

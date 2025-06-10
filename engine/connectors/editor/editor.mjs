@@ -95,12 +95,12 @@ class ConnectorEditor extends ConnectorBase
         var text = this.awi.utilities.isObject( args ) ? args.text : args;
         if ( this.current )
             await this.current.print( text, control );
-        else
-            console.error( 'No current editor to print: ' + text );
     }
     async setUser( args, basket, control )
     {
         var { userName } = this.awi.getArgs( [ 'userName' ], args, basket, [ '' ] );
+        if (!this.awi.configuration.getConfig(userName))
+            return this.newError('user-not-found');
         var editor = typeof control.editor != 'undefined' ? control.editor : this.current;
         editor.setPrompt( '.(' + userName + ') ' );
         return this.newAnswer();
@@ -109,15 +109,11 @@ class ConnectorEditor extends ConnectorBase
     {
         if ( this.current )
             this.current.setPrompt( prompt );
-        else
-            console.error( 'No current editor to set prompt: ' + prompt );
     }
     rerouteInput( route )
     {
         if ( this.current )
             this.current.rerouteInput( route );
-        else
-            console.error( 'No current editor to reroute input: ' + route );
     }
     saveInputs()
     {}
@@ -127,35 +123,30 @@ class ConnectorEditor extends ConnectorBase
     {
         if ( this.current )
             this.current.disableInput();
-        else
-            console.error( 'No current editor to disable input' );
     }
     saveInputs()
     {
         if ( this.current && this.current.saveInputs)
             this.current.saveInputs();
-        else
-            console.error( 'No current editor to save inputs' );
     }
     restoreInputs( editor )
     {
         if ( this.current && this.current.restoreInputs)
             this.current.restoreInputs( editor );
-        else
-            console.error( 'No current editor to restore inputs' );
     }
     waitForInput( options = {} )
     {
         if ( this.current )
             this.current.waitForInput( options );
-        else
-            console.error( 'No current editor to wait for input' );
     }
     sendMessage( command, parameters, callback )
     {
         if ( this.current )
             this.current.sendMessage( command, parameters, callback );
-        else
-            console.error( 'No current editor to send message' );
     }    
+    addDataToReply( name, data )
+    {
+        if ( this.current && this.current.addDataToReply)
+            this.current.addDataToReply( name, data );
+    }   
 }

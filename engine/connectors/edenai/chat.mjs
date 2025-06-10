@@ -120,6 +120,8 @@ max_tokens: ~{max_tokens}~`, data );
     async setUser( args, basket, control )
     {
         var { userName } = this.awi.getArgs( [ 'userName' ], args, basket, [ '' ] );
+        if (!this.awi.configuration.getConfig(userName))
+            return this.newError('user-not-found');
         if ( !this.user || userName != this.user )
         {
             var configAnswer = await this.awi.configuration.getToolConfiguration( 'edenai', 'chat' );

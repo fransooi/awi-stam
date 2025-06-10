@@ -32,6 +32,13 @@ stam:share                                Share
 stam:share-text                           Share Application
 stam:help                                 Help
 stam:help-text                            Documentation
+stam:password                             Password
+stam:password-required                     Password is required
+stam:passwords-do-not-match                Passwords do not match
+stam:first-name-required                   First name is required
+stam:last-name-required                    Last name is required
+stam:email-required                        Email is required
+stam:email-invalid                        Please enter a valid email address
 stam:preferences-saved                    Preferences saved...
 stam:alert_message                        Message
 stam:create-classroom                     Create Classroom
@@ -130,23 +137,18 @@ stam:connection-status-connecting         Connection Status: Connecting
 stam:send-indicator                        Send Indicator
 stam:receive-indicator                     Receive Indicator
 stam:error                                 Error
-stam:create-account-dialog-title          Create New Account
+stam:create-account-dialog-title          Create New STAM Account
 stam:country-placeholder                   Enter your country (optional)
 stam:preferred-language                   Preferred Language
-stam:create-account                       Create AWI Account
-stam:first-name-required                   First name is required
-stam:last-name-required                    Last name is required
-stam:password-required                     Password is required
-stam:passwords-do-not-match                Passwords do not match
-stam:email-required                        Email is required
-stam:email-invalid                        Please enter a valid email address
-stam:connection-settings                  Connection Settings
+stam:create-account                       Create Account and Connect
+stam:connection-dialog                    Connect to the STAM server
 stam:username                             Username
 stam:server-url                           Server URL
-stam:login-awi-account                     Login AWI account
-stam:create-awi-account                    Create AWI account
+stam:login-awi-account                     Login STAM account
+stam:create-awi-account                    Create STAM account
 stam:connect                               Connect
-stam:change-clip-type-or-select-playlist  Change clip type or select playlist
+stam:connect-to-awi-server                 Connect to AWI Artificial Intelligence server
+stam:change-clip-type-or-select-playlist   Change clip type or select playlist
 stam:edit-playlists                        Edit Playlists
 stam:edit-url                               Edit URL
 stam:previous-clip                          Previous clip

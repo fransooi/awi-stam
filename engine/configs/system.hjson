@@ -1,5 +1,4 @@
 {
-  serverUrl: ws://194.110.192.59:8765
   prompts:
   {
     user: ". "

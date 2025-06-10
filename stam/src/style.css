@@ -397,6 +397,11 @@ select.form-control option {
   background: color-mix(in srgb, var(--button-positive-hover), black 15%);
 }
 
+.btn-positive:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .btn-neutral {
   background: var(--button-neutral);
   color: var(--text-neutral);

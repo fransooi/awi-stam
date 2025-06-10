@@ -16,11 +16,11 @@
 *
 * @short Socket side window implementation
 */
-import SideWindow from './SideWindow.js';
-import WebSocketClient from '../../utils/WebSocketClient.js';
 import { SERVERCOMMANDS } from '../../../../engine/servercommands.mjs';
 import { MENUCOMMANDS } from '../MenuBar.js';
-import { MESSAGES } from '../../utils/BaseComponent.js';
+import { Dialog } from '../../utils/Dialog.js';
+import SideWindow from './SideWindow.js';
+import WebSocketClient from '../../utils/WebSocketClient.js';
 
 // Define message types for preference handling
 export const SOCKETMESSAGES = {
@@ -28,6 +28,7 @@ export const SOCKETMESSAGES = {
   CONNECT_IF_CONNECTED: 'SOCKET_CONNECT_IF_CONNECTED',
   DISCONNECT: 'SOCKET_DISCONNECT',
   CONNECTED: 'SOCKET_CONNECTED',
+  CONNECTEDAWI: 'SOCKET_CONNECTED_AWI',
   SEND_MESSAGE: 'SOCKET_SEND_MESSAGE',
   REQUEST_RESPONSE: 'SOCKET_REQUEST_RESPONSE',
   CONTENT_HEIGHT_CHANGED: 'CONTENT_HEIGHT_CHANGED',
@@ -50,13 +51,22 @@ class SocketSideWindow extends SideWindow {
     this.isConnected = false;
     this.isConnecting = false;
     this.wasConnected = false;
-    this.loggedIn = false;
-    this.userName = '';
-    this.url = this.root.webSocketUrl;
+    this.isLoggedIn = false;
+    this.isLoggedInAwi = false;
     this.messages = [];
     this.maxMessages = 50; // Maximum number of messages to display
-    this.accountInfo = null;
-    this.createAccount = false;
+    this.accountInfo = 
+    {
+      userName: '',
+      firstName: '',
+      lastName: '',
+      password: '',
+      email: '',
+      country: '',
+      language: 'en',
+      url: this.root.webSocketUrl,
+      connectToAwi: false
+    };
     
     // Message counters
     this.messagesSent = 0;
@@ -83,13 +93,13 @@ class SocketSideWindow extends SideWindow {
     this.messageMap[SOCKETMESSAGES.CONNECT] = this.handleConnect;
     this.messageMap[SOCKETMESSAGES.CONNECT_IF_CONNECTED] = this.handleConnectIfConnected;
     this.messageMap[SOCKETMESSAGES.DISCONNECT] = this.handleLogout;
+    this.messageMap[MENUCOMMANDS.LOGIN] = this.handleConnect;
+    this.messageMap[MENUCOMMANDS.LOGOUT] = this.handleLogout;
     this.messageMap[SOCKETMESSAGES.SEND_MESSAGE] = this.handleSendMessage;
     this.messageMap[SOCKETMESSAGES.REQUEST_RESPONSE] = this.handleRequestResponse;
     this.messageMap[SOCKETMESSAGES.CONTENT_HEIGHT_CHANGED] = this.handleContentHeightChanged;    
     this.messageMap[SOCKETMESSAGES.GET_CONNECTION_INFO] = this.handleGetConnectionInfo;
     this.messageMap[SOCKETMESSAGES.ENSURE_CONNECTED] = this.handleEnsureConnected;
-    this.messageMap[MENUCOMMANDS.LOGIN] = this.handleLogin;
-    this.messageMap[MENUCOMMANDS.LOGOUT] = this.handleLogout;
 
     // Create client if not exists
     this.client = new WebSocketClient({   
@@ -243,7 +253,7 @@ class SocketSideWindow extends SideWindow {
     if (this.isConnected) {
       this.disconnect();
     } else {
-      this.connect();
+      this.connect(this.accountInfo);
     }
   }
   
@@ -719,12 +729,10 @@ class SocketSideWindow extends SideWindow {
     const layoutInfo = await super.getLayoutInfo();
     
     // Add SocketSideWindow-specific information
-    layoutInfo.createAccount = this.createAccount;
     layoutInfo.accountInfo = this.accountInfo;
-    layoutInfo.userName = this.userName;
-    layoutInfo.url = this.url;
     layoutInfo.isConnected = this.isConnected;
     layoutInfo.isLoggedIn = this.isLoggedIn;
+    layoutInfo.isLoggedInAwi = this.isLoggedInAwi;
         
     return layoutInfo;
   }
@@ -739,21 +747,18 @@ class SocketSideWindow extends SideWindow {
     await super.applyLayout(layoutInfo);
     
     // Add SocketSideWindow-specific information
-    this.userName = layoutInfo.userName || 'demo';
-    this.url = layoutInfo.url || this.root.webSocketUrl;
     this.accountInfo = layoutInfo.accountInfo || null;
     this.wasConnected = layoutInfo.isConnected || false;
     this.wasLoggedIn = layoutInfo.isLoggedIn || false;
+    this.wasLoggedInAwi = layoutInfo.isLoggedInAwi || false;
     return layoutInfo;
   }
 
   /**
    * Connect to the WebSocket server
    */
-  connect(options) {
-    var userName=options.userName;
-    var url= options.url;
-    if ( !url || !userName )
+  connect(accountInfo) {
+    if (!accountInfo.url || !accountInfo.userName || !accountInfo.password)
     {
       this.addMessage('sent', 'Missing required connection information');
       return;
@@ -761,24 +766,23 @@ class SocketSideWindow extends SideWindow {
     // Disconnect if already connected
     if ( this.client.getState() === 'connected' ) {
       this.client.disconnect();
+      this.accountInfo=null;
     }
 
     // Add connection message
-    this.addMessage('sent', 'Connecting to server...');
-    
-    // Update connection indicator
+    this.isConnected = false;
     this.isConnecting = true;
+    this.isLoggedIn = false;
+    this.isLoggedInAwi = false;
+    this.addMessage('sent', 'Connecting to server...');
     this.updateStatusDisplay();
     this.updateConnectionIndicator();
-
-    this.client.connect({
-      url: url,
-      userName: userName
-    }).then(() => {
-      this.userName = userName;
-      this.root.userName = userName;
-      this.url = url;
-      this.handleConnectionOpen();
+    var password = accountInfo.password;
+    delete accountInfo.password;
+    this.client.connect(accountInfo.url).then(() => {
+      this.isConnected = true;
+      this.isConnecting = false;
+      this.handleConnectionOpen(accountInfo, password);
     }).catch(error => {
       this.handleConnectionError(error);
     });
@@ -802,10 +806,7 @@ class SocketSideWindow extends SideWindow {
   /**
    * Handle connection open event
    */
-  handleConnectionOpen() {
-    this.isConnected = true;
-    this.isConnecting = false;
-    // Reset message counters on new connection
+  async handleConnectionOpen(accountInfo, password) {
     this.messagesSent = 0;
     this.messagesReceived = 0;
     this.updateStatusDisplay();
@@ -813,9 +814,37 @@ class SocketSideWindow extends SideWindow {
     this.updateSendIndicatorTooltip();
     this.updateReceiveIndicatorTooltip();
     this.addMessage('received', 'Connected to server');
-
-    // Send authentication message
-    this.client.authenticate();
+    
+    var answer = await this.handleRequestResponse({command:SERVERCOMMANDS.CONNECT, parameters: { accountInfo: accountInfo, password: password, debug: this.root.debug }});
+    if (!answer.error) {
+      this.isLoggedIn = true;
+      this.addMessage('received', 'Connected to server');
+      this.broadcast(SOCKETMESSAGES.CONNECTED, { userName: answer.userName });
+      if (answer.connectToAwi)
+      {
+        var response;
+        if (accountInfo.createAccount){
+          response = await this.handleRequestResponse({command:SERVERCOMMANDS.CREATE_AWI_ACCOUNT, parameters: { userName: answer.userName, accountInfo: accountInfo }});
+          if (response.error){
+            this.disconnect();
+            this.addMessage('sent', 'Failed to create AWI account');
+            return;
+          }
+        }
+        response = await this.handleRequestResponse({command:SERVERCOMMANDS.LOGINAWI, parameters: { userName: answer.userName, key: answer.key }});
+        if (!response.error) 
+        {
+          this.isLoggedInAwi = true;
+          this.addMessage('received', 'Logged in AWI');
+          this.broadcast(SOCKETMESSAGES.CONNECTEDAWI, { userName: answer.userName });
+        }
+        else
+        {
+          this.disconnect();
+          this.addMessage('sent', 'Failed to login AWI');
+        }
+      }
+    }
   }
   
   /**
@@ -824,14 +853,14 @@ class SocketSideWindow extends SideWindow {
   handleConnectionClose() {
     this.isConnected = false;
     this.isConnecting = false;
+    this.isLoggedIn = false;
+    this.isLoggedInAwi = false;
     this.updateStatusDisplay();
     this.updateConnectionIndicator();
     this.updateSendIndicatorTooltip();
     this.updateReceiveIndicatorTooltip();
     this.addMessage('received', 'Disconnected from server');
-
-    // Broadcast message
-    this.broadcast(SOCKETMESSAGES.DISCONNECTED, { userName: this.userName });
+    this.broadcast(SOCKETMESSAGES.DISCONNECTED, { userName: this.accountInfo.userName });
   }
   
   /**
@@ -850,7 +879,7 @@ class SocketSideWindow extends SideWindow {
    * Handle message from server
    * @param {Object} message - The message received
    */
-  handleServerMessage(message) {
+  async handleServerMessage(message) {
     // Increment received counter
     this.messagesReceived++;
     
@@ -864,48 +893,21 @@ class SocketSideWindow extends SideWindow {
       this.addMessage('received', message);    
       if (!message.error) 
       {
-        // Handle login prompt
-        if (this.accountInfo)
-        {
-          if (this.createAccount)
-          {
-            this.createAccount = false;
-            this.client.requestResponse(SERVERCOMMANDS.CREATE_ACCOUNT, this.accountInfo).then((response) => 
-            {
-              if (!response.error) 
-              {
-                this.addMessage('received', 'AWI account created');
-                this.client.requestResponse(SERVERCOMMANDS.LOGIN, { userName: this.accountInfo.userName, password: this.accountInfo.password }).then((response) => {
-                  if (!response.error) 
-                  {
-                    this.loggedIn = true;
-                    this.sendMessageToRoot(MESSAGES.SAVE_LAYOUT);
-                    this.addMessage('received', 'Logged in AWI');
-                    this.broadcast(SOCKETMESSAGES.CONNECTED, message.parameters);  
-                  }
-                });
-              } 
-            });  
-          }else{
-            this.client.requestResponse(SERVERCOMMANDS.LOGIN, { userName: this.accountInfo.userName, password: this.accountInfo.password }).then((response) => {
-              if (!response.error) 
-              {
-                this.loggedIn = true;
-                this.addMessage('received', 'Logged in AWI');
-                this.broadcast(SOCKETMESSAGES.CONNECTED, message.parameters);  
-              }
-            });
-          }
-        }
-        else {
-          this.broadcast(SOCKETMESSAGES.CONNECTED, message.parameters);  
-        }
+        this.isLoggedIn = true;
+        this.broadcast(SOCKETMESSAGES.CONNECTED, message.parameters);  
       }
-      return;
     }
-
-    // Prompt? Display the response (temporary)
-    if (message.command === SERVERCOMMANDS.PROMPT) 
+    else if (message.responseTo === SERVERCOMMANDS.LOGINAWI)
+    {
+      this.addMessage('received', message);    
+      if (!message.error) 
+      {
+        this.isLoggedInAwi = true;
+        this.addMessage('received', 'Logged in AWI');
+        this.broadcast(SOCKETMESSAGES.CONNECTEDAWI, { userName: this.accountInfo.userName });
+      }
+    }
+    else if (message.command === SERVERCOMMANDS.PROMPT) 
     {
       this.addMessage('received', message, message.parameters.text);    
     }
@@ -913,7 +915,6 @@ class SocketSideWindow extends SideWindow {
     {
       this.addMessage('received', message);
     }
-    // Send message to root
     this.sendMessageToRoot(SOCKETMESSAGES.MESSAGE_RECEIVED,message);
   }
   
@@ -921,27 +922,29 @@ class SocketSideWindow extends SideWindow {
   // STAM Message Handlers
   ///////////////////////////////////////////////////////////////////////////////////////////////
     
-  /**
-   * Handle SOCKET_CONNECT message
-   * @param {Object} messageData - Message data
-   * @returns {boolean} - True if handled
-   */
   async handleConnect(data,sender) {
-    if ( data.userName && data.url )
-    {
-      if (data.accountInfo){
-        this.createAccount = true;
-        this.accountInfo = data.accountInfo;
-      }
-      else
+    if (this.isConnected)
+      return;
+    var accountInfo = data.accountInfo || this.accountInfo;
+    do{
+      var connect = await this.showConnectionDialog(accountInfo);
+      if (!connect)
+        return false;
+      accountInfo.userName = connect.userName;
+      accountInfo.password = connect.password;
+      if (connect.createAccount)
       {
-        this.createAccount = false;
-        this.accountInfo = null;
+        var response = await this.showCreateAccountDialog(accountInfo);
+        if (response){
+          accountInfo = response;
+          accountInfo.createAccount = true;
+        }
+        continue;
       }
-      this.connect(data);
-      return true;
-    }
-    return false;
+      break;
+    } while (true);
+    this.connect(accountInfo);
+    return true;
   }
   
   /**
@@ -949,65 +952,57 @@ class SocketSideWindow extends SideWindow {
    * @param {Object} messageData - Message data
    * @returns {boolean} - True if handled
    */
-  handleConnectIfConnected(data,sender) {
-    if (this.wasConnected && this.userName) {
-      this.connect({
-        userName: this.userName,
-        url: this.url
-      });
+  async handleConnectIfConnected(data,sender) {
+    if (this.wasConnected && this.accountInfo) {
+      await this.connect(this.accountInfo);
     } 
     return true;
   }
   
   /**
-   * Handle MENUCOMMANDS.LOGOUT message
+   * Handle SOCKET_LOGOUT message
    * @param {Object} messageData - Message data
    * @returns {boolean} - True if handled
    */
-  handleLogout(data,sender) {
+  async handleLogout(data,sender) {
     this.disconnect();
     return true;
   }
-  
+
   /**
-   * Handle MENUCOMMANDS.LOGIN message
+   * Handle SOCKET_GET_CONNECTION_INFO message
+   * @param {Object} messageData - Message data
+   * @returns {Object} - Connection information
+   */
+  async handleGetConnectionInfo(data,sender) {
+    return {
+      userName: this.accountInfo.userName,
+      url: this.accountInfo.url
+    };
+  }
+
+  /**
+   * Handle SOCKET_ENSURE_CONNECTED message
    * @param {Object} messageData - Message data
    * @returns {boolean} - True if handled
    */
-  async handleLogin(data,sender) {
-    const result = await this.showConnectionDialog();
-    if (result){
-      if (result.isAwiAccountChecked && !this.accountInfo) {
-        // Show the create account dialog
-        this.showCreateAccountDialog().then((accountInfo) => {
-          if (accountInfo) {
-            accountInfo.userName = result.userName;
-            this.createAccount = true;
-            this.accountInfo = accountInfo;
-            this.connect({
-              userName: result.userName,
-              url: result.url
-            });
-          }
-        });
-      } else {
-        this.createAccount = false;
-        this.connect({
-          userName: result.userName,
-          url: result.url
-        });
-      }
+  async handleEnsureConnected(data,sender) {
+    if (!this.isConnected) {
+      await this.showConnectionDialog();
+      return false;
     }
+    return true;
   }
+
 
   /**
    * Handle SOCKET_SEND_MESSAGE message
    * @param {Object} messageData - Message data
    * @returns {boolean} - True if handled
    */
-  handleSendMessage(data,sender) {
+  async handleSendMessage(data,sender) {
     if (this.client && this.isConnected) {
-      this.client.send(data.command,data.parameters);
+      await this.client.send(data.command,data.parameters);
 
       // Increment sent counter
       this.messagesSent++;
@@ -1021,7 +1016,7 @@ class SocketSideWindow extends SideWindow {
     return false;
   }
 
-  handleRequestResponse(data,sender) {
+  async handleRequestResponse(data,sender) {
 
     if (this.client && this.isConnected) {
       var self = this;
@@ -1060,72 +1055,15 @@ class SocketSideWindow extends SideWindow {
     }
     return false;
   }
-  async handleGetConnectionInfo(data,sender) {
-    return {
-      userName: this.userName,
-      url: this.url
-    };
-  }
-
-  async handleEnsureConnected(data,sender) {
-    if (!this.isConnected) {
-      this.showConnectionDialog();
-      return false;
-    }
-    return true;
-  }
-
   /**
    * Show a dialog to create a new account
    * @param {Array} userList - List of existing users (optional)
    * @returns {Promise<Object>} - Resolves to the account information
    */
-  showCreateAccountDialog(userList = []) {
+  showCreateAccountDialog(accountInfo = {}) {
+    var theme = this.root.preferences.getCurrentTheme();    
     return new Promise((resolve) => {
-      // Remove any existing dialog first
-      const existingDialog = document.getElementById('socket-create-account-dialog');
-      if (existingDialog) {
-        document.body.removeChild(existingDialog);
-      }
-      
-      // Create dialog container
-      const dialogContainer = document.createElement('div');
-      dialogContainer.id = 'socket-create-account-dialog';
-      dialogContainer.className = 'socket-dialog-container';
-      dialogContainer.style.position = 'fixed';
-      dialogContainer.style.top = '0';
-      dialogContainer.style.left = '0';
-      dialogContainer.style.width = '100%';
-      dialogContainer.style.height = '100%';
-      dialogContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-      dialogContainer.style.display = 'flex';
-      dialogContainer.style.justifyContent = 'center';
-      dialogContainer.style.alignItems = 'center';
-      dialogContainer.style.zIndex = '9999';
-      
-      // Create dialog
-      const dialog = document.createElement('div');
-      dialog.className = 'socket-dialog';
-      dialog.style.backgroundColor = '#2d2d2d';
-      dialog.style.color = '#e0e0e0';
-      dialog.style.padding = '20px';
-      dialog.style.borderRadius = '5px';
-      dialog.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.3)';
-      dialog.style.width = '500px';
-      dialog.style.maxWidth = '90%';
-      dialog.style.maxHeight = '90vh';
-      dialog.style.overflowY = 'auto';
-      
-      // Create dialog title
-      const title = document.createElement('h2');
-      title.textContent = this.root.messages.getMessage('stam:create-account-dialog-title');
-      title.style.margin = '0 0 20px 0';
-      title.style.fontSize = '18px';
-      title.style.fontWeight = 'bold';
-      title.style.borderBottom = '1px solid #555';
-      title.style.paddingBottom = '10px';
-      dialog.appendChild(title);
-      
+
       // Create form
       const form = document.createElement('form');
       form.style.display = 'flex';
@@ -1133,7 +1071,7 @@ class SocketSideWindow extends SideWindow {
       form.style.gap = '15px';
       
       // Helper function to create form groups
-      const createFormGroup = (labelText, inputType, required = false, placeholder = '') => {
+      const createFormGroup = (labelText, inputType, required = false, value = '', placeholder = '') => {
         const group = document.createElement('div');
         group.style.display = 'flex';
         group.style.flexDirection = 'column';
@@ -1146,6 +1084,7 @@ class SocketSideWindow extends SideWindow {
         
         const input = document.createElement('input');
         input.type = inputType;
+        input.value = value;
         input.placeholder = placeholder;
         input.style.padding = '8px';
         input.style.backgroundColor = '#3d3d3d';
@@ -1158,26 +1097,35 @@ class SocketSideWindow extends SideWindow {
         
         return { group, input };
       };
+
+      // Create container for username and email fields
+      const userInfoContainer = document.createElement('div');
+      userInfoContainer.style.display = 'flex';
+      userInfoContainer.style.gap = '10px';
+      userInfoContainer.style.width = '100%';
+      userInfoContainer.style.marginBottom = '0px';
       
-      // First name field (mandatory)
-      const { group: firstNameGroup, input: firstNameInput } = createFormGroup('First Name', 'text', true, 'Enter your first name');
-      form.appendChild(firstNameGroup);
+      // Username field
+      const { group: userNameGroup, input: userNameInput } = createFormGroup('User Name', 'text', true, accountInfo.userName);
+      userNameGroup.style.flex = '1';
+      userNameGroup.style.minWidth = '0';
+      userNameInput.style.width = '100%';
+      userInfoContainer.appendChild(userNameGroup);
       
-      // Last name field (mandatory)
-      const { group: lastNameGroup, input: lastNameInput } = createFormGroup('Last Name', 'text', true, 'Enter your last name');
-      form.appendChild(lastNameGroup);
+      // Email field
+      const { group: emailGroup, input: emailInput } = createFormGroup('Email', 'email', true, accountInfo.email);
+      emailGroup.style.flex = '1';
+      emailGroup.style.minWidth = '0';
+      emailInput.style.width = '100%';
+      userInfoContainer.appendChild(emailGroup);
       
-      // Note: Username field is intentionally omitted as it's already defined in the connection dialog
+      form.appendChild(userInfoContainer);
       
-      // Password field (mandatory)
-      const { group: passwordGroup, input: passwordInput } = createFormGroup('Password', 'password', true, 'Enter your password');
+      // Password fields
+      const { group: passwordGroup, input: passwordInput } = createFormGroup('Password', 'password', true, accountInfo.password);
       form.appendChild(passwordGroup);
-      
-      // Password confirmation field (mandatory)
-      const { group: confirmPasswordGroup, input: confirmPasswordInput } = createFormGroup('Confirm Password', 'password', true, 'Confirm your password');
+      const { group: confirmPasswordGroup, input: confirmPasswordInput } = createFormGroup('Confirm Password', 'password', true, accountInfo.password);
       form.appendChild(confirmPasswordGroup);
-      
-      // Password validation message
       const passwordValidation = document.createElement('div');
       passwordValidation.style.fontSize = '12px';
       passwordValidation.style.color = '#ff6b6b';
@@ -1185,57 +1133,14 @@ class SocketSideWindow extends SideWindow {
       passwordValidation.style.display = 'none';
       form.appendChild(passwordValidation);
       
-      // Check password match
-      confirmPasswordInput.addEventListener('input', () => {
-        if (passwordInput.value !== confirmPasswordInput.value) {
-          passwordValidation.textContent = 'Passwords do not match';
-          passwordValidation.style.display = 'block';
-          confirmPasswordInput.style.borderColor = '#ff6b6b';
-        } else {
-          passwordValidation.style.display = 'none';
-          confirmPasswordInput.style.borderColor = '#555';
-        }
-      });
-      
-      // Email field (mandatory)
-      const { group: emailGroup, input: emailInput } = createFormGroup('Email', 'email', true, 'Enter your email address');
-      form.appendChild(emailGroup);
-      
-      // Country field (optional)
-      const countryGroup = document.createElement('div');
-      countryGroup.style.display = 'flex';
-      countryGroup.style.flexDirection = 'column';
-      countryGroup.style.gap = '5px';
-      
-      const countryLabel = document.createElement('label');
-      countryLabel.textContent = 'Country';
-      countryLabel.style.fontSize = '14px';
-      countryGroup.appendChild(countryLabel);
-      
-      const countryInput = document.createElement('input');
-      countryInput.type = 'text';
-      countryInput.placeholder = this.root.messages.getMessage('stam:country-placeholder');
-      countryInput.style.padding = '8px';
-      countryInput.style.backgroundColor = '#3d3d3d';
-      countryInput.style.color = '#e0e0e0';
-      countryInput.style.border = '1px solid #555';
-      countryInput.style.borderRadius = '3px';
-      countryInput.style.fontSize = '14px';
-      countryGroup.appendChild(countryInput);
-      
-      form.appendChild(countryGroup);
-      
-      // Language preference field (optional, default to English)
       const languageGroup = document.createElement('div');
       languageGroup.style.display = 'flex';
       languageGroup.style.flexDirection = 'column';
-      languageGroup.style.gap = '5px';
-      
+      languageGroup.style.gap = '5px';      
       const languageLabel = document.createElement('label');
       languageLabel.textContent = this.root.messages.getMessage('stam:preferred-language');
       languageLabel.style.fontSize = '14px';
-      languageGroup.appendChild(languageLabel);
-      
+      languageGroup.appendChild(languageLabel);      
       const languageSelect = document.createElement('select');
       languageSelect.style.padding = '8px';
       languageSelect.style.backgroundColor = '#3d3d3d';
@@ -1243,161 +1148,175 @@ class SocketSideWindow extends SideWindow {
       languageSelect.style.border = '1px solid #555';
       languageSelect.style.borderRadius = '3px';
       languageSelect.style.fontSize = '14px';
-      
-      const languages = ['English', 'French', 'German'];
-      languages.forEach(lang => {
+      languageSelect.value = accountInfo.language;      
+      const langs = ['en|English', 'fr|Francais', 'de|Deutsch'];
+      langs.forEach(lang => {
         const option = document.createElement('option');
-        option.value = lang.toLowerCase();
-        option.textContent = lang;
+        option.value = lang.split('|')[0];
+        option.textContent = lang.split('|')[1];
         languageSelect.appendChild(option);
-      });
-      
+      });      
       languageGroup.appendChild(languageSelect);
       form.appendChild(languageGroup);
       
-      // Create buttons
-      const buttonGroup = document.createElement('div');
-      buttonGroup.style.display = 'flex';
-      buttonGroup.style.justifyContent = 'flex-end';
-      buttonGroup.style.gap = '10px';
-      buttonGroup.style.marginTop = '20px';
+      // Check box for 'Connect to AWI server'
+      const connectToAwi = document.createElement('div');
+      connectToAwi.style.display = 'flex';
+      connectToAwi.style.alignItems = 'center';
+      connectToAwi.style.gap = '8px';
+      connectToAwi.style.marginBottom = '0px';      
+      const connectToAwiCheckbox = document.createElement('input');
+      connectToAwiCheckbox.type = 'checkbox';
+      connectToAwiCheckbox.id = 'connect-to-awi-checkbox';
+      connectToAwiCheckbox.checked = accountInfo.connectToAWI;
+      connectToAwiCheckbox.style.margin = '0';
+      connectToAwiCheckbox.style.cursor = 'pointer';      
+      const connectToAwiLabel = document.createElement('label');
+      connectToAwiLabel.htmlFor = 'connect-to-awi-checkbox';
+      connectToAwiLabel.textContent = this.root.messages.getMessage('stam:connect-to-awi-server');
+      connectToAwiLabel.style.fontSize = '14px';
+      connectToAwiLabel.style.cursor = 'pointer';
+      connectToAwiLabel.style.margin = '0';      
+      connectToAwi.appendChild(connectToAwiCheckbox);
+      connectToAwi.appendChild(connectToAwiLabel);
+      form.appendChild(connectToAwi);
       
-      const cancelButton = document.createElement('button');
-      cancelButton.type = 'button';
-      cancelButton.textContent = this.root.messages.getMessage('stam:cancel');
-      cancelButton.style.padding = '8px 15px';
-      cancelButton.style.backgroundColor = '#555';
-      cancelButton.style.color = '#fff';
-      cancelButton.style.border = 'none';
-      cancelButton.style.borderRadius = '3px';
-      cancelButton.style.cursor = 'pointer';
-      cancelButton.style.fontSize = '14px';
-      cancelButton.addEventListener('click', () => {
-        document.body.removeChild(dialogContainer);
-        resolve(null);
-      });
-      buttonGroup.appendChild(cancelButton);
-      
-      const createButton = document.createElement('button');
-      createButton.type = 'button';
-      createButton.textContent = this.root.messages.getMessage('stam:create-account');
-      createButton.style.padding = '8px 15px';
-      createButton.style.backgroundColor = '#4CAF50';
-      createButton.style.color = '#fff';
-      createButton.style.border = 'none';
-      createButton.style.borderRadius = '3px';
-      createButton.style.cursor = 'pointer';
-      createButton.style.fontSize = '14px';
-      
-      createButton.addEventListener('click', () => {
-        // Validate form
-        let isValid = true;
-        let errorMessage = '';
-        
-        // Check required fields
-        if (!firstNameInput.value.trim()) {
-          isValid = false;
-          errorMessage = this.root.messages.getMessage('stam:first-name-required');
-        } else if (!lastNameInput.value.trim()) {
-          isValid = false;
-          errorMessage = this.root.messages.getMessage('stam:last-name-required');
-        } else if (!passwordInput.value) {
-          isValid = false;
-          errorMessage = this.root.messages.getMessage('stam:password-required');
-        } else if (passwordInput.value !== confirmPasswordInput.value) {
-          isValid = false;
-          errorMessage = this.root.messages.getMessage('stam:passwords-do-not-match');
-        } else if (!emailInput.value.trim()) {
-          isValid = false;
-          errorMessage = this.root.messages.getMessage('stam:email-required');
-        } else if (!emailInput.value.includes('@') || !emailInput.value.includes('.')) {
-          isValid = false;
-          errorMessage = this.root.messages.getMessage('stam:email-invalid');
+      // Create a container for the name fields to be displayed side by side
+      const nameFieldsContainer = document.createElement('div');
+      nameFieldsContainer.style.display = accountInfo.connectToAWI ? 'flex' : 'none';
+      nameFieldsContainer.style.gap = '10px';
+      nameFieldsContainer.style.width = '100%';
+      nameFieldsContainer.style.marginBottom = '0px';
+      const { group: firstNameGroup, input: firstNameInput } = createFormGroup('First Name', 'text', true, accountInfo.firstName);
+      firstNameGroup.style.flex = '1';
+      firstNameGroup.style.minWidth = '0';
+      firstNameGroup.style.marginBottom = '0';
+      firstNameInput.style.width = '100%';
+      nameFieldsContainer.appendChild(firstNameGroup);
+      const { group: lastNameGroup, input: lastNameInput } = createFormGroup('Last Name', 'text', true, accountInfo.lastName);
+      lastNameGroup.style.flex = '1';
+      lastNameGroup.style.minWidth = '0';
+      lastNameGroup.style.marginBottom = '0';
+      lastNameInput.style.width = '100%';
+      nameFieldsContainer.appendChild(lastNameGroup);      
+      form.appendChild(nameFieldsContainer);
+
+      const { group: keyGroup, input: keyInput } = createFormGroup('Key', 'text', true, accountInfo.key);
+      keyGroup.style.display = accountInfo.connectToAWI ? 'flex' : 'none';
+      form.appendChild(keyGroup);
+
+      // Show/hide the rest of the form based on the checkbox
+      connectToAwiCheckbox.addEventListener('change', () => {
+        if (connectToAwiCheckbox.checked) {
+          nameFieldsContainer.style.display = 'flex';
+          keyGroup.style.display = 'flex';
+        } else {
+          nameFieldsContainer.style.display = 'none';
+          keyGroup.style.display = 'none';
         }
-        
-        if (!isValid) {
-          this.root.alert.showError(errorMessage);
-          return;
-        }
-        
-        // Create account info object - username will be added from the connection dialog
-        const accountInfo = {
-          firstName: firstNameInput.value.trim(),
-          lastName: lastNameInput.value.trim(),
-          password: passwordInput.value,
-          email: emailInput.value.trim(),
-          country: countryInput.value.trim() || undefined,
-          language: languageSelect.value
-        };
-        
-        // Close dialog and return account info
-        document.body.removeChild(dialogContainer);
-        resolve(accountInfo);
       });
-      
-      buttonGroup.appendChild(createButton);
-      form.appendChild(buttonGroup);
-      
-      dialog.appendChild(form);
-      dialogContainer.appendChild(dialog);
-      
-      // Add dialog to body
-      document.body.appendChild(dialogContainer);
-      
-      // Focus on first name input
-      firstNameInput.focus();
+
+      // Create dialog 
+      let dialog = null;
+      let dialogAnswer = null;
+      const buttons = [
+        {
+          label: this.root.messages.getMessage('stam:cancel'),
+          className: 'btn-neutral',
+          onClick: () => {
+            dialogAnswer = null;
+            dialog.close();
+          }
+        },
+        {
+          label: this.root.messages.getMessage('stam:create-awi-account'),
+          className: 'btn-positive',
+          onClick: () => {
+            // Validate form
+            var test = {
+              userName: userNameInput.value.trim(),
+              firstName: firstNameInput.value.trim(),
+              lastName: lastNameInput.value.trim(),
+              password: passwordInput.value,
+              email: emailInput.value.trim(),
+              language: languageSelect.value,
+              connectToAwi: connectToAwiCheckbox.checked,
+              key: keyInput.value.trim() || '',
+              url: accountInfo.url
+            };
+
+            let errorMessage = '';
+            if (!test.userName.trim()) {
+              errorMessage = 'stam:user-name-required';
+            } else if (!test.userName.trim().match(/^[a-zA-Z0-9_]+$/)) {
+              errorMessage = 'stam:user-name-illegal-chars';
+            } else if (!test.email.trim()) {
+              errorMessage = 'stam:email-required';
+            } else if (!test.email.includes('@') || !test.email.includes('.')) {
+              errorMessage = 'stam:email-invalid';
+            } else if (!test.password || test.password.length < 8) {
+              errorMessage = 'stam:password-invalid';
+            } else if (test.password !== confirmPasswordInput.value) {
+              errorMessage = 'stam:passwords-do-not-match';
+            } else if (connectToAwiCheckbox.checked) {
+              if (!firstNameInput.value.trim()) {
+                errorMessage = 'stam:first-name-required';
+              }
+              if (!keyInput.value.trim()) {
+                errorMessage = 'stam:key-required';
+              }
+            }
+            if (errorMessage) {
+              this.root.alert.showError(this.root.messages.getMessage(errorMessage));
+              return;
+            }
+            // Create account info object - username will be added from the connection dialog
+            dialogAnswer = test;
+            dialog.close();
+          }
+        },
+      ];
+
+      // Create and show the dialog
+      dialog = new Dialog({
+        title: this.root.messages.getMessage('stam:create-account-dialog'),
+        content: form,
+        buttons: buttons,
+        theme: theme,
+        className: 'socket-create-account-dialog',
+        onOpen: () => {
+          // Focus on username input when dialog opens
+          userNameInput.focus();
+        },
+        onClose: () => {
+          // If dialog is closed without clicking any button, treat as cancel
+          resolve(dialogAnswer);
+        }
+      });      
+      dialog.open();
+
+      confirmPasswordInput.addEventListener('input', () => {
+        if (passwordInput.value !== confirmPasswordInput.value) {
+          passwordValidation.textContent = 'Passwords do not match';
+          passwordValidation.style.display = 'block';
+          confirmPasswordInput.style.borderColor = '#ff6b6b';
+          dialog.buttons[1].element.disabled = true;
+        } else {
+          passwordValidation.style.display = 'none';
+          confirmPasswordInput.style.borderColor = '#555';
+          dialog.buttons[1].element.disabled = false;
+        }
+      });      
     });
   }
 
   /**
    * Show a connection dialog to enter user credentials and server URL
-   * @returns {Promise<boolean>} - Resolves to true if Connect was clicked, false if Cancel was clicked
+   * @returns {Promise<{userName: string, url: string, isAwiAccountChecked: boolean}|false>} - Resolves with connection data or false if canceled
    */
-  showConnectionDialog() {
+  showConnectionDialog(accountInfo = {}) {
     return new Promise((resolve) => {
-      // Remove any existing dialog first
-      const existingDialog = document.getElementById('socket-connection-dialog');
-      if (existingDialog) {
-        document.body.removeChild(existingDialog);
-      }
-      
-      // Create dialog container
-      const dialogContainer = document.createElement('div');
-      dialogContainer.id = 'socket-connection-dialog';
-      dialogContainer.className = 'socket-dialog-container';
-      dialogContainer.style.position = 'fixed';
-      dialogContainer.style.top = '0';
-      dialogContainer.style.left = '0';
-      dialogContainer.style.width = '100%';
-      dialogContainer.style.height = '100%';
-      dialogContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-      dialogContainer.style.display = 'flex';
-      dialogContainer.style.justifyContent = 'center';
-      dialogContainer.style.alignItems = 'center';
-      dialogContainer.style.zIndex = '9999';
-      
-      // Create dialog
-      const dialog = document.createElement('div');
-      dialog.className = 'socket-dialog';
-      dialog.style.backgroundColor = '#2d2d2d';
-      dialog.style.color = '#e0e0e0';
-      dialog.style.padding = '20px';
-      dialog.style.borderRadius = '5px';
-      dialog.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.3)';
-      dialog.style.width = '400px';
-      dialog.style.maxWidth = '90%';
-      
-      // Create dialog title
-      const title = document.createElement('h2');
-      title.textContent = this.root.messages.getMessage('stam:connection-settings');
-      title.style.margin = '0 0 20px 0';
-      title.style.fontSize = '18px';
-      title.style.fontWeight = 'bold';
-      title.style.borderBottom = '1px solid #555';
-      title.style.paddingBottom = '10px';
-      dialog.appendChild(title);
-      
-      // Create form
+      // Create form container
       const form = document.createElement('form');
       form.style.display = 'flex';
       form.style.flexDirection = 'column';
@@ -1407,129 +1326,173 @@ class SocketSideWindow extends SideWindow {
       const userNameGroup = document.createElement('div');
       userNameGroup.style.display = 'flex';
       userNameGroup.style.flexDirection = 'column';
-      userNameGroup.style.gap = '5px';
-      
+      userNameGroup.style.gap = '5px';      
       const userNameLabel = document.createElement('label');
       userNameLabel.textContent = this.root.messages.getMessage('stam:username');
       userNameLabel.style.fontSize = '14px';
-      userNameGroup.appendChild(userNameLabel);
-      
+      userNameGroup.appendChild(userNameLabel);      
       const userNameInput = document.createElement('input');
       userNameInput.type = 'text';
-      userNameInput.value = this.userName;
+      userNameInput.value = accountInfo.userName || '';
       userNameInput.style.padding = '8px';
-      userNameInput.style.backgroundColor = '#3d3d3d';
-      userNameInput.style.color = '#e0e0e0';
-      userNameInput.style.border = '1px solid #555';
+      userNameInput.style.backgroundColor = 'var(--input-background, #3d3d3d)';
+      userNameInput.style.color = 'var(--text-primary, #e0e0e0)';
+      userNameInput.style.border = '1px solid var(--borders, #555)';
       userNameInput.style.borderRadius = '3px';
       userNameInput.style.fontSize = '14px';
-      userNameGroup.appendChild(userNameInput);
-      
+      userNameGroup.appendChild(userNameInput);      
       form.appendChild(userNameGroup);
       
-      // Note: User key field has been removed
-      
-      // Create URL field
+      // Password field with reveal toggle
+      const passwordGroup = document.createElement('div');
+      passwordGroup.style.display = 'flex';
+      passwordGroup.style.flexDirection = 'column';
+      passwordGroup.style.gap = '5px';      
+      const passwordLabel = document.createElement('label');
+      passwordLabel.textContent = this.root.messages.getMessage('stam:password');
+      passwordLabel.style.fontSize = '14px';
+      passwordGroup.appendChild(passwordLabel);
+      const passwordInputContainer = document.createElement('div');
+      passwordInputContainer.style.display = 'flex';
+      passwordInputContainer.style.gap = '5px';
+      passwordInputContainer.style.alignItems = 'center';
+      const passwordInput = document.createElement('input');
+      passwordInput.type = 'password';
+      passwordInput.value = accountInfo.password || '';
+      passwordInput.style.padding = '8px';
+      passwordInput.style.backgroundColor = 'var(--input-background, #3d3d3d)';
+      passwordInput.style.color = 'var(--text-primary, #e0e0e0)';
+      passwordInput.style.border = '1px solid var(--borders, #555)';
+      passwordInput.style.borderRadius = '3px';
+      passwordInput.style.fontSize = '14px';
+      passwordInput.style.flex = '1';
+      passwordInput.style.minWidth = '200px';
+      const revealButton = document.createElement('button');
+      revealButton.type = 'button';
+      revealButton.style.background = 'none';
+      revealButton.style.border = 'none';
+      revealButton.style.color = 'var(--text-secondary, #aaa)';
+      revealButton.style.cursor = 'pointer';
+      revealButton.style.padding = '5px';
+      revealButton.style.borderRadius = '3px';
+      revealButton.style.display = 'flex';
+      revealButton.style.alignItems = 'center';
+      revealButton.style.justifyContent = 'center';
+      revealButton.style.width = '30px';
+      revealButton.style.height = '30px';
+      revealButton.innerHTML = '<i class="fas fa-eye"></i>';
+      revealButton.title = 'Reveal password';
+      revealButton.addEventListener('click', () => {
+        if (passwordInput.type === 'password') {
+          passwordInput.type = 'text';
+          revealButton.innerHTML = '<i class="fas fa-eye-slash"></i>';
+          revealButton.title = 'Hide password';
+        } else {
+          passwordInput.type = 'password';
+          revealButton.innerHTML = '<i class="fas fa-eye"></i>';
+          revealButton.title = 'Reveal password';
+        }
+      });
+      revealButton.addEventListener('mouseenter', () => {
+        revealButton.style.backgroundColor = 'var(--button-hover, rgba(255, 255, 255, 0.1))';
+      });
+      revealButton.addEventListener('mouseleave', () => {
+        revealButton.style.backgroundColor = 'transparent';
+      });      
+      passwordInputContainer.appendChild(passwordInput);
+      passwordInputContainer.appendChild(revealButton);
+      passwordGroup.appendChild(passwordInputContainer);
+      form.appendChild(passwordGroup);
+    
+      // Create url field
       const urlGroup = document.createElement('div');
       urlGroup.style.display = 'flex';
       urlGroup.style.flexDirection = 'column';
-      urlGroup.style.gap = '5px';
-      
+      urlGroup.style.gap = '5px';      
       const urlLabel = document.createElement('label');
       urlLabel.textContent = this.root.messages.getMessage('stam:server-url');
       urlLabel.style.fontSize = '14px';
-      urlGroup.appendChild(urlLabel);
-      
+      urlGroup.appendChild(urlLabel);      
       const urlInput = document.createElement('input');
       urlInput.type = 'text';
-      urlInput.value = this.url;
+      urlInput.value = accountInfo.url || '';
       urlInput.style.padding = '8px';
-      urlInput.style.backgroundColor = '#3d3d3d';
-      urlInput.style.color = '#e0e0e0';
-      urlInput.style.border = '1px solid #555';
+      urlInput.style.backgroundColor = 'var(--input-background, #3d3d3d)';
+      urlInput.style.color = 'var(--text-primary, #e0e0e0)';
+      urlInput.style.border = '1px solid var(--borders, #555)';
       urlInput.style.borderRadius = '3px';
       urlInput.style.fontSize = '14px';
-      urlGroup.appendChild(urlInput);
-      
+      urlGroup.appendChild(urlInput);      
       form.appendChild(urlGroup);
-      
-      // Create AWI account checkbox
-      const checkboxContainer = document.createElement('div');
-      checkboxContainer.style.display = 'flex';
-      checkboxContainer.style.alignItems = 'center';
-      checkboxContainer.style.marginBottom = '15px';
-      
-      const accountCheckbox = document.createElement('input');
-      accountCheckbox.type = 'checkbox';
-      accountCheckbox.id = 'awi-account-checkbox';
-      accountCheckbox.style.marginRight = '8px';
-      accountCheckbox.style.cursor = 'pointer';
-      
-      const checkboxLabel = document.createElement('label');
-      checkboxLabel.htmlFor = 'awi-account-checkbox';
-      checkboxLabel.textContent = this.accountInfo ? this.root.messages.getMessage('stam:login-awi-account') : this.root.messages.getMessage('stam:create-awi-account');
-      checkboxLabel.style.fontSize = '14px';
-      checkboxLabel.style.cursor = 'pointer';
-      
-      checkboxContainer.appendChild(accountCheckbox);
-      checkboxContainer.appendChild(checkboxLabel);
-      form.appendChild(checkboxContainer);
-      
-      // Create buttons
-      const buttonGroup = document.createElement('div');
-      buttonGroup.style.display = 'flex';
-      buttonGroup.style.justifyContent = 'flex-end';
-      buttonGroup.style.gap = '10px';
-      buttonGroup.style.marginTop = '10px';
-      
-      const cancelButton = document.createElement('button');
-      cancelButton.type = 'button';
-      cancelButton.textContent = this.root.messages.getMessage('stam:cancel');
-      cancelButton.style.padding = '8px 15px';
-      cancelButton.style.backgroundColor = '#555';
-      cancelButton.style.color = '#e0e0e0';
-      cancelButton.style.border = 'none';
-      cancelButton.style.borderRadius = '3px';
-      cancelButton.style.cursor = 'pointer';
-      cancelButton.style.fontSize = '14px';
-      cancelButton.addEventListener('click', () => {
-        document.body.removeChild(dialogContainer);
-        resolve(false);
-      });
-      buttonGroup.appendChild(cancelButton);
-      
-      const connectButton = document.createElement('button');
-      connectButton.type = 'button';
-      connectButton.textContent = this.root.messages.getMessage('stam:connect');
-      connectButton.style.padding = '8px 15px';
-      connectButton.style.backgroundColor = '#4CAF50';
-      connectButton.style.color = '#fff';
-      connectButton.style.border = 'none';
-      connectButton.style.borderRadius = '3px';
-      connectButton.style.cursor = 'pointer';
-      connectButton.style.fontSize = '14px';
-      connectButton.addEventListener('click', () => {
-        // Get values from input fields
-        const userName = userNameInput.value.trim();
-        const url = urlInput.value.trim();
-        const isAwiAccountChecked = accountCheckbox.checked;
-        if (userName && url) {
-          document.body.removeChild(dialogContainer);
-          resolve( { userName, url, isAwiAccountChecked } );
+
+      // Create dialog buttons
+      let dialog = null;
+      let dialogAnswer = null;
+      const buttons = [
+        {
+          label: this.root.messages.getMessage('stam:cancel'),
+          className: 'btn-neutral',
+          onClick: () => {
+            dialogAnswer = null;
+            dialog.close();
+          }
+        },
+        {
+          label: this.root.messages.getMessage('stam:create-awi-account'),
+          className: 'btn-negative',
+          onClick: () => {
+            dialogAnswer = { 
+              userName: userNameInput.value.trim(), 
+              password: passwordInput.value.trim(),
+              url: urlInput.value.trim(),
+              createAccount: true
+            }
+            dialog.close();
+          }
+        },
+        {
+          label: this.root.messages.getMessage('stam:connect'),
+          className: 'btn-positive',
+          onClick: () => {
+            dialogAnswer = { 
+              userName: userNameInput.value.trim(), 
+              password: passwordInput.value.trim(),
+              url: urlInput.value.trim(),
+              createAccount: false
+            };
+            dialog.close();
+          }
+        }
+      ];
+
+      // Create and show the dialog
+      dialog = new Dialog({
+        title: this.root.messages.getMessage('stam:connection-dialog'),
+        content: form,
+        buttons: buttons,
+        className: 'socket-connection-dialog',
+        onOpen: () => {
+          // Focus on username input when dialog opens
+          userNameInput.focus();
+        },
+        onClose: () => {
+          // If dialog is closed without clicking any button, treat as cancel
+          resolve(dialogAnswer);
         }
       });
-      buttonGroup.appendChild(connectButton);
-      
-      form.appendChild(buttonGroup);
-      
-      dialog.appendChild(form);
-      dialogContainer.appendChild(dialog);
-      
-      // Add dialog to body
-      document.body.appendChild(dialogContainer);
-      
-      // Focus on username input
-      userNameInput.focus();
+      dialog.open();
+
+      var connectButton = dialog.buttons[2].element;
+      connectButton.disabled = !userNameInput.value.trim() || !passwordInput.value.trim() || !urlInput.value.trim();
+      userNameInput.addEventListener('input', () => {
+        connectButton.disabled = !userNameInput.value.trim() || !passwordInput.value.trim() || !urlInput.value.trim();
+      });
+      passwordInput.addEventListener('input', () => {
+        connectButton.disabled = !userNameInput.value.trim() || !passwordInput.value.trim() || !urlInput.value.trim();
+      });
+      urlInput.addEventListener('input', () => {
+        connectButton.disabled = !userNameInput.value.trim() || !passwordInput.value.trim() || !urlInput.value.trim();
+      });
     });
   }
 }
