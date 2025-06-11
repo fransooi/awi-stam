@@ -170,6 +170,46 @@ class ConnectorUtilities extends ConnectorBase
 	{
 		return typeof item != 'undefined' ? Array.isArray( item ) : false;
 	};
+
+	/**
+     * Encrypts a string using XOR cipher with a key and Base64 encoding
+     * @param {string} text - The text to encrypt
+     * @param {string} key - The encryption key (default: 'awi-secret-key')
+     * @returns {string} Encrypted string in Base64 format
+     */
+    encrypt(text, key = 'awi-secret-key') {
+        if (!text) return '';
+        
+        let result = '';
+        for (let i = 0; i < text.length; i++) {
+            const charCode = text.charCodeAt(i) ^ key.charCodeAt(i % key.length);
+            result += String.fromCharCode(charCode);
+        }
+        
+        // Convert to Base64 to ensure ASCII output
+        return Buffer.from(result, 'binary').toString('base64');
+    }
+
+    /**
+     * Decrypts a string that was encrypted with the encrypt method
+     * @param {string} encryptedText - The encrypted text in Base64 format
+     * @param {string} key - The decryption key (must match the encryption key)
+     * @returns {string} Decrypted string
+     */
+    decrypt(encryptedText, key = 'awi-secret-key') {
+        if (!encryptedText) return '';
+        
+        // Convert from Base64 back to binary
+        const binaryString = Buffer.from(encryptedText, 'base64').toString('binary');
+        
+        let result = '';
+        for (let i = 0; i < binaryString.length; i++) {
+            const charCode = binaryString.charCodeAt(i) ^ key.charCodeAt(i % key.length);
+            result += String.fromCharCode(charCode);
+        }
+        
+        return result;
+    }
 	countElements( obj, options = { all: true } )
 	{
 		var count = 0;

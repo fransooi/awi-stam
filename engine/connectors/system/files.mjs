@@ -549,9 +549,13 @@ class ConnectorFiles extends ConnectorBase
 		var buffer = Buffer.from( data, 'base64' );
 		return await this.awi.system.writeFile( path, buffer, { encoding: 'binary' } );
 	}
-	async saveText( path, data )
+	async saveText( path, text )
 	{
-		return await this.awi.system.writeFile( path, data, { encoding: 'utf8' } );
+		return await this.awi.system.writeFile( path, text, { encoding: 'utf8' } );
+	}
+	async loadText( path )
+	{
+		return await this.awi.system.readFile( path, { encoding: 'utf8' } );
 	}
 	async delete( path )
 	{

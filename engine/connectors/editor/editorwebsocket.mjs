@@ -48,17 +48,22 @@ class EditorWebSocket extends EditorBase
         
         // Find all languages available in this server
         this.languageMode='';
-        this.connectors=[];
+        this.connectors=null;
         this.lastMode = '';
 	}
     async connect(options, message)
     {
         super.connect( options );
-        var answer = await this.awi.callConnectors( [ 'registerEditor', '*', { editor: this } ] );
-        if ( !answer.isSuccess() )
-            return this.replyError( this.newError( 'awi:cannot-register-editor', { value: options.accountInfo.userName } ), message );
-        this.connectors=answer.data;
-
+        var answer = await this.loadAccounts();
+        if (!answer.isSuccess())
+            return this.replyError( answer, message );
+        if ( !this.connectors )
+        {
+            var answer = await this.awi.callConnectors( [ 'registerEditor', '*', { editor: this } ] );
+            if ( !answer.isSuccess() )
+                return this.replyError( this.newError( 'awi:cannot-register-editor', { value: options.accountInfo.userName } ), message );
+            this.connectors=answer.data;
+        }
         var answer = await this.command_checkPassword({userName: options.accountInfo.userName, password: options.password});
         if (!answer.isSuccess())
         {
@@ -81,7 +86,37 @@ class EditorWebSocket extends EditorBase
             return this.newError( 'awi:account-already-exist', { value: parameters.accountInfo.userName } );
         this.accounts[ parameters.accountInfo.userName ] = parameters.accountInfo;
         this.accounts[ parameters.accountInfo.userName ].password = parameters.password;
+        var answer = await this.saveAccounts();
+        if (!answer.isSuccess())
+            return this.newError( 'awi:error-when-creating-user', { value: parameters.accountInfo.userName } );
         return this.newAnswer( { userName: parameters.accountInfo.userName } );
+    }
+    async saveAccounts()
+    {
+        var path = this.awi.awi.configuration.getConfigurationPath();
+        var json = JSON.stringify( this.accounts );
+        var jsonEncrypted = this.awi.awi.utilities.encrypt( json );
+        return await this.awi.files.saveText( path + '/accounts.dat', jsonEncrypted );
+    }
+    async loadAccounts()
+    {
+        var path = this.awi.awi.configuration.getConfigurationPath() + '/accounts.dat';
+        var answer = this.awi.files.exists( path );
+        if (answer.isError())
+            return this.newAnswer(true);
+        var jsonEncrypted = await this.awi.files.loadText( path );
+        if (!jsonEncrypted.isSuccess())
+            return this.newError( 'awi:error-when-loading-accounts' );
+        var json = this.awi.utilities.decrypt( jsonEncrypted.data );
+        try 
+        {
+            this.accounts = JSON.parse( json );
+        }
+        catch( e )
+        {
+            return this.newError( 'awi:error-when-loading-accounts' );
+        }
+        return this.newAnswer(true);
     }
     addDataToReply( name, data )
     {

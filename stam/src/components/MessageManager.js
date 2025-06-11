@@ -24,6 +24,8 @@ export const MESSAGESCOMMANDS = {
   GET_MESSAGE: 'GET_MESSAGE',
   SET_LANGUAGE: 'SET_LANGUAGE',
   GET_AVAILABLE_LANGUAGES: 'GET_AVAILABLE_LANGUAGES',
+  GET_TIMEZONE_INFORMATION: 'GET_TIMEZONE_INFORMATION',
+  GET_COUNTRY_LIST: 'GET_COUNTRY_LIST'
 };
 
 class MessageManager extends BaseComponent {
@@ -36,16 +38,37 @@ class MessageManager extends BaseComponent {
     this.currentLanguage = '';
     this.messages = {};
     this.countries = {};
+    this.countryCodes = {};
     this.english = {};
     this.messagesPath = '/messages';
     this.messageMap[MESSAGESCOMMANDS.GET_MESSAGE] = this.handleGetMessage;
     this.messageMap[MESSAGESCOMMANDS.SET_LANGUAGE] = this.handleSetLanguage;
     this.messageMap[MESSAGESCOMMANDS.GET_AVAILABLE_LANGUAGES] = this.handleGetAvailableLanguages;
+    this.messageMap[MESSAGESCOMMANDS.GET_TIMEZONE_INFORMATION] = this.handleTimezoneInformation;
+    this.messageMap[MESSAGESCOMMANDS.GET_COUNTRY_LIST] = this.handleGetCountryList;
   }
 
   async init(options = {}) {
     if (await super.init(options))
       return;
+
+    // Load list of cities/countries
+    var path = this.messagesPath + '/cities-to-countries.json';
+    var answer = await this.root.utilities.readFile( path, 'json' );
+    if ( !answer.error )
+    {
+      this.citiesToCountries = answer;
+    }
+
+    // Load list of country codes
+    var path = this.messagesPath + '/country-codes.json';
+    var answer = await this.root.utilities.readFile( path, 'json' );
+    if ( !answer.error )
+    {
+      for ( var c = 0; c < answer.length; c++ )
+        this.countryCodes[answer[c].Code.toLowerCase()] = answer[c].Name;
+    }
+    
     // Load list of countries
     var path = this.messagesPath + '/countries.csv';
     var answer = await this.root.utilities.readFile( path, 'text' );
@@ -127,6 +150,31 @@ class MessageManager extends BaseComponent {
     return !answer.error;
   }
 
+  // Get the current country
+  async handleTimezoneInformation() {
+    var region;
+    var city;
+    var country;
+    var countryCode;
+    var timeZone;
+
+    if (Intl) {
+      timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      var tzArr = timeZone.split("/");
+      region = tzArr[0];
+      city = tzArr[tzArr.length - 1];
+      country = this.citiesToCountries[city];
+    }
+    // Get country code from country name
+    for ( var cc in this.countryCodes )
+      if ( this.countryCodes[cc].toLowerCase() == country.toLowerCase() )
+        countryCode = cc;
+    return { region, city, country, countryCode, timeZone };
+  }
+
+  handleGetCountryList() {
+    return this.countryCodes;
+  }
   // Get layout info
   async getLayoutInfo() {
     const layoutInfo = await super.getLayoutInfo();

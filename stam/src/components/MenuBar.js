@@ -22,8 +22,9 @@
 */
 import BaseComponent, { MESSAGES } from '../utils/BaseComponent.js';
 import PopupMenu from './PopupMenu.js';
-import { SOCKETMESSAGES } from '../components/sidewindows/SocketSideWindow.js';
-import { CLASSROOMCOMMANDS } from '../components/ClassroomManager.js';
+import { EDITORMESSAGES } from './Editor.js';
+import { SOCKETMESSAGES } from './sidewindows/SocketSideWindow.js';
+import { CLASSROOMCOMMANDS } from './ClassroomManager.js';
 
 // Define message types for preference handling
 export const MENUCOMMANDS = {
@@ -55,11 +56,29 @@ export const MENUCOMMANDS = {
   BUILD: 'MENU_BUILD',
   DOCUMENTATION: 'MENU_DOCUMENTATION',
   ABOUT: 'MENU_ABOUT',
+  HELP: 'MENU_HELP',
   DEBUG1: 'MENU_DEBUG1',
   DEBUG2: 'MENU_DEBUG2',
   LOGIN: 'MENU_LOGIN',
   LOGOUT: 'MENU_LOGOUT',
-  HELP: 'MENU_HELP'
+  CREATE_ACCOUNT: 'MENU_CREATE_ACCOUNT',
+  EDIT_ACCOUNT: 'MENU_EDIT_ACCOUNT',
+  CONNECT_AWI_DEVICE: 'MENU_CONNECT_AWI_DEVICE',
+  DISPLAY_AWI_DEVICES: 'MENU_DISPLAY_AWI_DEVICES',
+  REMOVE_AWI_DEVICE: 'MENU_REMOVE_AWI_DEVICE',
+  ABOUT_AWI_SERVER: 'MENU_ABOUT_AWI_SERVER',
+  VIEW_LEFT_PROJECT_WINDOW: 'MENU_VIEW_LEFT_PROJECT_WINDOW',
+  VIEW_LEFT_OUTPUT_WINDOW: 'MENU_VIEW_LEFT_OUTPUT_WINDOW',
+  VIEW_LEFT_SERVER_WINDOW: 'MENU_VIEW_LEFT_SERVER_WINDOW',
+  VIEW_LEFT_AWI_WINDOW: 'MENU_VIEW_LEFT_AWI_WINDOW',
+  VIEW_LEFT_TV_WINDOW: 'MENU_VIEW_LEFT_TV_WINDOW',
+  VIEW_RIGHT_PROJECT_WINDOW: 'MENU_VIEW_RIGHT_PROJECT_WINDOW',
+  VIEW_RIGHT_OUTPUT_WINDOW: 'MENU_VIEW_RIGHT_OUTPUT_WINDOW',
+  VIEW_RIGHT_SERVER_WINDOW: 'MENU_VIEW_RIGHT_SERVER_WINDOW',
+  VIEW_RIGHT_AWI_WINDOW: 'MENU_VIEW_RIGHT_AWI_WINDOW',
+  VIEW_RIGHT_TV_WINDOW: 'MENU_VIEW_RIGHT_TV_WINDOW',
+  VIEW_MENUBAR: 'MENU_VIEW_MENUBAR',
+  VIEW_STATUSBAR: 'MENU_VIEW_STATUSBAR'
 };
 
 
@@ -70,10 +89,13 @@ class MenuBar extends BaseComponent {
     
     this.activeMenu = null;
     this.menuStructure = [];
+    this.menuMap = {};
     this.menuItems = {}; 
     this.activePopupMenu = null; 
+    this.handleInterval = null;
     this.messageMap[MESSAGES.MODE_CHANGE] = this.handleModeChange;
     this.messageMap[SOCKETMESSAGES.CONNECTED] = this.handleConnected;
+    this.messageMap[SOCKETMESSAGES.CONNECTEDAWI] = this.handleConnectedAwi;
     this.messageMap[SOCKETMESSAGES.DISCONNECTED] = this.handleDisconnected;
     this.messageMap[CLASSROOMCOMMANDS.CLASSROOM_JOINED] = this.handleClassroomJoined;
     this.messageMap[CLASSROOMCOMMANDS.CLASSROOM_LEFT] = this.handleClassroomLeft;
@@ -83,12 +105,78 @@ class MenuBar extends BaseComponent {
     if (await super.init(options))
       return;
     this.menuStructure = this.getDefaultMenuStructure();
+    this.menuMap = this.makeMenuMap(this.menuStructure);
     if(options.mode) {
       this.setMode(options.mode);
     }
     document.addEventListener('click', this.handleDocumentClick.bind(this));
+
+    // Update menu items based on connection state
+    this.handleInterval = setInterval(() => {
+      this.updateMenuItems();
+    }, 500);
   }
 
+  async updateMenuItems() {
+    var socketInfo = await this.sendRequestTo('class:SocketSideWindow',SOCKETMESSAGES.GET_CONNECTION_INFO);
+    this.menuMap[MENUCOMMANDS.LOGIN].disabled = socketInfo.loggedIn;
+    this.menuMap[MENUCOMMANDS.LOGOUT].disabled = !socketInfo.loggedIn;
+    this.menuMap[MENUCOMMANDS.CREATE_ACCOUNT].disabled = !socketInfo.loggedInAWI;
+    this.menuMap[MENUCOMMANDS.EDIT_ACCOUNT].disabled = !socketInfo.loggedInAWI;
+    this.menuMap[MENUCOMMANDS.DISPLAY_AWI_DEVICES].disabled = !socketInfo.loggedInAWI;
+    this.menuMap[MENUCOMMANDS.REMOVE_AWI_DEVICE].disabled = !socketInfo.loggedInAWI;
+    this.menuMap[MENUCOMMANDS.CONNECT_AWI_DEVICE].disabled = !socketInfo.loggedInAWI;
+    this.menuMap[MENUCOMMANDS.ABOUT_AWI_SERVER].disabled = !socketInfo.loggedInAWI;
+
+    this.menuMap[MENUCOMMANDS.NEW_PROJECT].disabled = !socketInfo.loggedIn;
+    this.menuMap[MENUCOMMANDS.OPEN_PROJECT].disabled = !socketInfo.loggedIn;
+    this.menuMap[MENUCOMMANDS.SAVE_PROJECT].disabled = !socketInfo.loggedIn;
+    this.menuMap[MENUCOMMANDS.SAVE_AS_PROJECT].disabled = !socketInfo.loggedIn;
+    this.menuMap[MENUCOMMANDS.CLOSE_PROJECT].disabled = !socketInfo.loggedIn;
+    this.menuMap[MENUCOMMANDS.NEW_FILE].disabled = !socketInfo.loggedIn;
+    this.menuMap[MENUCOMMANDS.OPEN_FILE].disabled = !socketInfo.loggedIn;
+    this.menuMap[MENUCOMMANDS.SAVE_FILE].disabled = !socketInfo.loggedIn;
+    this.menuMap[MENUCOMMANDS.SAVE_AS_FILE].disabled = !socketInfo.loggedIn;
+    this.menuMap[MENUCOMMANDS.CLOSE_FILE].disabled = !socketInfo.loggedIn;
+
+    this.menuMap[MENUCOMMANDS.UNDO].disabled = !socketInfo.loggedIn;
+    this.menuMap[MENUCOMMANDS.REDO].disabled = !socketInfo.loggedIn;
+    this.menuMap[MENUCOMMANDS.CUT].disabled = !socketInfo.loggedIn;
+    this.menuMap[MENUCOMMANDS.COPY].disabled = !socketInfo.loggedIn;
+    this.menuMap[MENUCOMMANDS.PASTE].disabled = !socketInfo.loggedIn;
+    this.menuMap[MENUCOMMANDS.FIND].disabled = !socketInfo.loggedIn;
+    this.menuMap[MENUCOMMANDS.REPLACE].disabled = !socketInfo.loggedIn;
+
+    this.menuMap[CLASSROOMCOMMANDS.CREATE_CLASSROOM].disabled = !socketInfo.loggedIn;
+    this.menuMap[CLASSROOMCOMMANDS.JOIN_CLASSROOM].disabled = !socketInfo.loggedIn;
+    this.menuMap[CLASSROOMCOMMANDS.LEAVE_CLASSROOM].disabled = !socketInfo.loggedIn;
+    this.updateButtonDisable(this.classroomButton, !socketInfo.loggedIn);
+
+    if (socketInfo.loggedIn)
+    {
+      var projectInfo = this.root.project.getProjectInformation();
+      this.menuMap[MENUCOMMANDS.NEW_FILE].disabled = !projectInfo.projectLoaded;
+      this.menuMap[MENUCOMMANDS.OPEN_FILE].disabled = !projectInfo.projectLoaded;
+      
+      var classroomInfo = this.root.classroom.getInformation();
+      this.menuMap[CLASSROOMCOMMANDS.CREATE_CLASSROOM].disabled = classroomInfo.classroomOpen;
+      this.menuMap[CLASSROOMCOMMANDS.JOIN_CLASSROOM].disabled = classroomInfo.classroomOpen;
+      this.menuMap[CLASSROOMCOMMANDS.LEAVE_CLASSROOM].disabled = !classroomInfo.classroomOpen;
+
+      var editorInfo = await this.sendRequestTo('class:Editor',EDITORMESSAGES.GET_INFORMATION);
+      this.menuMap[MENUCOMMANDS.SAVE_FILE].disabled = editorInfo.numberOfTabs==0;
+      this.menuMap[MENUCOMMANDS.SAVE_AS_FILE].disabled = editorInfo.numberOfTabs==0;
+      this.menuMap[MENUCOMMANDS.CLOSE_FILE].disabled = editorInfo.numberOfTabs==0;
+      this.menuMap[MENUCOMMANDS.UNDO].disabled = editorInfo.numberOfTabs==0;
+      this.menuMap[MENUCOMMANDS.REDO].disabled = editorInfo.numberOfTabs==0;
+      this.menuMap[MENUCOMMANDS.CUT].disabled = editorInfo.numberOfTabs==0;
+      this.menuMap[MENUCOMMANDS.COPY].disabled = editorInfo.numberOfTabs==0;
+      this.menuMap[MENUCOMMANDS.PASTE].disabled = editorInfo.numberOfTabs==0;
+      this.menuMap[MENUCOMMANDS.FIND].disabled = editorInfo.numberOfTabs==0;
+      this.menuMap[MENUCOMMANDS.REPLACE].disabled = editorInfo.numberOfTabs==0;
+    }    
+  }
+  
   async destroy() {
     document.removeEventListener('click', this.handleDocumentClick.bind(this));
     if (this.menuItemsContainer) {
@@ -110,6 +198,10 @@ class MenuBar extends BaseComponent {
     if (this.rightContainer) {
       this.parentContainer.removeChild(this.rightContainer);
       this.rightContainer=null;
+    }
+    if (this.handleInterval) {
+      clearInterval(this.handleInterval);
+      this.handleInterval=null;
     }
     super.destroy();
   }
@@ -166,19 +258,19 @@ class MenuBar extends BaseComponent {
     // Create classroom button container
     this.classroomButtonContainer = document.createElement('div');
     this.classroomButtonContainer.className = 'classroom-button-container';
-    this.createClassroomButton(this.classroomButtonContainer);
+    this.classroomButton = this.createClassroomButton(this.classroomButtonContainer);
     this.rightContainer.appendChild(this.classroomButtonContainer);
     
     // Create login button container
     this.loginButtonContainer = document.createElement('div');
     this.loginButtonContainer.className = 'login-button-container';
-    this.createLoginButton(this.loginButtonContainer);
+    this.loginButton = this.createLoginButton(this.loginButtonContainer);
     this.rightContainer.appendChild(this.loginButtonContainer);
 
     // Create mode selector container
     this.modeSelectorContainer = document.createElement('div');
     this.modeSelectorContainer.className = 'mode-selector-container';
-    this.createModeSelector(this.modeSelectorContainer);
+    this.modeSelector = this.createModeSelector(this.modeSelectorContainer);
     this.rightContainer.appendChild(this.modeSelectorContainer);
     
     // Add the right container to the main container
@@ -218,6 +310,7 @@ class MenuBar extends BaseComponent {
     });
     
     container.appendChild(modeSelector);
+    return modeSelector;
   }
   
   /**
@@ -240,7 +333,6 @@ class MenuBar extends BaseComponent {
     classroomButton.style.fontSize = '12px';
     classroomButton.style.fontWeight = '500';
     classroomButton.style.cursor = 'pointer';
-    classroomButton.style.transition = 'all 0.2s ease';
     classroomButton.style.display = 'flex';
     classroomButton.style.alignItems = 'center';
     classroomButton.style.height = '24px';
@@ -268,6 +360,7 @@ class MenuBar extends BaseComponent {
     });
     
     container.appendChild(classroomButton);
+    return classroomButton;
   }
   
   /**
@@ -318,57 +411,101 @@ class MenuBar extends BaseComponent {
     });
     
     container.appendChild(loginButton);
+    return loginButton;
   }
   
   getDefaultMenuStructure() {
-    return [
-      { name: this.root.messages.getMessage('stam:menu-file'), items: [
-        { name: this.root.messages.getMessage('stam:menu-new-project'), command: MENUCOMMANDS.NEW_PROJECT },
-        { name: this.root.messages.getMessage('stam:menu-open-project'), command: MENUCOMMANDS.OPEN_PROJECT },
-        { name: this.root.messages.getMessage('stam:menu-save-project'), command: MENUCOMMANDS.SAVE_PROJECT },
-        { name: this.root.messages.getMessage('stam:menu-save-project-as'), command: MENUCOMMANDS.SAVE_AS_PROJECT },
-        { name: this.root.messages.getMessage('stam:menu-close-project'), command: MENUCOMMANDS.CLOSE_PROJECT },
+    var menu = [
+      { name: this.root.messages.getMessage('stam:menu-awi'), items: [
+        { name: this.root.messages.getMessage('stam:menu-login'), command: MENUCOMMANDS.LOGIN, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-logout'), command: MENUCOMMANDS.LOGOUT, disabled: true },
+        { name: this.root.messages.getMessage('stam:menu-create-account'), command: MENUCOMMANDS.CREATE_ACCOUNT, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-edit-account'), command: MENUCOMMANDS.EDIT_ACCOUNT, disabled: true },
         '-',
-        { name: this.root.messages.getMessage('stam:menu-new-file'), command: MENUCOMMANDS.NEW_FILE },
-        { name: this.root.messages.getMessage('stam:menu-open-file'), command: MENUCOMMANDS.OPEN_FILE },
-        { name: this.root.messages.getMessage('stam:menu-save-file'), command: MENUCOMMANDS.SAVE_FILE },
-        { name: this.root.messages.getMessage('stam:menu-save-file-as'), command: MENUCOMMANDS.SAVE_AS_FILE },
-        { name: this.root.messages.getMessage('stam:menu-close-file'), command: MENUCOMMANDS.CLOSE_FILE }
+        { name: this.root.messages.getMessage('stam:menu-connect-awi-device'), command: MENUCOMMANDS.CONNECT_AWI_DEVICE, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-display-awi-devices'), command: MENUCOMMANDS.DISPLAY_AWI_DEVICES, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-remove-awi-device'), command: MENUCOMMANDS.REMOVE_AWI_DEVICE, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-about-awi-server'), command: MENUCOMMANDS.ABOUT_AWI_SERVER, disabled: false }
+      ] },
+      { name: this.root.messages.getMessage('stam:menu-file'), items: [
+        { name: this.root.messages.getMessage('stam:menu-new-project'), command: MENUCOMMANDS.NEW_PROJECT, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-open-project'), command: MENUCOMMANDS.OPEN_PROJECT, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-save-project'), command: MENUCOMMANDS.SAVE_PROJECT, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-save-project-as'), command: MENUCOMMANDS.SAVE_AS_PROJECT, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-close-project'), command: MENUCOMMANDS.CLOSE_PROJECT, disabled: false },
+        '-',
+        { name: this.root.messages.getMessage('stam:menu-new-file'), command: MENUCOMMANDS.NEW_FILE, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-open-file'), command: MENUCOMMANDS.OPEN_FILE, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-save-file'), command: MENUCOMMANDS.SAVE_FILE, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-save-file-as'), command: MENUCOMMANDS.SAVE_AS_FILE, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-close-file'), command: MENUCOMMANDS.CLOSE_FILE, disabled: false }
       ] },
       { name: this.root.messages.getMessage('stam:menu-edit'), items: [
-        { name: this.root.messages.getMessage('stam:menu-undo'), command: MENUCOMMANDS.UNDO },
-        { name: this.root.messages.getMessage('stam:menu-redo'), command: MENUCOMMANDS.REDO },
+        { name: this.root.messages.getMessage('stam:menu-undo'), command: MENUCOMMANDS.UNDO, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-redo'), command: MENUCOMMANDS.REDO, disabled: false },
         '-',
-        { name: this.root.messages.getMessage('stam:menu-cut'), command: MENUCOMMANDS.CUT },
-        { name: this.root.messages.getMessage('stam:menu-copy'), command: MENUCOMMANDS.COPY },
-        { name: this.root.messages.getMessage('stam:menu-paste'), command: MENUCOMMANDS.PASTE },
-        { name: this.root.messages.getMessage('stam:menu-find'), command: MENUCOMMANDS.FIND },
-        { name: this.root.messages.getMessage('stam:menu-replace'), command: MENUCOMMANDS.REPLACE },
+        { name: this.root.messages.getMessage('stam:menu-cut'), command: MENUCOMMANDS.CUT, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-copy'), command: MENUCOMMANDS.COPY, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-paste'), command: MENUCOMMANDS.PASTE, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-find'), command: MENUCOMMANDS.FIND, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-replace'), command: MENUCOMMANDS.REPLACE, disabled: false },
         '-',
-        { name: this.root.messages.getMessage('stam:menu-preferences'), command: MENUCOMMANDS.PREFERENCES }
+        { name: this.root.messages.getMessage('stam:menu-preferences'), command: MENUCOMMANDS.PREFERENCES, disabled: false }
       ] },
+      { name: this.root.messages.getMessage('stam:menu-view'), items: [
+        { name: this.root.messages.getMessage('stam:menuleft-sidebar'), items: [
+          { name: this.root.messages.getMessage('stam:menu-view-project-window'), command: MENUCOMMANDS.VIEW_LEFT_PROJECT_WINDOW, disabled: false },
+          { name: this.root.messages.getMessage('stam:menu-view-output-window'), command: MENUCOMMANDS.VIEW_LEFT_OUTPUT_WINDOW, disabled: false },
+          { name: this.root.messages.getMessage('stam:menu-view-server-window'), command: MENUCOMMANDS.VIEW_LEFT_SERVER_WINDOW, disabled: false },
+          { name: this.root.messages.getMessage('stam:menu-view-awi-window'), command: MENUCOMMANDS.VIEW_LEFT_AWI_WINDOW, disabled: false },
+          { name: this.root.messages.getMessage('stam:menu-view-tv-window'), command: MENUCOMMANDS.VIEW_LEFT_TV_WINDOW, disabled: false }
+        ] },
+        { name: this.root.messages.getMessage('stam:menuright-sidebar'), items: [
+          { name: this.root.messages.getMessage('stam:menu-view-project-window'), command: MENUCOMMANDS.VIEW_RIGHT_PROJECT_WINDOW, disabled: false },
+          { name: this.root.messages.getMessage('stam:menu-view-output-window'), command: MENUCOMMANDS.VIEW_RIGHT_OUTPUT_WINDOW, disabled: false },
+          { name: this.root.messages.getMessage('stam:menu-view-server-window'), command: MENUCOMMANDS.VIEW_RIGHT_SERVER_WINDOW, disabled: false },
+          { name: this.root.messages.getMessage('stam:menu-view-awi-window'), command: MENUCOMMANDS.VIEW_RIGHT_AWI_WINDOW, disabled: false },
+          { name: this.root.messages.getMessage('stam:menu-view-tv-window'), command: MENUCOMMANDS.VIEW_RIGHT_TV_WINDOW, disabled: false },
+        ] },
+        { name: this.root.messages.getMessage('stam:menu-menubar'), command: MENUCOMMANDS.VIEW_MENUBAR, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-statusbar'), command: MENUCOMMANDS.VIEW_STATUSBAR, disabled: false }
+      ] }, 
       { name: this.root.messages.getMessage('stam:menu-classroom'), items: [
-        { name: this.root.messages.getMessage('stam:menu-create-classroom'), command: CLASSROOMCOMMANDS.CREATE_CLASSROOM },
-        { name: this.root.messages.getMessage('stam:menu-join-classroom'), command: CLASSROOMCOMMANDS.JOIN_CLASSROOM },
-        { name: this.root.messages.getMessage('stam:menu-leave-classroom'), command: CLASSROOMCOMMANDS.LEAVE_CLASSROOM }
-      ] },
-      { name: this.root.messages.getMessage('stam:menu-run'), items: [
-        { name: this.root.messages.getMessage('stam:menu-run-run'), command: MENUCOMMANDS.RUN },
-        { name: this.root.messages.getMessage('stam:menu-run-debug'), command: MENUCOMMANDS.DEBUG },
-        { name: this.root.messages.getMessage('stam:menu-run-stop'), command: MENUCOMMANDS.STOP },
-        { name: this.root.messages.getMessage('stam:menu-run-build'), command: MENUCOMMANDS.BUILD }
+        { name: this.root.messages.getMessage('stam:menu-create-classroom'), command: CLASSROOMCOMMANDS.CREATE_CLASSROOM, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-join-classroom'), command: CLASSROOMCOMMANDS.JOIN_CLASSROOM, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-leave-classroom'), command: CLASSROOMCOMMANDS.LEAVE_CLASSROOM, disabled: false }
       ] },
       { name: this.root.messages.getMessage('stam:menu-help'), items: [
-        { name: this.root.messages.getMessage('stam:menu-help-documentation'), command: MENUCOMMANDS.DOCUMENTATION },
-        { name: this.root.messages.getMessage('stam:menu-help-about'), command: MENUCOMMANDS.ABOUT },
-        { name: this.root.messages.getMessage('stam:menu-help-debug'), items: [
-          { name: this.root.messages.getMessage('stam:menu-help-debug-debug1'), command: MENUCOMMANDS.DEBUG1 },
-          { name: this.root.messages.getMessage('stam:menu-help-debug-debug2'), command: MENUCOMMANDS.DEBUG2 }
-        ] }
+        { name: this.root.messages.getMessage('stam:menu-help-documentation'), command: MENUCOMMANDS.DOCUMENTATION, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-help-about'), command: MENUCOMMANDS.ABOUT, disabled: false },
       ] }
     ];
+    // Add debug menu if in debug mode
+    if (this.root.debug != 0)
+      menu.push(
+        { name: this.root.messages.getMessage('stam:menu-help-debug'), items: [
+          { name: this.root.messages.getMessage('stam:menu-help-debug-debug1'), command: MENUCOMMANDS.DEBUG1, disabled: false },
+          { name: this.root.messages.getMessage('stam:menu-help-debug-debug2'), command: MENUCOMMANDS.DEBUG2, disabled: false }
+        ] } );
+    return menu;
   }
-  
+
+  makeMenuMap(menuBase) {
+    var menuMap = {};
+    function makeMap(menu) {
+      for (var m = 0; m < menu.length; m++) {
+        var item = menu[m];
+        if (item.items) {
+          makeMap(item.items);
+        } else if (item.command) {
+          menuMap[item.command] = item;
+        }
+      }
+    }
+    makeMap(menuBase);
+    return menuMap;
+  }
+
   toggleMenu(menuData, menuElement) {
     // Close the active popup menu if it exists
     if (this.activePopupMenu) {
@@ -448,6 +585,11 @@ class MenuBar extends BaseComponent {
     }
   }
   
+  disableMenuItem(command, onOff) {
+    if (this.menuMap[command])
+      this.menuMap[command].disabled = onOff;
+  }
+
   setMode(mode) {
     this.currentMode = mode;
     const modeSelector = document.getElementById('mode-selector');
@@ -621,6 +763,17 @@ class MenuBar extends BaseComponent {
    * Add hover and click effects to the login button
    * @param {HTMLElement} button - The login button element
    */
+  updateButtonDisable(button, isDisabled)
+  {
+    button.dataset.disabled = isDisabled;
+    if (isDisabled) {
+      button.style.cursor = 'not-allowed';
+      button.style.opacity = '0.5';
+    } else {
+      button.style.cursor = 'pointer';
+      button.style.opacity = '1';
+    }
+  }
   addButtonEffects(button,isPositive) {
     // Set initial colors based on button state
     if (isPositive) {
@@ -635,21 +788,29 @@ class MenuBar extends BaseComponent {
   
     // Add hover and active effects
     button.addEventListener('mouseover', () => {
+      if (button.dataset.disabled)
+        return;
       button.style.opacity = '0.9';
       button.style.transform = 'translateY(-1px)';
     });
   
     button.addEventListener('mouseout', () => {
+      if (button.dataset.disabled)
+        return;
       button.style.opacity = '1';
       button.style.transform = 'translateY(0)';
     });
   
     button.addEventListener('mousedown', () => {
+      if (button.dataset.disabled)
+        return;
       button.style.opacity = '0.8';
       button.style.transform = 'translateY(1px)';
     });
   
     button.addEventListener('mouseup', () => {
+      if (button.dataset.disabled)
+        return;
       button.style.opacity = '0.9';
       button.style.transform = 'translateY(-1px)';
     });

@@ -25,6 +25,11 @@ import { PROJECTMESSAGES } from './ProjectManager.js'
 import { MENUCOMMANDS } from './MenuBar.js'
 import { SOCKETMESSAGES } from './sidewindows/SocketSideWindow.js';
 
+// Define message types for preference handling
+export const EDITORMESSAGES = {
+  GET_INFORMATION: 'EDITOR_GET_INFORMATION',
+};
+
 class Editor extends BaseComponent {
   constructor(parentId, containerId) {
     // Initialize the base component with component name
@@ -42,7 +47,7 @@ class Editor extends BaseComponent {
     this.messageMap[MENUCOMMANDS.SAVE_FILE] = this.handleSaveFile;
     this.messageMap[MENUCOMMANDS.SAVE_AS_FILE] = this.handleSaveAsFile;
     this.messageMap[MENUCOMMANDS.CLOSE_FILE] = this.handleCloseFile;
-    this.messageMap[SOCKETMESSAGES.CONNECTED] = this.handleConnected;
+    this.messageMap[EDITORMESSAGES.GET_INFORMATION] = this.handleGetInformation;
   }
   
   async init(options) {
@@ -162,6 +167,12 @@ class Editor extends BaseComponent {
     }
     return false;
   }
+  async handleGetInformation(data, sender) {
+    if (this.editor && this.editor.handleGetInformation) {
+      return await this.editor.handleGetInformation(data, sender);
+    }
+    return false;
+  }
   
   /**
    * Apply layout information to restore the Editor state
@@ -228,6 +239,14 @@ class Editor extends BaseComponent {
     if (this.editor && this.editor.handleModeChange) {
       await this.editor.handleModeChange({ mode }, this.id);
     }
+  }
+  async getInformation() {
+    return {
+      currentMode: this.currentMode,
+      numberOfTabs: this.editor.getNumberOfTabs(),
+      activeTabIndex: this.editor.getActiveTabIndex(),
+      modeSpecific: this.editor.getModeSpecific()
+    };
   }
 }
 

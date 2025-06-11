@@ -18,6 +18,7 @@
 */
 import { SERVERCOMMANDS } from '../../../../engine/servercommands.mjs';
 import { MENUCOMMANDS } from '../MenuBar.js';
+import { MESSAGESCOMMANDS } from '../MessageManager.js';
 import { Dialog } from '../../utils/Dialog.js';
 import SideWindow from './SideWindow.js';
 import WebSocketClient from '../../utils/WebSocketClient.js';
@@ -62,8 +63,9 @@ class SocketSideWindow extends SideWindow {
       lastName: '',
       password: '',
       email: '',
-      country: '',
       language: 'en',
+      countryCode: '',
+      key: '',
       url: this.root.webSocketUrl,
       connectToAwi: false
     };
@@ -122,6 +124,10 @@ class SocketSideWindow extends SideWindow {
    */
   async init(options) {
     super.init(options);
+    
+    // Get timezone information
+    this.countryList = await this.sendRequestTo('class:MessageManager', MESSAGESCOMMANDS.GET_COUNTRY_LIST);
+    this.timezoneInformation = await this.sendRequestTo('class:MessageManager', MESSAGESCOMMANDS.GET_TIMEZONE_INFORMATION);
   }
   
   /**
@@ -824,6 +830,7 @@ class SocketSideWindow extends SideWindow {
       {
         var response;
         if (accountInfo.createAccount){
+          if (accountInfo.firstName)
           response = await this.handleRequestResponse({command:SERVERCOMMANDS.CREATE_AWI_ACCOUNT, parameters: { userName: answer.userName, accountInfo: accountInfo }});
           if (response.error){
             this.disconnect();
@@ -844,6 +851,20 @@ class SocketSideWindow extends SideWindow {
           this.addMessage('sent', 'Failed to login AWI');
         }
       }
+    }
+    else
+    {
+      this.addMessage('sent', 'Failed to connect'); 
+      if (answer.error === 'awi:account-not-found')
+        await this.root.alert.showError('stam:account-not-found', { value: accountInfo.userName });
+      else if (answer.error === 'awi:wrong-password')
+      {
+        var answer = await this.root.alert.showCustom('stam:wrong-password', this.root.messages.getMessage('stam:password-not-found', { value: accountInfo.userName }), ['stam:retry|positive', 'stam:change-password|negative'], 'error');
+        if (answer === 1)
+          await this.root.alert.showInformation('stam:mail-sent', { value: accountInfo.userName + '@toto.com' });
+      }
+      else
+        await this.root.alert.showError(answer.error);
     }
   }
   
@@ -926,18 +947,20 @@ class SocketSideWindow extends SideWindow {
     if (this.isConnected)
       return;
     var accountInfo = data.accountInfo || this.accountInfo;
+    var edited = false;
     do{
-      var connect = await this.showConnectionDialog(accountInfo);
+      var connect = await this.showConnectionDialog(accountInfo, edited);
       if (!connect)
         return false;
       accountInfo.userName = connect.userName;
       accountInfo.password = connect.password;
       if (connect.createAccount)
       {
-        var response = await this.showCreateAccountDialog(accountInfo);
+        var response = await this.showCreateAccountDialog(accountInfo, true);
         if (response){
           accountInfo = response;
           accountInfo.createAccount = true;
+          edited = true;
         }
         continue;
       }
@@ -977,7 +1000,10 @@ class SocketSideWindow extends SideWindow {
   async handleGetConnectionInfo(data,sender) {
     return {
       userName: this.accountInfo.userName,
-      url: this.accountInfo.url
+      url: this.accountInfo.url,
+      connected: this.isConnected,
+      loggedIn: this.isLoggedIn,
+      loggedInAWI: this.isLoggedInAwi
     };
   }
 
@@ -1060,7 +1086,7 @@ class SocketSideWindow extends SideWindow {
    * @param {Array} userList - List of existing users (optional)
    * @returns {Promise<Object>} - Resolves to the account information
    */
-  showCreateAccountDialog(accountInfo = {}) {
+  showCreateAccountDialog(accountInfo = {}, back = false) {
     var theme = this.root.preferences.getCurrentTheme();    
     return new Promise((resolve) => {
 
@@ -1082,20 +1108,37 @@ class SocketSideWindow extends SideWindow {
         label.style.fontSize = '14px';
         group.appendChild(label);
         
-        const input = document.createElement('input');
-        input.type = inputType;
-        input.value = value;
-        input.placeholder = placeholder;
-        input.style.padding = '8px';
-        input.style.backgroundColor = '#3d3d3d';
-        input.style.color = '#e0e0e0';
-        input.style.border = '1px solid #555';
-        input.style.borderRadius = '3px';
-        input.style.fontSize = '14px';
-        input.required = required;
-        group.appendChild(input);
-        
-        return { group, input };
+        if (inputType == 'select')
+        {
+          const input = document.createElement('select');
+          input.value = value;
+          input.placeholder = placeholder;
+          input.style.padding = '8px';
+          input.style.backgroundColor = '#3d3d3d';
+          input.style.color = '#e0e0e0';
+          input.style.border = '1px solid #555';
+          input.style.borderRadius = '3px';
+          input.style.fontSize = '14px';
+          input.required = required;
+          group.appendChild(input);
+          return { group, input };
+        }
+        else
+        {
+          const input = document.createElement('input');
+          input.type = inputType;
+          input.value = value;
+          input.placeholder = placeholder;
+          input.style.padding = '8px';
+          input.style.backgroundColor = '#3d3d3d';
+          input.style.color = '#e0e0e0';
+          input.style.border = '1px solid #555';
+          input.style.borderRadius = '3px';
+          input.style.fontSize = '14px';
+          input.required = required;
+          group.appendChild(input);
+          return { group, input };
+        }        
       };
 
       // Create container for username and email fields
@@ -1205,14 +1248,36 @@ class SocketSideWindow extends SideWindow {
       keyGroup.style.display = accountInfo.connectToAWI ? 'flex' : 'none';
       form.appendChild(keyGroup);
 
+      // Create a combo box with all countries filled with this.countryList and set the default to the current country
+      const { group: countryGroup, input: countryInput } = createFormGroup('Country', 'select', true, accountInfo.countryCode);
+      countryGroup.style.flex = '1';
+      countryGroup.style.minWidth = '0';
+      countryGroup.style.marginBottom = '0';
+      countryInput.style.width = '100%';
+      countryGroup.style.display = accountInfo.connectToAWI ? 'flex' : 'none';
+      for (var cc in this.countryList)
+      {
+        const option = document.createElement('option');
+        option.value = cc;
+        option.textContent = this.countryList[cc];
+        countryInput.appendChild(option);
+      }
+      if (accountInfo.countryCode)
+        countryInput.value = accountInfo.countryCode;
+      else
+        countryInput.value = this.timezoneInformation.countryCode;
+      form.appendChild(countryGroup);
+
       // Show/hide the rest of the form based on the checkbox
       connectToAwiCheckbox.addEventListener('change', () => {
         if (connectToAwiCheckbox.checked) {
           nameFieldsContainer.style.display = 'flex';
           keyGroup.style.display = 'flex';
+          countryGroup.style.display = 'flex';
         } else {
           nameFieldsContainer.style.display = 'none';
           keyGroup.style.display = 'none';
+          countryGroup.style.display = 'none';
         }
       });
 
@@ -1229,7 +1294,7 @@ class SocketSideWindow extends SideWindow {
           }
         },
         {
-          label: this.root.messages.getMessage('stam:create-awi-account'),
+          label: this.root.messages.getMessage(back ? 'stam:back' : 'stam:save'),
           className: 'btn-positive',
           onClick: () => {
             // Validate form
@@ -1240,6 +1305,7 @@ class SocketSideWindow extends SideWindow {
               password: passwordInput.value,
               email: emailInput.value.trim(),
               language: languageSelect.value,
+              countryCode: countryInput.value,
               connectToAwi: connectToAwiCheckbox.checked,
               key: keyInput.value.trim() || '',
               url: accountInfo.url
@@ -1314,7 +1380,7 @@ class SocketSideWindow extends SideWindow {
    * Show a connection dialog to enter user credentials and server URL
    * @returns {Promise<{userName: string, url: string, isAwiAccountChecked: boolean}|false>} - Resolves with connection data or false if canceled
    */
-  showConnectionDialog(accountInfo = {}) {
+  showConnectionDialog(accountInfo = {}, edited = false) {
     return new Promise((resolve) => {
       // Create form container
       const form = document.createElement('form');
@@ -1438,7 +1504,7 @@ class SocketSideWindow extends SideWindow {
           }
         },
         {
-          label: this.root.messages.getMessage('stam:create-awi-account'),
+          label: this.root.messages.getMessage(edited ? 'stam:update-awi-account' : 'stam:create-awi-account'),
           className: 'btn-negative',
           onClick: () => {
             dialogAnswer = { 

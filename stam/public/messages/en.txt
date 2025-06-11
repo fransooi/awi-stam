@@ -32,6 +32,7 @@ stam:share                                Share
 stam:share-text                           Share Application
 stam:help                                 Help
 stam:help-text                            Documentation
+stam:back                                 Back
 stam:password                             Password
 stam:password-required                     Password is required
 stam:passwords-do-not-match                Passwords do not match
@@ -122,6 +123,26 @@ stam:menu-help-debug-debug1               Debug1
 stam:menu-help-debug-debug2               Debug2
 stam:menu-log-out                         Log Out
 stam:menu-log-in                          Log In
+stam:menu-awi                             Awi
+stam:menu-login                           Login
+stam:menu-logout                          Logout
+stam:menu-create-account                  Create Account
+stam:menu-edit-account                    Edit Account
+stam:menu-connect-awi-device              Connect Awi Device
+stam:menu-display-awi-devices             Display Awi Devices
+stam:menu-remove-awi-device               Remove Awi Device
+stam:menu-about-awi-server                About Awi Server
+stam:menu-view                            View
+stam:menuleft-sidebar                     Left Sidebar
+stam:menu-view-project-window             Project Window
+stam:menu-view-output-window              Output Window
+stam:menu-view-server-window              Server Window
+stam:menu-view-awi-window                 Awi Window
+stam:menu-view-tv-window                  TV Window
+stam:menuright-sidebar                    Right Sidebar
+stam:menu-menubar                         Menu Bar
+stam:menu-statusbar                       Status Bar
+
 stam:classroom-icon                       Icon
 stam:classroom-choose                    Choose
 stam:preferences                          Preferences
@@ -259,3 +280,23 @@ stam:theme-font-menu                      Menu Font
 stam:theme-font-side-window               Side Window Font
 stam:theme-font-status-bar                Status Bar Font
 stam:theme-font-editor                    Editor Font
+stam:mail-sent                            A mail have been send to ${value} with instructions to reset your password.
+stam:account-not-found                    User not found: ${value}
+stam:wrong-password                       Wrong password
+stam:password-not-found                   The password you have provided is not correct.
+stam:retry                                Retry
+stam:forgot-password                      Change Password
+stam:user-name-required                   User name is required
+stam:user-name-illegal-chars              User name can only contain letters, numbers, and underscores.
+stam:first-name-required                  First name is required
+stam:key-required                         Key is required
+stam:email-required                       Email is required
+stam:email-invalid                        Email is invalid
+stam:password-invalid                     Password is invalid, 8 characters minimum...
+stam:passwords-do-not-match               Passwords do not match
+stam:create-account-dialog                Create STAM Account
+stam:update-awi-account                   Update AWI Account
+
+
+
+

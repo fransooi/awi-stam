@@ -162,6 +162,11 @@ input, button, textarea, select {
   color: var(--menu-text-hover);
 }
 
+.menu-item.disabled {
+  background-color: var(--menu-background);
+  color: var(--menu-text);
+}
+
 /* Menu title text */
 .menu-title {
   white-space: nowrap;
@@ -188,10 +193,17 @@ input, button, textarea, select {
   transition: background-color 0.2s;
   user-select: none;
   font-family: var(--font-menu, Arial, sans-serif);
+  font-size: 13px;
 }
 
 .popup-menu-item:hover {
   background-color: var(--menu-background-hover, #3a3a3a);
+}
+
+.popup-menu-item.disabled {
+  background-color: var(--menu-background);
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .popup-menu-separator {

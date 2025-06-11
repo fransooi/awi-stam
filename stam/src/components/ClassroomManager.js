@@ -57,6 +57,18 @@ class ClassroomManager extends BaseComponent {
     super('Classroom', parentId,containerId);      
     this.classroomName = null;
     this.classroom = null;
+    this.teacherClassroomOpen = false;
+    this.studentClassroomOpen = false;
+    this.teacherClassroomId = null;
+    this.studentClassroomId = null;
+    this.teacherClassroomInfo = null;
+    this.studentClassroomInfo = null;
+    this.teacherHandle = null;
+    this.studentHandle = null;
+    this.teacherName = null;
+    this.studentName = null;
+    this.teacherConnected = false;
+    this.studentConnected = false;
 
     this.messageMap[SOCKETMESSAGES.CONNECTED] = this.handleConnected;
     this.messageMap[SOCKETMESSAGES.DISCONNECTED] = this.handleDisconnected;
@@ -85,6 +97,18 @@ class ClassroomManager extends BaseComponent {
 
   async handleDisconnected(data, senderId) {
     
+  }
+
+  getInformation() {
+    return {
+      classroomOpen: this.teacherClassroomOpen || this.studentClassroomOpen,
+      teacherClassroomInfo: this.teacherClassroomInfo,
+      teacherName: this.teacherName,
+      studentClassroomOpen: this.studentClassroomOpen,
+      studentClassroomId: this.studentClassroomId,
+      studentClassroomInfo: this.studentClassroomInfo,
+      studentName: this.studentName,
+    };
   }
 
   async handleCreateClassroom(data, senderId) {

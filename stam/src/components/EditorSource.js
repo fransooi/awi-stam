@@ -42,7 +42,7 @@ class EditorSource extends BaseComponent {
     this.modeConfig = null; // Current mode configuration
     
     // Set up message handlers
-    this.messageMap[MESSAGES.MODE_CHANGE] = this.handleModeChange;
+    this.messageMap[MESSAGES.MODE_CHANGE] = this.handleModeChange;    
   }
   
   async init(options) {
@@ -670,6 +670,14 @@ class EditorSource extends BaseComponent {
    * @param {Object} sender - The sender of the message
    * @returns {boolean} True if the mode was changed, false otherwise
    */
+  async handleGetInformation(data, sender) {
+    return {
+      currentMode: this.currentMode,
+      numberOfTabs: this.tabs.length,
+      activeTabIndex: this.activeTabIndex,
+      activeTab: this.getActiveTab()
+    };
+  }
   async handleModeChange(data, sender) {
     if (!data.mode) return false;
     

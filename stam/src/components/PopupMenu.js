@@ -118,6 +118,9 @@ export default class PopupMenu extends BaseComponent {
     const menuItem = document.createElement('div');
     menuItem.className = 'popup-menu-item';    
     menuItem.textContent = item.name;
+    if (item.disabled) {
+      menuItem.classList.add('disabled');
+    }
     
     // Add click handler
     menuItem.addEventListener('click', (e) => {

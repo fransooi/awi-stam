@@ -75,6 +75,11 @@ class ProjectManager extends BaseComponent {
     await super.destroy();
   }
   
+  getProjectInformation()
+  {
+    return {projectLoaded: this.project!=null, project: this.project};
+  }
+  
   // Find a file in the project
   findFile( path )
   {
