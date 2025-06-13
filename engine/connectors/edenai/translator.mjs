@@ -57,6 +57,21 @@ class ConnectorTranslator extends ConnectorBase
         }
         return this.newAnswer( data );
     }
+    async setUser( args, basket, control )
+    {
+        var { userName } = this.awi.getArgs( [ 'userName' ], args, basket, [ '' ] );
+        if (!this.awi.configuration.getConfig(userName))
+            return this.newError('user-not-found');
+        if ( !this.user || userName != this.user )
+        {
+            var configAnswer = await this.awi.configuration.getToolConfiguration( 'edenai', 'chat' );
+            if ( configAnswer.isError() )
+                return configAnswer;
+            this.user = userName;
+            this.configuration = configAnswer.getValue();
+        }
+        return this.newAnswer( { translator: { config: this.configuration } } );
+    }
 
 	async command_translate( args, basket, control )
 	{

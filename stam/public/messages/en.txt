@@ -76,9 +76,24 @@ stam:please-select-a-project              Please select a project
 stam:select-file-to-open                  Select a file to open
 stam:open-file                            Open File
 stam:filter                               Filter
+stam:filter-files-placeholder             Enter file filter
+stam:filter-all-files                     All files: *.*
+stam:filter-javascript                    JavaScript: *.js,*.mjs,*.ts,*.tsx,*.json,*.html,*.css,*.md,*.txt
+stam:filter-phaser                        Phaser: *.js,*.mjs,*.ts,*.tsx,*.json,*.html,*.css,*.md,*.txt
+stam:filter-stos                          STOS: *.bas,*.pic,*.abk,*.bin
+stam:filter-amos1_3                       AMOS: *.bas,*.iff,*.wav,*.bin
+stam:filter-amosPro                       AMOS Pro: *.bas,*.iff,*.wav,*.bin
+stam:filter-c64                           C64: *.bas,*.prg,*.bin
+stam:filter-images                        Images: *.png,*.jpg,*.jpeg,*.gif,*.bmp,*.webp,*.svg
+stam:filter-audio                         Audio: *.mp3,*.wav,*.ogg,*.m4a,*.aac,*.flac,*.webm
+stam:filter-video                         Video: *.mp4,*.webm,*.ogv,*.mov,*.avi,*.mkv,*.wmv
+stam:filter-text                          Text: *.txt,*.md,*.json,*.csv,*.tsv,*.xml,*.yaml,*.yml
+stam:filter-three                         Three.js: *.js,*.mjs,*.ts,*.tsx,*.json,*.html,*.css,*.md,*.txt
+stam:filter-assembly                      Assembly: *.asm,*.inc,*.bin
 stam:no-files-available                   No files available
 stam:file-exists-overwrite                File already exists, overwrite?
 stam:filename                             Filename
+stam:path-label                           Path: 
 stam:save-changes                         Save changes?
 stam:file-modified                        File has been modified, do you want to save the changes?
 stam:location                             Location
@@ -106,6 +121,8 @@ stam:menu-paste                           Paste
 stam:menu-find                            Find
 stam:menu-replace                         Replace
 stam:menu-preferences                     Preferences
+stam:menu-language                        Language
+stam:menu-theme                           Theme
 stam:menu-run                             Run
 stam:menu-run-run                         Run
 stam:menu-run-debug                       Debug
@@ -280,6 +297,11 @@ stam:theme-font-menu                      Menu Font
 stam:theme-font-side-window               Side Window Font
 stam:theme-font-status-bar                Status Bar Font
 stam:theme-font-editor                    Editor Font
+stam:theme-dialog-title                   Choose theme
+stam:language-dialog-title                Choose language
+stam:available-languages                  Available languages
+stam:translatable-languages               Translate to a new language with AWI
+
 stam:mail-sent                            A mail have been send to ${value} with instructions to reset your password.
 stam:account-not-found                    User not found: ${value}
 stam:wrong-password                       Wrong password

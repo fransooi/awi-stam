@@ -947,25 +947,28 @@ class SocketSideWindow extends SideWindow {
     if (this.isConnected)
       return;
     var accountInfo = data.accountInfo || this.accountInfo;
-    var edited = false;
-    do{
-      var connect = await this.showConnectionDialog(accountInfo, edited);
-      if (!connect)
-        return false;
-      accountInfo.userName = connect.userName;
-      accountInfo.password = connect.password;
-      if (connect.createAccount)
-      {
-        var response = await this.showCreateAccountDialog(accountInfo, true);
-        if (response){
-          accountInfo = response;
-          accountInfo.createAccount = true;
-          edited = true;
+    if (!data || (data && !data.force))
+    {
+      var edited = false;
+      do{
+        var connect = await this.showConnectionDialog(accountInfo, edited);
+        if (!connect)
+          return false;
+        accountInfo.userName = connect.userName;
+        accountInfo.password = connect.password;
+        if (connect.createAccount)
+        {
+          var response = await this.showCreateAccountDialog(accountInfo, true);
+          if (response){
+            accountInfo = response;
+            accountInfo.createAccount = true;
+            edited = true;
+          }
+          continue;
         }
-        continue;
-      }
-      break;
-    } while (true);
+        break;
+      } while (true);
+    }
     this.connect(accountInfo);
     return true;
   }
@@ -1259,7 +1262,7 @@ class SocketSideWindow extends SideWindow {
       {
         const option = document.createElement('option');
         option.value = cc;
-        option.textContent = this.countryList[cc];
+        option.textContent = this.countryList[cc].name;
         countryInput.appendChild(option);
       }
       if (accountInfo.countryCode)
@@ -1386,116 +1389,45 @@ class SocketSideWindow extends SideWindow {
       const form = document.createElement('form');
       form.style.display = 'flex';
       form.style.flexDirection = 'column';
-      form.style.gap = '15px';
       
       // Create username field
       const userNameGroup = document.createElement('div');
-      userNameGroup.style.display = 'flex';
-      userNameGroup.style.flexDirection = 'column';
-      userNameGroup.style.gap = '5px';      
-      const userNameLabel = document.createElement('label');
-      userNameLabel.textContent = this.root.messages.getMessage('stam:username');
-      userNameLabel.style.fontSize = '14px';
-      userNameGroup.appendChild(userNameLabel);      
-      const userNameInput = document.createElement('input');
-      userNameInput.type = 'text';
-      userNameInput.value = accountInfo.userName || '';
-      userNameInput.style.padding = '8px';
-      userNameInput.style.backgroundColor = 'var(--input-background, #3d3d3d)';
-      userNameInput.style.color = 'var(--text-primary, #e0e0e0)';
-      userNameInput.style.border = '1px solid var(--borders, #555)';
-      userNameInput.style.borderRadius = '3px';
-      userNameInput.style.fontSize = '14px';
-      userNameGroup.appendChild(userNameInput);      
+      userNameGroup.className = 'form-group';
+      userNameGroup.innerHTML = `
+        <label for="language-select">${this.root.messages.getMessage('stam:username')}</label>
+        <input type="text" id="username" name="username" value="${accountInfo.userName || ''}">
+      `;
       form.appendChild(userNameGroup);
-      
+        
       // Password field with reveal toggle
       const passwordGroup = document.createElement('div');
-      passwordGroup.style.display = 'flex';
-      passwordGroup.style.flexDirection = 'column';
-      passwordGroup.style.gap = '5px';      
-      const passwordLabel = document.createElement('label');
-      passwordLabel.textContent = this.root.messages.getMessage('stam:password');
-      passwordLabel.style.fontSize = '14px';
-      passwordGroup.appendChild(passwordLabel);
-      const passwordInputContainer = document.createElement('div');
-      passwordInputContainer.style.display = 'flex';
-      passwordInputContainer.style.gap = '5px';
-      passwordInputContainer.style.alignItems = 'center';
-      const passwordInput = document.createElement('input');
-      passwordInput.type = 'password';
-      passwordInput.value = accountInfo.password || '';
-      passwordInput.style.padding = '8px';
-      passwordInput.style.backgroundColor = 'var(--input-background, #3d3d3d)';
-      passwordInput.style.color = 'var(--text-primary, #e0e0e0)';
-      passwordInput.style.border = '1px solid var(--borders, #555)';
-      passwordInput.style.borderRadius = '3px';
-      passwordInput.style.fontSize = '14px';
-      passwordInput.style.flex = '1';
-      passwordInput.style.minWidth = '200px';
-      const revealButton = document.createElement('button');
-      revealButton.type = 'button';
-      revealButton.style.background = 'none';
-      revealButton.style.border = 'none';
-      revealButton.style.color = 'var(--text-secondary, #aaa)';
-      revealButton.style.cursor = 'pointer';
-      revealButton.style.padding = '5px';
-      revealButton.style.borderRadius = '3px';
-      revealButton.style.display = 'flex';
-      revealButton.style.alignItems = 'center';
-      revealButton.style.justifyContent = 'center';
-      revealButton.style.width = '30px';
-      revealButton.style.height = '30px';
-      revealButton.innerHTML = '<i class="fas fa-eye"></i>';
-      revealButton.title = 'Reveal password';
-      revealButton.addEventListener('click', () => {
-        if (passwordInput.type === 'password') {
-          passwordInput.type = 'text';
-          revealButton.innerHTML = '<i class="fas fa-eye-slash"></i>';
-          revealButton.title = 'Hide password';
-        } else {
-          passwordInput.type = 'password';
-          revealButton.innerHTML = '<i class="fas fa-eye"></i>';
-          revealButton.title = 'Reveal password';
-        }
-      });
-      revealButton.addEventListener('mouseenter', () => {
-        revealButton.style.backgroundColor = 'var(--button-hover, rgba(255, 255, 255, 0.1))';
-      });
-      revealButton.addEventListener('mouseleave', () => {
-        revealButton.style.backgroundColor = 'transparent';
-      });      
-      passwordInputContainer.appendChild(passwordInput);
-      passwordInputContainer.appendChild(revealButton);
-      passwordGroup.appendChild(passwordInputContainer);
+      passwordGroup.className = 'form-group';
+      passwordGroup.innerHTML = `
+        <label for="password">${this.root.messages.getMessage('stam:password')}</label>
+        <input type="password" id="password" name="password" value="${accountInfo.password || ''}">
+        <button type="button" id="reveal-password" class="btn btn-link">
+          <i class="fas fa-eye"></i>
+        </button>
+      `;
       form.appendChild(passwordGroup);
     
-      // Create url field
+      // Create url field 
       const urlGroup = document.createElement('div');
-      urlGroup.style.display = 'flex';
-      urlGroup.style.flexDirection = 'column';
-      urlGroup.style.gap = '5px';      
-      const urlLabel = document.createElement('label');
-      urlLabel.textContent = this.root.messages.getMessage('stam:server-url');
-      urlLabel.style.fontSize = '14px';
-      urlGroup.appendChild(urlLabel);      
-      const urlInput = document.createElement('input');
-      urlInput.type = 'text';
-      urlInput.value = accountInfo.url || '';
-      urlInput.style.padding = '8px';
-      urlInput.style.backgroundColor = 'var(--input-background, #3d3d3d)';
-      urlInput.style.color = 'var(--text-primary, #e0e0e0)';
-      urlInput.style.border = '1px solid var(--borders, #555)';
-      urlInput.style.borderRadius = '3px';
-      urlInput.style.fontSize = '14px';
-      urlGroup.appendChild(urlInput);      
+      urlGroup.className = 'form-group'; 
+      urlGroup.innerHTML = `
+        <label for="url">${this.root.messages.getMessage('stam:server-url')}</label>
+        <input type="text" id="url" name="url" value="${accountInfo.url || ''}">
+      `;
       form.appendChild(urlGroup);
 
       // Create dialog buttons
       let dialog = null;
       let dialogAnswer = null;
+      var userNameInput = null;
+      var passwordInput = null;
+      var urlInput = null;
       const buttons = [
-        {
+        { 
           label: this.root.messages.getMessage('stam:cancel'),
           className: 'btn-neutral',
           onClick: () => {
@@ -1547,6 +1479,28 @@ class SocketSideWindow extends SideWindow {
         }
       });
       dialog.open();
+      userNameInput = document.getElementById('username');
+      passwordInput = document.getElementById('password');
+      urlInput = document.getElementById('url');
+
+      var revealButton = document.getElementById('reveal-password');
+      revealButton.addEventListener('click', () => {
+        if (passwordInput.type === 'password') {
+          passwordInput.type = 'text';
+          revealButton.innerHTML = '<i class="fas fa-eye-slash"></i>';
+          revealButton.title = 'Hide password';
+        } else {
+          passwordInput.type = 'password';
+          revealButton.innerHTML = '<i class="fas fa-eye"></i>';
+          revealButton.title = 'Reveal password';
+        }
+      });
+      revealButton.addEventListener('mouseenter', () => {
+        revealButton.style.backgroundColor = 'var(--button-hover, rgba(255, 255, 255, 0.1))';
+      });
+      revealButton.addEventListener('mouseleave', () => {
+        revealButton.style.backgroundColor = 'transparent';
+      });      
 
       var connectButton = dialog.buttons[2].element;
       connectButton.disabled = !userNameInput.value.trim() || !passwordInput.value.trim() || !urlInput.value.trim();

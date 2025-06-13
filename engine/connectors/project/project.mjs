@@ -38,8 +38,8 @@ class ConnectorProject extends ConnectorBase
             var path = await this.awi.callParentConnector( 'http', 'getRootDirectory', {} );
             if ( path )
                 this.projectsPath = path + '/projects';
-           else
-               this.projectsPath = this.awi.getEnginePath() + '/data/projects';
+            else
+                this.projectsPath = this.awi.getEnginePath() + '/data/projects';
        }
        return this.setConnected( true );
     }

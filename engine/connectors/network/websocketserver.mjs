@@ -137,7 +137,7 @@ class ConnectorWebSocketServer extends ConnectorBase
                 { name: 'connectors/system/files', config: { priority: 100 }, options: {} },
                 { name: 'connectors/awi/messages', config: { priority: 99 }, options: {} },
                 { name: 'connectors/awi/utilities', config: { priority: 99 }, options: {} },
-                { name: 'connectors/awi/configuration', config: { priority: 99 }, options: {} },
+                { name: 'connectors/awi/configuration', config: { priority: 99, configurationPath: this.awi.configuration.getConfigurationPath() }, options: {} },
                 { name: 'connectors/awi/time', config: { priority: 99  }, options: {} },
                 { name: 'bubbles/awi/*', config: {}, options: {} },
                 { name: 'souvenirs/awi/*', config: {}, options: {} },
@@ -151,6 +151,7 @@ class ConnectorWebSocketServer extends ConnectorBase
 				{ name: 'connectors/project/c64', config: { priority: 98 }, options: { templatesPath: this.templatesPath, runUrl: this.runUrl, projectsUrl: this.projectsUrl, templatesUrl: this.templatesUrl } },
 				{ name: 'connectors/network/classroomclient', config: { priority: 94 }, options: {} },
 				{ name: 'connectors/language/javascript', config: { priority: 98 }, options: { templatesPath: this.templatesPath } },
+				{ name: 'connectors/awi/languages', config: { priority: 97 }, options: {} },
 				{ name: 'connectors/awi/parser', config: { priority: 97 }, options: {} },
                 { name: 'connectors/awi/persona', config: { priority: 96 }, options: {} },
                 { name: 'connectors/awi/prompt', config: { priority: 95 }, options: {} },
@@ -171,7 +172,7 @@ class ConnectorWebSocketServer extends ConnectorBase
         var answer = await awi2.connect( {} );
         if ( answer.isSuccess() )
         {
-			this.awi.editor.print('awi:socket-new-connection', { name: message.parameters.userName, user: 'awi' } );
+			this.awi.editor.print('awi:socket-new-connection', { name: message.parameters.accountInfo.userName, user: 'awi' } );
             this.editors[ awi2.editor.current.handle ] = awi2.editor.current;
 			awi2.editor.current.connect( message.parameters, message );
         }

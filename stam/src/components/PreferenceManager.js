@@ -23,7 +23,7 @@
 import BaseComponent from '../utils/BaseComponent.js';
 import { MENUCOMMANDS } from './MenuBar.js';
 import { Dialog } from '../utils/Dialog.js';
-import { MESSAGESCOMMANDS } from './MessageManager.js';
+import { MESSAGES } from '../utils/BaseComponent.js';
 
 // Default theme definition
 const DEFAULT_THEME = {
@@ -34,7 +34,7 @@ const DEFAULT_THEME = {
     'background': '#1e1e1e',                  // UI Background color
     'dialog-background': '#2d2d2d',           // Dialog Background color
     'container-background': '#252526',        // Container Background color
-    'borders': '#808080',                     // Border color
+    'borders': '#444444',                     // Border color
     'list-background': '#3a3a3a',             // List Background color
     'list-item-background': '#2a2a2a',        // List Item Background color
     'list-item-background-hover': '#252526',  // List Item Background color
@@ -68,12 +68,14 @@ const DEFAULT_THEME = {
   },
   fonts: {
     'menu': 'Inter, system-ui, sans-serif', // Menu Font
+    'dialog': 'Inter, system-ui, sans-serif', // Dialog Font
     'side-window': 'Inter, system-ui, sans-serif', // Side Window Font
     'status-bar': 'Consolas, monospace', // Status Bar Font
     'editor': 'Inter, system-ui, sans-serif', // Editor Font
   },
   fontSizes: {
     'menu': '12px', // Menu Font Size
+    'dialog': '13px', // Menu Font Size
     'side-window': '12px', // Side Window Font Size
     'status-bar': '12px', // Status Bar Font Size
     'editor': '12px' // Editor Font Size
@@ -125,12 +127,14 @@ const THEMES = {
     },
     fonts: {
       'menu': 'Inter, system-ui, sans-serif', // Menu Font
+      'dialog': 'Inter, system-ui, sans-serif', // Dialog Font
       'side-window': 'Inter, system-ui, sans-serif', // Side Window Font
       'status-bar': 'Consolas, monospace', // Status Bar Font
       'editor': 'Inter, system-ui, sans-serif', // Editor Font
     },
     fontSizes: {
       'menu': '12px', // Menu Font Size
+      'dialog': '13px', // Dialog Font Size
       'side-window': '12px', // Side Window Font Size
       'status-bar': '12px', // Status Bar Font Size
       'editor': '12px' // Editor Font Size
@@ -145,7 +149,7 @@ class PreferenceManager extends BaseComponent {
    */
   constructor(parentId = null, containerId) {
     super('PreferenceManager', parentId, containerId);      
-    this.messageMap[MENUCOMMANDS.PREFERENCES] = this.handleShowPreferences;
+    this.messageMap[MENUCOMMANDS.THEME] = this.handleSetTheme;
     this.defaultThemeId = 'default-dark';
     this.themes = { ...THEMES };
     this.currentPrefs = {
@@ -160,12 +164,6 @@ class PreferenceManager extends BaseComponent {
     
     this.loadPreferences();
     this.applyTheme();
-    return true;
-  }
-  async setLanguage(language) {
-    if (language && language != this.currentPrefs.language)
-      this.currentPrefs.language = language;
-    await this.sendRequestTo('class:MessageManager', MESSAGESCOMMANDS.SET_LANGUAGE, { language: this.currentPrefs.language });
     return true;
   }
   async destroy() {
@@ -241,6 +239,7 @@ class PreferenceManager extends BaseComponent {
     // Add font variables
     Object.entries(theme.fonts).forEach(([key, value]) => {
       css += `  --font-${key}: ${value};\n`;
+      css += `  --font-${key}-size: ${theme.fontSizes[key]};\n`;
     });
     
     css += '}';
@@ -248,33 +247,41 @@ class PreferenceManager extends BaseComponent {
     // Apply the styles
     style.textContent = css;
     document.head.appendChild(style);
-    
-    // Force a reflow to ensure styles are applied
     if (refresh)
-    {
-      document.documentElement.getBoundingClientRect();    
-    }
+      this.refreshDisplay(); 
+  }
+  refreshDisplay() {
+    this.showThemeDialog(this.currentPrefs, true);
+    this.root.utilities.sleep(100);
+    this.showThemeDialog(this.currentPrefs, true);
+    this.root.utilities.sleep(100);
+    this.broadcast(MESSAGES.REFRESH_DISPLAY, { refreshType: 'all' });
   }
 
-  async handleShowPreferences(currentPrefs = {}) {
-    var response = await this.showPreferencesDialog(currentPrefs);    
+  async handleSetLanguage(data, senderId){
+    if (this.currentPrefs.language != data.language )
+    {
+      this.currentPrefs.language = data.language;
+      this.savePreferences();
+      this.refreshDisplay();
+      return true;
+    }
+    return false;
+  }
+  async handleSetTheme(currentPrefs = {}) {
+    var response = await this.showThemeDialog(this.currentPrefs);    
     if (response)
     {
       if (response.theme)
         this.currentPrefs.themeId = response.themeId;
-      this.applyTheme(true);
       this.savePreferences();
-      this.root.alert.showSuccess('stam:preferences-saved');
-      this.root.messages.sendRequestTo(this.root.messages.componentId, MESSAGESCOMMANDS.SET_LANGUAGE, { language: response.language });
+      this.applyTheme(false);
+      this.refreshDisplay();
     }
     return true;
   }
-
-
-  async showPreferencesDialog(currentPrefs = {}) {
-    // Request available languages from the root component
-    const availableLangs = await this.sendRequestTo(this.root.messages.componentId, 'GET_AVAILABLE_LANGUAGES');
-    
+  async showThemeDialog(currentPrefs = {}, autoClose = false) {
+   
     // Get current theme
     const currentThemeId = this.currentPrefs.themeId;
     const currentTheme = this.getTheme(currentThemeId);
@@ -284,23 +291,7 @@ class PreferenceManager extends BaseComponent {
     
     // Create dialog content container
     const content = document.createElement('div');
-    content.className = 'preferences-dialog-content';
-    
-    // Create language selection
-    const langGroup = document.createElement('div');
-    langGroup.className = 'form-group';
-    const currentLanguage = (currentPrefs?.language || this.currentPrefs.language);
-    langGroup.innerHTML = `
-      <label for="language-select">${this.root.messages.getMessage('stam:preferences-language')}</label>
-      <select id="language-select" class="form-control">
-        ${availableLangs.map(lang => 
-          `<option value="${lang.language}" ${currentLanguage === lang.language ? 'selected' : ''}>
-            ${lang.country} (${lang.language})
-          </option>`
-        ).join('')}
-      </select>
-    `;
-    content.appendChild(langGroup);
+    content.className = 'theme-dialog-content';
     
     // Create theme selection
     const themeGroup = document.createElement('div');
@@ -336,11 +327,9 @@ class PreferenceManager extends BaseComponent {
         label: this.root.messages.getMessage('stam:preferences-save'),
         className: 'btn-positive',
         onClick: () => {
-          const language = content.querySelector('#language-select').value;
           dialog.close();
           dialogClosed = true;
           dialogAnswer = {
-            language,
             themeId: selectedThemeId,
             theme: this.getTheme(selectedThemeId)
           };
@@ -350,7 +339,7 @@ class PreferenceManager extends BaseComponent {
     
     // Create and show the dialog
     const dialog = new Dialog({
-      title: this.root.messages.getMessage('stam:preferences'),
+      title: this.root.messages.getMessage('stam:theme-dialog-title'),
       content: content,
       buttons: buttons,
       theme: this.getCurrentTheme()
@@ -382,6 +371,14 @@ class PreferenceManager extends BaseComponent {
     
     // Show the dialog and return the promise
     dialog.open();
+
+    // Close automaticaly after
+    if (autoClose)
+      setTimeout(() => {
+        dialogClosed = true;
+        dialogAnswer = null;
+        dialog.close();
+      }, 100);
 
     return new Promise(async (resolve) => {
       while(true)

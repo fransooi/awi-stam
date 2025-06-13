@@ -48,6 +48,8 @@ class Editor extends BaseComponent {
     this.messageMap[MENUCOMMANDS.SAVE_AS_FILE] = this.handleSaveAsFile;
     this.messageMap[MENUCOMMANDS.CLOSE_FILE] = this.handleCloseFile;
     this.messageMap[EDITORMESSAGES.GET_INFORMATION] = this.handleGetInformation;
+    this.messageMap[PROJECTMESSAGES.FILE_RENAMED] = this.handleFileRenamed;
+    this.messageMap[PROJECTMESSAGES.FILE_DELETED] = this.handleFileDeleted;
   }
   
   async init(options) {

@@ -39,6 +39,8 @@ export const PROJECTMESSAGES = {
   GET_TEMPLATE: 'PROJECT_GET_TEMPLATE',
   CHOOSE_TEMPLATE: 'PROJECT_CHOOSE_TEMPLATE',
   CHOOSE_PROJECT: 'PROJECT_CHOOSE_PROJECT',
+  FILE_RENAMED: 'PROJECT_FILE_RENAMED',
+  FILE_DELETED: 'PROJECT_FILE_DELETED',
 };
 
 class ProjectManager extends BaseComponent {
@@ -151,8 +153,22 @@ class ProjectManager extends BaseComponent {
     var folder = file.path.substring(0, file.path.lastIndexOf('/'));
     var hostFile = this.findFolder(folder);
     if (hostFile)
-    {
       hostFile.files.push(file);
+  }
+  removeFile(path) {
+    var folder = path.substring(0, path.lastIndexOf('/'));
+    var hostFile = this.findFolder(folder);
+    if (hostFile)
+    {
+      for ( var f = 0; f < hostFile.files.length; f++ )
+      {
+          var file = hostFile.files[f];
+          if ( file.path == path )
+          {
+              hostFile.files.splice(f, 1);
+              return;
+          }
+      }
     }   
   }
 
@@ -345,7 +361,7 @@ class ProjectManager extends BaseComponent {
     // No file name-> file selector
     if (!data.path)
     {
-      this.showOpenFileDialog().then((response) =>{
+      this.showOpenFileDialog('stam:filter-' + this.root.currentMode).then((response) =>{
         if (response)
         {
           this.handleOpenFile(response, senderId);
@@ -381,11 +397,11 @@ class ProjectManager extends BaseComponent {
     if ( !await this.checkProject())
       return;
 
-    var response = await this.showSaveFileDialog('New file.js', 'Create a new file');
-    if (response)
+    var path = await this.showSaveFileDialog('New file.js', 'Create a new file');
+    if (path)
     {
-      data.path = response.path;
-      data.name = this.root.utilities.getFileNameFromPath(data.path);
+      data.path = path;
+      data.name = this.root.utilities.getFileNameFromPath(path);
       data.content = '';
       data.mode = this.root.currentMode;
       data.handle = this.project.handle;
@@ -414,43 +430,39 @@ class ProjectManager extends BaseComponent {
       return;
 
     // No file name-> get current file from editor
-    if (!data.path)
-    {
-      var response = await this.showSaveFileDialog(data.name);
-      if (response)
-      {
-        data.path = response.path;
-        data.name = this.root.utilities.getFileNameFromPath(data.path);
-        var newFile = await this.handleSaveFile(data, senderId);
-        if ( !newFile.error )
-        {
-          this.addNewFile(newFile);
-          this.broadcast(PROJECTMESSAGES.NEW_FILE_ADDED, newFile);
-          return newFile;
-        }
-      }
-      return false;
+    var oldPath = data.fileInfo.path;
+    var newPath = oldPath;
+    var oldName = data.fileInfo.name;
+    var newName = oldName;
+    if (data.forceDialog) {      
+      newPath = await this.showSaveFileDialog(oldPath);
+      if (!newPath)
+        return null;
+      newName = this.root.utilities.getFileNameFromPath(newPath);
     }
-
+    
     // Save the file on the server
     var state = null;
-    if (data.state)
-      state = JSON.stringify(data.state.toJSON());
-    var newData = {
-      path: data.path,
-      name: data.name,
-      content: data.content,
+    if (data.fileInfo.state)
+      state = JSON.stringify(data.fileInfo.state.toJSON());
+    var infoSave = {
+      path: newPath,
+      name: newName,
+      content: data.fileInfo.content,
       state: state,
       mode: this.root.currentMode,
       handle: this.project.handle
     };
-    var answer = await this.root.server.saveFile(newData);
-    if (answer && !answer.error){
-      var file = this.findFile(data.path);
-      file.content = data.content;
-      file.state = data.state;
+    var answer = await this.root.server.saveFile(infoSave);
+    if (answer.error){
+      this.root.alert.showError(answer.error);
+      return false;
     }
-    return answer;
+    if (oldPath != infoSave.path)
+    {
+      this.broadcast(PROJECTMESSAGES.NEW_FILE_ADDED, infoSave);
+    }
+    return infoSave;
   }
   
   async getLayoutInfo() {
@@ -478,38 +490,23 @@ class ProjectManager extends BaseComponent {
       // Create dialog content container
       const content = document.createElement('div');
       content.className = 'new-project-dialog';
-      content.style.padding = '0';
-      content.style.margin = '0';
-      content.style.width = 'auto';
-      content.style.minWidth = '0';
-      content.style.maxWidth = '100%';
-      content.style.boxSizing = 'border-box';
-      content.style.display = 'flex';
-      content.style.flexDirection = 'column';
       
       // Create content HTML
       content.innerHTML = `
-        <div style="padding: 0px 0px 0 0px; width: 100%; box-sizing: border-box;">
-          <div class="form-group">
-            <label for="project-name" class="dialog-label">${this.root.messages.getMessage('stam:project-name')}</label>
-            <input type="text" id="project-name" class="dialog-input" value="${projectName}" 
-                   placeholder="${this.root.messages.getMessage('stam:enter-project-name')}">
-          </div>
+        <div class="form-group">
+          <label for="project-name"">${this.root.messages.getMessage('stam:project-name')}</label>
+          <input type="text" id="project-name" value="${projectName}" 
+                  placeholder="${this.root.messages.getMessage('stam:enter-project-name')}">
         </div>
-        
-        <div style="padding: 0 0px; width: 100%; box-sizing: border-box;">
-          <div class="form-group">
-            <label class="checkbox-label">
-              <input type="checkbox" id="overwrite-checkbox" ${overwriteExisting ? 'checked' : ''}>
-              ${this.root.messages.getMessage('stam:overwrite-existing-project')}
-            </label>
-          </div>
+        <div class="form-group">
+          <checkbox>
+            <input type="checkbox" id="overwrite-checkbox" ${overwriteExisting ? 'checked' : ''}>
+            <label for="overwrite-checkbox">${this.root.messages.getMessage('stam:overwrite-existing-project')}</label>
+          </checkbox>
         </div>
-        
-        <div style="flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 2px 24px 2px 24px; width: 100%; box-sizing: border-box;">
-          <div class="dialog-label">${this.root.messages.getMessage('stam:template')}</div>
-          <div class="dialog-description" style="margin-bottom: 8px;">${this.root.messages.getMessage('stam:select-template-for-new-project')}</div>
-          <div class="template-list">
+        <div class="form-group">
+          <label for="iconiclist">${this.root.messages.getMessage('stam:select-template-for-new-project')}</label>
+          <div class="iconiclist-list">
             ${this._renderTemplateList(templateList, theme)}
           </div>
         </div>
@@ -520,12 +517,12 @@ class ProjectManager extends BaseComponent {
       const overwriteCheckbox = content.querySelector('#overwrite-checkbox');
       
       // Handle template selection
-      content.querySelectorAll('.template-item').forEach((item, index) => {
+      content.querySelectorAll('.iconiclist-item').forEach((item, index) => {
         item.addEventListener('click', () => {
           selectedTemplate = templateList[index];
           
           // Update UI
-          content.querySelectorAll('.template-item').forEach(el => 
+          content.querySelectorAll('.iconiclist-item').forEach(el => 
             el.classList.remove('selected')
           );
           item.classList.add('selected');
@@ -577,21 +574,21 @@ class ProjectManager extends BaseComponent {
    */
   _renderTemplateList(templates, theme) {
     if (!templates || !templates.length) {
-      return `<div class="no-templates dialog-list-empty">
+      return `<div class="iconiclist-list-empty>
         ${this.root.messages.getMessage('stam:no-templates-available')}
       </div>`;
     }
     
     return templates.map((template, index) => `
-      <div class="template-item dialog-list-item ${index === 0 ? 'selected' : ''}">
+      <div class="iconiclist-item ${index === 0 ? 'selected' : ''}">
         ${template.iconUrl ? `
-          <div class="template-icon dialog-list-item-icon">
+          <div class="iconiclist-icon">
             <img src="${template.iconUrl}" alt="${template.name}">
           </div>` : ''}
-        <div class="template-info dialog-list-item-info">
-          <div class="template-name dialog-list-item-name">${template.name}</div>
+        <div class="iconiclist-info">
+          <div class="iconiclist-name">${template.name}</div>
           ${template.description ? `
-            <div class="template-description dialog-list-item-description">${template.description}</div>` : ''}
+            <div class="iconiclist-description">${template.description}</div>` : ''}
         </div>
       </div>
     `).join('');
@@ -607,36 +604,26 @@ class ProjectManager extends BaseComponent {
       // Create the dialog element using the Dialog component
       const content = document.createElement('div');
       content.className = 'open-project-dialog';
-      content.style.padding = '0';
-      content.style.margin = '0';
-      content.style.width = '600px';
-      content.style.maxWidth = '90vw';
-      content.style.boxSizing = 'border-box';
-      content.style.display = 'flex';
-      content.style.flexDirection = 'column';
-      
+     
       // Create content HTML
       content.innerHTML = `
-        <div style="padding: 0 24px 2px 24px; width: 100%; box-sizing: border-box;">
-          <div class="form-group">
-            <div class="dialog-label">${this.root.messages.getMessage('stam:select-project-to-open')}</div>
-          </div>
-          
-          <div class="dialog-list-container">
+      <div class="form-group">
+          <label for="iconiclist">${this.root.messages.getMessage('stam:select-project-to-open')}</label>
+          <div class="iconiclist-list">
             ${this._renderProjectList(projectList)}
           </div>
         </div>
       `;
-      
-      let selectedProject = projectList?.[0] || null;
+
+     let selectedProject = projectList?.[0] || null;
       
       // Handle project selection
-      content.querySelectorAll('.dialog-list-item').forEach((item, index) => {
+      content.querySelectorAll('.iconiclist-item').forEach((item, index) => {
         item.addEventListener('click', () => {
           selectedProject = projectList[index];
           
           // Update UI
-          content.querySelectorAll('.dialog-list-item').forEach(el => 
+          content.querySelectorAll('.iconiclist-item').forEach(el => 
             el.classList.remove('selected')
           );
           item.classList.add('selected');
@@ -697,126 +684,63 @@ class ProjectManager extends BaseComponent {
   _renderProjectList(projects) {
     if (!projects || !projects.length) {
       return `
-        <div class="dialog-list-empty">
+        <div class="iconiclist-list-empty">
           ${this.root.messages.getMessage('stam:no-projects-available')}
         </div>`;
     }
     
     return projects.map((project, index) => `
-      <div class="dialog-list-item ${index === 0 ? 'selected' : ''}" 
+      <div class="iconiclist-item ${index === 0 ? 'selected' : ''}" 
            data-project-index="${index}">
         ${project.iconUrl ? `
-          <div class="dialog-list-item-icon">
+          <div class="iconiclist-icon">
             <img src="${project.iconUrl}" alt="${project.name}">
           </div>` : ''}
-        <div class="dialog-list-item-info">
-          <div class="dialog-list-item-name">${project.name}</div>
+        <div class="iconiclist-info">
+          <div class="iconiclist-name">${project.name}</div>
           ${project.description ? `
-            <div class="dialog-list-item-description">${project.description}</div>` : ''}
+            <div class="iconiclist-description">${project.description}</div>` : ''}
         </div>
       </div>
     `).join('');
   }
   
   // Show a file open dialog with the project file structure
-  // @param {Array|string} fileExtensions - File extensions to filter (e.g., "*.js" or ["*.js", "*.mjs"])
+  // @param string fileExtensions - File extensions to filter eg. Phaser:*.js,*.mjs;Three:*.js,*.mjs;
   // @returns {Promise} - Resolves with the selected file or null if cancelled
-  async showOpenFileDialog(fileExtensions = null) {
+  // ["Phaser:'*.js','*.mjs','*.ts','*.tsx','*.json','*.html','*.css','*.md','*.txt'"]
+  async showOpenFileDialog(defaultFilter = "stam:filter-all-files") {
     return new Promise((resolve) => {
       const theme = this.root.preferences.getCurrentTheme();
       let selectedFile = null;
-      let extensions = [];
-
-      // Convert single extension string to array if needed
-      if (typeof fileExtensions === 'string') {
-        extensions = [fileExtensions];
-      } else if (Array.isArray(fileExtensions)) {
-        extensions = [...fileExtensions];
-      }
-
+      let userFilter = '';
+      let currentFilterId = defaultFilter;
+      let filterList = this.root.messages.getMessagesStartingWith('stam:filter-');
+      let currentFilter = this.root.messages.getMessage(currentFilterId);     
+      
       // Create dialog content container
       const content = document.createElement('div');
       content.className = 'file-selector';
       
       // Create content HTML
       content.innerHTML = `
-        ${extensions.length > 0 ? `
-          <div class="file-selector-header">
-            <div class="file-selector-filter">
-              ${this.root.messages.getMessage('stam:filter')}: ${extensions.join(', ')}
-            </div>
-          </div>` : ''}
-        
-        <div class="file-list-container">
-          <div class="file-list">
-            ${this._renderFileList(this.project?.files || [], extensions)}
+        <div class="form-group file-list-container">
+          <input type="text" id="file-filter-user" class="form-control" placeholder="${this.root.messages.getMessage('stam:filter-files-placeholder')}">
+          <div class="form-filter-select">
+            <select id="file-filter-select" class="form-control">
+            </select>
+          </div>
+          <div class="file-list" id="file-list">
+            ${this._renderFileList(this.project?.files || [], userFilter, currentFilterId)}
           </div>
         </div>
       `;
-
-      // Set up event listeners for file and folder selection
-      content.addEventListener('click', (e) => {
-        const fileItem = e.target.closest('.file-item');
-        if (!fileItem) return;
-        
-        const isDirectory = fileItem.dataset.isDirectory === 'true';
-        const filePath = fileItem.dataset.path;
-        
-        if (isDirectory) {
-          // Toggle folder expansion
-          if (this.expandedFolders.has(filePath)) {
-            this.expandedFolders.delete(filePath);
-          } else {
-            this.expandedFolders.add(filePath);
-          }
-          
-          // Re-render the file list
-          const fileList = content.querySelector('.file-list');
-          if (fileList) {
-            fileList.innerHTML = this._renderFileList(this.project?.files || [], extensions);
-            // Re-attach event listeners after re-rendering
-            this._attachFileListEventListeners(content);
-          }
-          e.stopPropagation();
-        } else {
-          // Handle file selection
-          content.querySelectorAll('.file-item').forEach(el => 
-            el.classList.remove('selected')
-          );
-          fileItem.classList.add('selected');
-          
-          // Find the selected file
-          const file = this._findFileByPath(this.project?.files || [], filePath);
-          if (file) {
-            selectedFile = file;
-            // Enable the Open button when a file is selected
-            const openButton = content.closest('.dialog').querySelector('.dialog-button.primary');
-            if (openButton) {
-              openButton.disabled = false;
-            }
-          }
-        }
-      });
-      
-      // Helper method to attach event listeners to file items
-      this._attachFileListEventListeners = (container) => {
-        // No need to reattach click handlers as we're using event delegation
-      };
 
       // Create and show the dialog
       const dialog = new Dialog({
         title: this.root.messages.getMessage('stam:select-file-to-open'),
         content: content,
-        style: {
-          width: '600px',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          position: 'relative',
-          margin: '0',
-          padding: '0',
-          boxSizing: 'border-box'
-        },
+        theme: this.root.preferences.getCurrentTheme(),
         className: 'file-dialog',
         onOpen: (dialogEl) => {
           // Ensure dialog maintains fixed height
@@ -852,11 +776,111 @@ class ProjectManager extends BaseComponent {
         ]
       });
 
+      // Fill and update the filter select
+      const fileList = content.querySelector('#file-list');
+      const filterSelect = content.querySelector('#file-filter-select');
+      const filterInput = content.querySelector('#file-filter-user');
+      filterSelect.innerHTML = '';
+      filterList.forEach((filter) => {
+        const option = document.createElement('option');
+        option.value = filter;
+        option.textContent = this.root.messages.getMessage(filter);
+        filterSelect.appendChild(option);
+      });
+      filterSelect.value = currentFilterId;
+      filterSelect.addEventListener('change', (e) => {
+        if ( e.target.value != currentFilterId ) {
+          currentFilterId = e.target.value;
+          fileList.innerHTML = this._renderFileList(this.project?.files || [], userFilter, currentFilterId);
+        }
+      });
+
+      // Handle filter input changes
+      filterInput.addEventListener('input', (e) => {
+        userFilter = e.target.value;
+        if (userFilter.length > 0) {
+          filterSelect.disabled = true;
+        } else {
+          filterSelect.disabled = false;
+        }
+        fileList.innerHTML = this._renderFileList(this.project?.files || [], userFilter, currentFilterId);
+      });
+
+      // Set up double click
+      content.addEventListener('dblclick', (e) => {
+        const fileItem = e.target.closest('.file-item');
+        if (!fileItem) return;
+        const isDirectory = fileItem.dataset.isDirectory === 'true';
+        const filePath = fileItem.dataset.path;
+        if (isDirectory) {
+          // Toggle folder expansion
+          if (this.expandedFolders.has(filePath)) {
+            this.expandedFolders.delete(filePath);
+          } else {
+            this.expandedFolders.add(filePath);
+          }
+          
+          // Re-render the file list
+          fileList.innerHTML = this._renderFileList(this.project?.files || [], userFilter, currentFilterId);
+        } else {
+          // Handle file selection
+          content.querySelectorAll('.file-item').forEach(el => 
+            el.classList.remove('selected')
+          );
+          fileItem.classList.add('selected');
+          
+          // Find the selected file
+          const file = this._findFileByPath(this.project?.files || [], filePath);
+          if ( file ){
+            resolve(file);
+            dialog.close();
+          }
+        }
+        e.stopPropagation();
+      });
+      // Set up event listeners for file and folder selection
+      content.addEventListener('click', (e) => {
+        const fileItem = e.target.closest('.file-item');
+        if (!fileItem) return;
+        
+        const isDirectory = fileItem.dataset.isDirectory === 'true';
+        const filePath = fileItem.dataset.path;
+        
+        if (isDirectory) {
+          // Toggle folder expansion
+          if (this.expandedFolders.has(filePath)) {
+            this.expandedFolders.delete(filePath);
+          } else {
+            this.expandedFolders.add(filePath);
+          }
+          
+          // Re-render the file list
+          fileList.innerHTML = this._renderFileList(this.project?.files || [], userFilter, currentFilterId);
+          e.stopPropagation();
+          dialog.buttons[1].element.disabled = true;
+          selectedFile = null;
+        } else {
+          // Handle file selection
+          content.querySelectorAll('.file-item').forEach(el => 
+            el.classList.remove('selected')
+          );
+          fileItem.classList.add('selected');
+          
+          // Find the selected file
+          const file = this._findFileByPath(this.project?.files || [], filePath);
+          if (file) {
+            selectedFile = file;
+            dialog.buttons[1].element.disabled = false;
+          }
+        }
+      });
+
       // Store reference to the dialog for external access if needed
       this._openFileDialog = dialog;
 
       // Show the dialog
       dialog.open();
+      dialog.buttons[1].element.disabled = true;
     });
   }
 
@@ -878,7 +902,7 @@ class ProjectManager extends BaseComponent {
   }
 
   // Renders the file list HTML
-  _renderFileList(files, extensions = [], level = 0, parentPath = '') {
+  _renderFileList(files, userFilter, currentFilterId, level = 0, parentPath = '') {
     if (!files || !files.length) {
       return `
         <div class="file-list-empty" style="padding-left: ${level * 16}px;">
@@ -887,9 +911,29 @@ class ProjectManager extends BaseComponent {
       `;
     }
     
-    let result = '';
+    // Convert filter string to filter array
+    function _extractFilters(filter) {
+      var extensions = [];
+      if (filter) {
+        filter = filter.replace(/'/g, '');
+        filter = filter.replace(/"/g, '');
+        var parts = filter.split(';');
+        for ( var p in parts) {
+          var part = parts[ p ].trim();
+          if (part.length === 0) continue;
+          var column = part.indexOf(':');
+          if ( column > -1) {
+            part = part.substring(column + 1);
+          }
+          extensions.push(...part.split(',').map(ext => ext.trim()));
+        } 
+      }
+      return extensions;
+    }
+    var currentFilter = this.root.messages.getMessage(currentFilterId);
+    var extensions = _extractFilters(userFilter?userFilter:currentFilter);
     
-    // Sort files: directories first, then files alphabetically
+    let result = '';    
     const sortedFiles = [...files].sort((a, b) => {
       if (a.isDirectory && !b.isDirectory) return -1;
       if (!a.isDirectory && b.isDirectory) return 1;
@@ -903,13 +947,32 @@ class ProjectManager extends BaseComponent {
       const isExpanded = isDirectory && this.expandedFolders.has(filePath);
       
       // Only show files that match the filter
-      if (!isDirectory && extensions.length > 0) {
-        const matchesFilter = extensions.some(ext => {
-          const pattern = ext.replace('*.', '.').toLowerCase();
-          return file.name.toLowerCase().endsWith(pattern);
-        });
-        if (!matchesFilter) return;
+      var matched = isDirectory || extensions.length == 0;
+      if (!matched) {
+        for ( var f = 0; f < extensions.length && !matched; f++ ) {
+          var filter = extensions[f];
+          var filterParts = filter.split('.');
+          if (filterParts.length == 1) {
+            if (filterParts[0].indexOf('*') > -1) 
+              matched = true;
+            else if ( file.name.toLowerCase().indexOf(filterParts[0]) > -1 )
+              matched = true;
+          } else {
+            var fileParts = file.name.toLowerCase().split('.');
+            var maxFilters = Math.min(fileParts.length, filterParts.length);
+            var matchedCount = 0;
+            for ( var p = 0; p < maxFilters; p++ ) {
+              if (filterParts[p].indexOf('*') > -1) 
+                matchedCount++;
+              else if (fileParts[p].indexOf(filterParts[p]) > -1)
+                matchedCount++;
+            }
+            if ( matchedCount == maxFilters )
+              matched = true;
+          }
+        }
       }
+      if (!matched) return;
       
       result += `
         <div class="file-item ${isDirectory ? 'is-folder' : ''} ${isExpanded ? 'is-expanded' : ''}" 
@@ -925,7 +988,7 @@ class ProjectManager extends BaseComponent {
       
       // Render children if this is an expanded directory
       if (isDirectory && isExpanded && file.files && file.files.length > 0) {
-        result += this._renderFileList(file.files, extensions, level + 1, filePath);
+        result += this._renderFileList(file.files, userFilter, currentFilterId, level + 1, filePath);
       }
     });
     
@@ -935,8 +998,7 @@ class ProjectManager extends BaseComponent {
           ${this.root.messages.getMessage('stam:no-matching-files')}
         </div>
       `;
-    }
-    
+    }    
     return result;
   }  
   
@@ -952,12 +1014,13 @@ class ProjectManager extends BaseComponent {
    * @param {string} title - Dialog title
    * @returns {Promise} - Resolves with the file data object or null if cancelled
    */
-  async showSaveFileDialog(defaultFileName = 'Untitled.js', title = '') {
+  async showSaveFileDialog(defaultPath = 'Untitled.js', title = '') {
     return new Promise((resolve) => {
-      const theme = this.root.preferences.getCurrentTheme();
-      let currentPath = '';
-      let fileName = defaultFileName;
-      let currentDirectory = null;
+      let dialog;
+      let userFilter = '';
+      let currentFilterId = 'stam:filter-all-files';
+      let currentPath = defaultPath;
+      let currentFilename = currentPath.split('/').pop();
 
       // Create dialog content container
       const content = document.createElement('div');
@@ -965,53 +1028,37 @@ class ProjectManager extends BaseComponent {
       
       // Create content HTML
       content.innerHTML = `
-        <div class="file-save-controls" style="margin-bottom: 16px;">
-          <div style="margin-bottom: 8px; font-size: 14px; color: var(--text-secondary, #b0b0b0);">
-            ${this.root.messages.getMessage('stam:filename')}:
+        <div class="form-group file-list-container">
+          <div class="form-group-row">
+            <label for="path-label">${this.root.messages.getMessage('stam:path-label')}</label>
+            <input type="text" id="path-input" class="form-control" value="/${currentPath}">
           </div>
-          <input type="text" class="file-name-input" value="${defaultFileName}" 
-                 style="width: 100%; padding: 8px; margin-bottom: 16px; background: var(--container-background, #252526); 
-                        border: 1px solid var(--borders, #444); color: var(--text-primary, #e0e0e0);
-                        border-radius: 4px; font-size: 14px; outline: none;">
-          
-          <div style="margin-bottom: 8px; font-size: 14px; color: var(--text-secondary, #b0b0b0);">
-            ${this.root.messages.getMessage('stam:location')}:
-          </div>
-          <div class="current-location" style="margin-bottom: 16px; padding: 8px; background: var(--container-background, #252526); 
-                                          border: 1px solid var(--borders, #444); color: var(--text-primary, #e0e0e0);
-                                          border-radius: 4px; font-size: 14px; min-height: 16px;">
-            ${currentPath ? `/${currentPath}` : '/'}
-          </div>
-        </div>
-        
-        <div class="file-list-container" style="flex: 1; overflow: auto; border: 1px solid var(--borders, #444);">
-          <div class="file-list">
-            ${this._renderFileList(this.project?.files || [])}
+          <div class="file-list" id="file-list">
+            ${this._renderFileList(this.project?.files || [], userFilter, currentFilterId)}
           </div>
         </div>
       `;
 
-      // Helper function to update the UI
-      const updateUI = () => {
-        const locationEl = content.querySelector('.current-location');
-        if (locationEl) {
-          locationEl.textContent = currentPath ? `/${currentPath}` : '/';
-        }
-        
-        // Update save button state
-        const saveButton = content.closest('.dialog')?.querySelector('.dialog-button.primary');
-        if (saveButton) {
-          saveButton.disabled = !fileName.trim();
-        }
-      };
+      // Handle file name input changes
+      const fileList = content.querySelector('#file-list');
+      var pathInput = content.querySelector('#path-input');
+      pathInput?.addEventListener('input', (e) => {
+        currentPath = e.target.value.trim();
+        if (currentPath.startsWith('/'))
+          currentPath = currentPath.substring(1);
+        var parts = currentPath.split('/');
+        currentFilename = parts[parts.length - 1];
+        dialog.buttons[ 1 ].element.disabled = !currentFilename.trim();
+      });
 
+     
       // Set up event listeners for file and folder selection
       content.addEventListener('click', (e) => {
         const fileItem = e.target.closest('.file-item');
         if (!fileItem) return;
         
         const isDirectory = fileItem.dataset.isDirectory === 'true';
-        const filePath = fileItem.dataset.path;
+        let filePath = fileItem.dataset.path;
         
         if (isDirectory) {
           // Toggle folder expansion
@@ -1019,51 +1066,25 @@ class ProjectManager extends BaseComponent {
             this.expandedFolders.delete(filePath);
           } else {
             this.expandedFolders.add(filePath);
-            // Update current path when entering a directory
-            currentPath = filePath;
-            currentDirectory = this._findFileByPath(this.project?.files || [], filePath);
-            updateUI();
-          }
-          
-          // Re-render the file list
-          const fileList = content.querySelector('.file-list');
-          if (fileList) {
-            fileList.innerHTML = this._renderFileList(this.project?.files || []);
-          }
-          e.stopPropagation();
+            currentPath = filePath + '/' + currentFilename;
+          }          
+          fileList.innerHTML = this._renderFileList(this.project?.files || [], userFilter, currentFilterId);          
         } else {
           // Update selected file name
-          const fileNameInput = content.querySelector('.file-name-input');
-          if (fileNameInput) {
-            const parts = filePath.split('/');
-            fileNameInput.value = parts[parts.length - 1];
-            fileName = fileNameInput.value;
-            updateUI();
-          }
+          const parts = filePath.split('/');
+          currentFilename = parts[parts.length - 1];
+          currentPath = filePath;
         }
-      });
-
-      // Handle file name input changes
-      content.querySelector('.file-name-input')?.addEventListener('input', (e) => {
-        fileName = e.target.value.trim();
-        updateUI();
+        dialog.buttons[ 1 ].element.disabled = !currentFilename.trim();
+        pathInput.value = '/' + currentPath;
+        e.stopPropagation();
       });
 
       // Create and show the dialog
-      const dialog = new Dialog({
+      dialog = new Dialog({
         title: title || this.root.messages.getMessage('stam:save-file'),
         content: content,
-        style: {
-          width: '600px',
-          height: '500px',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          position: 'relative',
-          margin: '0',
-          padding: '0',
-          boxSizing: 'border-box'
-        },
+        theme: this.root.preferences.getCurrentTheme(),
         className: 'file-dialog',
         onOpen: (dialogEl) => {
           // Ensure dialog maintains fixed height
@@ -1073,15 +1094,12 @@ class ProjectManager extends BaseComponent {
             contentEl.style.display = 'flex';
             contentEl.style.flexDirection = 'column';
             contentEl.style.flex = '1 1 auto';
-            contentEl.style.minHeight = '0'; // Crucial for flex children to respect overflow
+            contentEl.style.minHeight = '0'; 
           }
           
-          // Focus the file name input
-          const fileNameInput = dialogEl.querySelector('.file-name-input');
-          if (fileNameInput) {
-            fileNameInput.focus();
-            fileNameInput.select();
-          }
+          // Focus the path input
+          pathInput.focus();
+          pathInput.select();
         },
         buttons: [
           {
@@ -1095,22 +1113,18 @@ class ProjectManager extends BaseComponent {
           {
             label: this.root.messages.getMessage('stam:save'),
             className: 'btn btn-positive',
-            disabled: !fileName.trim(),
+            disabled: !currentFilename.trim(),
             onClick: () => {
-              const fullPath = currentPath ? `${currentPath}/${fileName}` : fileName;
-              
               // Check if file exists
-              const fileExists = this._findFileByPath(this.project?.files || [], fullPath);
-              
+              const fileExists = this._findFileByPath(this.project?.files || [], currentPath);              
               if (fileExists) {
                 // Show confirmation dialog for overwrite
-                if (confirm(this.root.messages.getMessage('stam:file-exists-overwrite', { fileName }))) {
-                  resolve({ path: fullPath, name: fileName });
+                if (confirm(this.root.messages.getMessage('stam:file-exists-overwrite', { fileName: currentPath }))) {
+                  resolve(currentPath);
                   dialog.close();
                 }
               } else {
-                resolve({ path: fullPath, name: fileName });
-                dialog.close();
+                resolve(currentPath);
               }
             }
           }

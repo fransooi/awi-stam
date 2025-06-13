@@ -68,6 +68,10 @@ export default class EditorBase extends Base
 	{
 		this.inputEnabled = true;
 	}
+    saveInputs()
+    {
+        
+    }
 	close()
 	{
 	}

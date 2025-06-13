@@ -246,6 +246,10 @@ export default class Utilities {
   }
 
   getFileNameFromPath(path) {
+    if ( path.indexOf('/') == -1 )
+      return path;
+    if ( path.indexOf('/') == 0)
+      path = path.substring(1);
     const parts = path.split('/');
     return parts[parts.length - 1];
   }
@@ -262,6 +266,18 @@ export default class Utilities {
       else if ( type === 'json' )
         return await response.json();
       return await response.arrayBuffer();
+    } catch (error) {
+      return { error: 'stam:file-not-found' };
+    }
+  }
+  // Get the file list inside the public directory with HTTP
+  async getPublicDirectoryFiles(path) {
+    try {
+      const response = await fetch(path);
+      if (!response.ok) {
+        return { error: 'stam:file-not-found' };
+      }
+      return await response.json();
     } catch (error) {
       return { error: 'stam:file-not-found' };
     }

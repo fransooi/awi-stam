@@ -25,6 +25,7 @@ import PopupMenu from './PopupMenu.js';
 import { EDITORMESSAGES } from './Editor.js';
 import { SOCKETMESSAGES } from './sidewindows/SocketSideWindow.js';
 import { CLASSROOMCOMMANDS } from './ClassroomManager.js';
+import { MESSAGESCOMMANDS } from './MessageManager.js';
 
 // Define message types for preference handling
 export const MENUCOMMANDS = {
@@ -49,6 +50,8 @@ export const MENUCOMMANDS = {
   DELETE: 'MENU_DELETE',
   FIND: 'MENU_FIND',
   REPLACE: 'MENU_REPLACE',
+  THEME: 'MENU_THEME',
+  LANGUAGE: 'MENU_LANGUAGE',
   PREFERENCES: 'MENU_PREFERENCES',
   RUN: 'MENU_RUN',
   DEBUG: 'MENU_DEBUG',
@@ -114,7 +117,7 @@ class MenuBar extends BaseComponent {
     // Update menu items based on connection state
     this.handleInterval = setInterval(() => {
       this.updateMenuItems();
-    }, 500);
+    }, 250);
   }
 
   async updateMenuItems() {
@@ -450,6 +453,8 @@ class MenuBar extends BaseComponent {
         { name: this.root.messages.getMessage('stam:menu-find'), command: MENUCOMMANDS.FIND, disabled: false },
         { name: this.root.messages.getMessage('stam:menu-replace'), command: MENUCOMMANDS.REPLACE, disabled: false },
         '-',
+        { name: this.root.messages.getMessage('stam:menu-theme'), command: MENUCOMMANDS.THEME, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-language'), command: MESSAGESCOMMANDS.CHOOSE_LANGUAGE, disabled: false },
         { name: this.root.messages.getMessage('stam:menu-preferences'), command: MENUCOMMANDS.PREFERENCES, disabled: false }
       ] },
       { name: this.root.messages.getMessage('stam:menu-view'), items: [
@@ -468,7 +473,11 @@ class MenuBar extends BaseComponent {
           { name: this.root.messages.getMessage('stam:menu-view-tv-window'), command: MENUCOMMANDS.VIEW_RIGHT_TV_WINDOW, disabled: false },
         ] },
         { name: this.root.messages.getMessage('stam:menu-menubar'), command: MENUCOMMANDS.VIEW_MENUBAR, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-statusbar'), command: MENUCOMMANDS.VIEW_STATUSBAR, disabled: false }
+        { name: this.root.messages.getMessage('stam:menu-statusbar'), command: MENUCOMMANDS.VIEW_STATUSBAR, disabled: false },
+        '-',
+        { name: this.root.messages.getMessage('stam:menu-savelayout'), command: MENUCOMMANDS.SAVE_LAYOUT, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-loadlayout'), command: MENUCOMMANDS.LOAD_LAYOUT, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-resetlayout'), command: MENUCOMMANDS.RESET_LAYOUT, disabled: false }
       ] }, 
       { name: this.root.messages.getMessage('stam:menu-classroom'), items: [
         { name: this.root.messages.getMessage('stam:menu-create-classroom'), command: CLASSROOMCOMMANDS.CREATE_CLASSROOM, disabled: false },

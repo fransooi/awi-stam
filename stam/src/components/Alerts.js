@@ -284,9 +284,9 @@ class Alerts extends BaseComponent {
     content.style.gap = '16px';
     content.style.alignItems = 'center';
     content.style.padding = '16px';
-    content.style.backgroundColor = 'var(--background-secondary, #2d2d2d)';
-    content.style.borderRadius = '8px';
-    content.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+    content.style.backgroundColor = 'var(--dialog-background, #2d2d2d)';
+    //content.style.borderRadius = '8px';
+    //content.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
     content.style.maxWidth = '500px';
     content.style.width = '90%';
     content.style.maxHeight = '90vh';
@@ -361,7 +361,7 @@ class Alerts extends BaseComponent {
     // Create dialog content
     const dialogContent = document.createElement('div');
     dialogContent.style.position = 'relative';
-    dialogContent.style.backgroundColor = 'var(--background-secondary, #2d2d2d)';
+    dialogContent.style.backgroundColor = 'var(--dialog-background, #2d2d2d)';
     dialogContent.style.borderRadius = '8px';
     dialogContent.style.overflow = 'hidden';
     dialogContent.style.width = '100%';

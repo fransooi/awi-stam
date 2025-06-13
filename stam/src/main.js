@@ -94,7 +94,9 @@ class StamApp extends BaseComponent {
     this.messageMap[MESSAGES.MODE_CHANGED] = this.handleModeChanged;    
     this.messageMap[MESSAGES.SAVE_LAYOUT] = this.handleSaveLayout;        
     this.messageMap[SOCKETMESSAGES.CONNECTED] = this.handleConnected;  
-    this.messageMap[MENUCOMMANDS.DEBUG1] = this.handleSaveLayout;  
+    this.messageMap[MENUCOMMANDS.DEBUG1] = this.debug1;  
+    this.messageMap[MENUCOMMANDS.DEBUG2] = this.debug2;  
+    this.messageMap[MESSAGES.REFRESH_DISPLAY] = this.handleRefreshDisplay;  
   }
   
   async init(options = {}) {
@@ -108,7 +110,6 @@ class StamApp extends BaseComponent {
     await this.server.init({});
     await this.project.init({});
     await this.classroom.init({});
-    await this.preferences.setLanguage();
 
     const layoutData=this.utilities.loadStorage('stam-layout');  
     let layout;    
@@ -151,8 +152,8 @@ class StamApp extends BaseComponent {
     await this.broadcastUp(MESSAGES.LAYOUT_READY);
 
     // Send CONNECT message to socket
-//    if (this.debug)
-//      await this.sendMessageTo('class:SocketSideWindow',SOCKETMESSAGES.CONNECT, {userName: 'francois', url: this.webSocketUrl});
+    if (this.debug)
+      await this.sendMessageTo('class:SocketSideWindow',SOCKETMESSAGES.CONNECT, { accountInfo: {userName: 'francois', url: this.webSocketUrl, password: '123456789'}, force: true });
 //    else
 //      await this.sendMessageTo('class:SocketSideWindow',SOCKETMESSAGES.CONNECT_IF_CONNECTED);
 
@@ -210,6 +211,16 @@ class StamApp extends BaseComponent {
     return true; // Command handled
   }
   
+  async debug1(data, sender) {
+    this.alert.showSuccess('stam:preferences-saved');
+    return true;
+  }
+  
+  async debug2(data, sender) {
+    console.log('Debug 2');
+    return true;
+  }
+  
   async handleLayoutInfo(data, sender) {
     if (sender) {
       this.layoutInfo[sender] = data;
@@ -241,7 +252,86 @@ class StamApp extends BaseComponent {
       this.sendMessageTo(this.preferenceDialog.getComponentID(), MESSAGES.SHOW_PREFERENCES);
     }
   }
+
+  async handleRefreshDisplay(data, senderId) {
+    const element = document.documentElement; // Default to whole document
+    const rect = data.rect || { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight };
   
+    const refreshMethods = {
+      style: () => {
+        element.style.display = 'none';
+        element.offsetHeight; // Force reflow
+        element.style.display = '';
+      },
+      redraw: () => {
+        const transform = window.getComputedStyle(element).transform;
+        element.style.transform = 'translateZ(0)';
+        requestAnimationFrame(() => {
+            element.style.transform = transform || 'none';
+        });
+      },
+      requestAnimation: () => {
+        const transform = window.getComputedStyle(element).transform;
+        element.style.transform = 'translateZ(0)';
+        requestAnimationFrame(() => {
+          element.style.transform = transform || 'none';
+        });
+      },
+      /*
+      canvas: () => {
+        const canvas = document.querySelector('canvas');
+        if (canvas && canvas.getContext) {
+          const ctx = canvas.getContext('2d');
+          ctx.clearRect(rect.x, rect.y, rect.width, rect.height);
+        }
+      },
+      */
+      modern: () => {
+        if (element.invalidate) {
+          const domRect = new DOMRect(rect.x, rect.y, rect.width, rect.height);
+          element.invalidate(domRect);
+        } else {
+          console.warn('Element.invalidate() not supported in this browser');
+        }
+      }
+    };
+
+    const executeRefresh = (method) => {
+      try {
+        refreshMethods[method]();
+        console.log(`Refresh method executed: ${method}`);
+      } catch (error) {
+        console.error(`Error executing refresh method ${method}:`, error);
+      }
+    };
+
+    const refreshType = (data.refreshType || '').toLowerCase();  
+    switch (refreshType) {
+      case 'all':
+        // Execute all methods with delay
+        const methods = Object.keys(refreshMethods);
+        methods.forEach((method, index) => {
+          setTimeout(() => {
+            executeRefresh(method);
+          }, 250 + index * 100);
+        });
+        break;
+      case 'style':
+      case 'requestanimation':
+      case 'canvas':
+      case 'modern':
+        // Execute specific method
+        executeRefresh(refreshType);
+        break;
+      default:
+        console.warn(`Unknown refresh type: ${refreshType}`);
+        return false;
+    }  
+    await this.utilities.sleep(1000);
+    this.alert.showSuccess('stam:preferences-saved');
+    return true;
+  }
+
   /**
    * Returns the current layout JSON string
    * @returns {Promise<string>} - Promise that resolves with the layout JSON

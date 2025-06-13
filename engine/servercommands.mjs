@@ -37,4 +37,8 @@ export const SERVERCOMMANDS = {
     LEAVE_CLASSROOM: 'classroom:leaveClassroom',
     GET_CLASSROOM_LIST: 'classroom:getClassroomList',
     TRANSLATE: 'translator:translate',
+    GET_LANGUAGE_LIST: 'languages:getLanguageList',
+    LOAD_LANGUAGE: 'languages:loadLanguage',
+    DELETE_LANGUAGE: 'languages:deleteLanguage',
+    TRANSLATE_LANGUAGE: 'languages:translateLanguage',
 };
