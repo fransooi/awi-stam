@@ -47,7 +47,7 @@ class ConnectorProject extends ConnectorBase
     async registerEditor(args, basket, control)
     {
         this.editor = args.editor;
-        this.userName = this.editor.userName;
+        this.userName = args.userName;
         this.templatesUrl = this.editor.templatesUrl || this.templatesUrl;
         this.projectsUrl = this.editor.projectsUrl || this.projectsUrl;
         this.runUrl = this.editor.runUrl || this.runUrl;
@@ -61,7 +61,7 @@ class ConnectorProject extends ConnectorBase
                 getTemplates: this.command_getTemplates.bind(this),
                 newProject: this.command_newProject.bind(this),
                 openProject: this.command_openProject.bind(this),
-                saveProject: this.command_saveProject.bind(this),
+                closeProject: this.command_closeProject.bind(this),
                 renameProject: this.command_renameProject.bind(this),
                 deleteProject: this.command_deleteProject.bind(this),
                 newFile: this.command_newFile.bind(this),
@@ -404,6 +404,15 @@ class ConnectorProject extends ConnectorBase
         projectToSend.path = '';
         return this.replySuccess(this.newAnswer( projectToSend ), message, editor);
     }
+    async command_closeProject( parameters, message, editor )
+    {
+        var projectHandle = parameters.handle || this.awi.files.convertToFileName( parameters.name );
+        if ( !this.projects[ projectHandle ] )
+            return this.replyError(this.newError( 'awi:project-not-open', parameters.projectHandle ), message, editor);
+        // Reset project
+        this.projects[ projectHandle ] = null;
+        return this.replySuccess(this.newAnswer( true ), message, editor);
+    }
     async command_saveProject( parameters, message, editor )
     {
         if ( !parameters.handle || !this.projects[ parameters.handle ] )
@@ -492,27 +501,27 @@ class ConnectorProject extends ConnectorBase
         var project = this.projects[ parameters.handle ];
         if ( !this.findFile( project, parameters.path ) )
         {
-            var content = parameters.content || '';
+            var content = parameters.content;
+            var state;
+            if ( parameters.state ) {
+                var state = this.awi.utilities.JSONParse(parameters.state);
+                if (state.isError())
+                    return this.replyError(state, message, editor);
+                state = state.data;
+                content = state.doc;
+                var statePath = this.projects[ parameters.handle ].path + '/.project/' + this.awi.files.convertToFileName( parameters.path ) + '.state';
+                answer = await this.awi.system.writeFile( statePath, parameters.state, { encoding: 'utf8' } );
+                if ( answer.isError() )
+                    return this.replyError(answer, message, editor );
+            }            
             var path = this.projects[ parameters.handle ].path + '/' + parameters.path;
             var answer = await this.awi.system.writeFile( path, content, { encoding: 'utf8' } );
             if ( answer.isError() )
                 return this.replyError(answer, message, editor );
-            var state = parameters.state;
-            if (state)
-            {
-                var statePath = this.projects[ parameters.handle ].path + '/.project/' + this.awi.files.convertToFileName( parameters.path ) + '.state';
-                answer = await this.awi.system.writeFile( statePath, state, { encoding: 'utf8' } );
-                if ( answer.isError() )
-                    return this.replyError(answer, message, editor );
-            }
             var answer = await this.updateFileTree( project );
             if ( answer.isError() )
                 return this.replyError(answer, message, editor );
-            var file = this.findFile( project, parameters.path );
-            var response = this.awi.utilities.copyObject( file );
-            response.content = content;
-            response.state = state;
-            return this.replySuccess(this.newAnswer( response ), message, editor);
+            return this.replySuccess(this.newAnswer( true ), message, editor);
         }
         return this.replyError(this.newError( 'awi:file-exists', parameters.path ), message, editor);
     }
@@ -531,11 +540,13 @@ class ConnectorProject extends ConnectorBase
             var answer = await this.awi.system.readFile( path, { encoding: 'utf8' } );
             if ( answer.isError() )
                 return this.replyError(answer, message, editor );
-            response.content = answer.data;
+            var content = answer.data;
             var statePath = this.projects[ parameters.handle ].path + '/.project/' + this.awi.files.convertToFileName( parameters.path ) + '.state';
             var stateAnswer = await this.awi.system.readFile( statePath, { encoding: 'utf8' } );
             if ( stateAnswer.isSuccess() )
                 response.state = stateAnswer.data;
+            else
+                response.content = content;
             return this.replySuccess(this.newAnswer(response), message, editor);
         }
         return this.replyError(this.newError( 'awi:file-not-found', parameters.path ), message, editor);
@@ -551,20 +562,21 @@ class ConnectorProject extends ConnectorBase
         if ( file )
         {
             var path = this.projects[ parameters.handle ].path + '/' + parameters.path;
-            var answer = await this.awi.system.writeFile( path, parameters.content, { encoding: 'utf8' } );
+            var state = this.awi.utilities.JSONParse(parameters.state);
+            if (state.isError())
+                return this.replyError(state, message, editor);
+            state = state.data;
+            var answer = await this.awi.system.writeFile( path, state.doc, { encoding: 'utf8' } );
             if ( answer.isError() )
                 return this.replyError(answer, message, editor);
-            if (parameters.state)
-            {
-                var statePath = this.projects[ parameters.handle ].path + '/.project/' + this.awi.files.convertToFileName( parameters.path ) + '.state';
-                var stateAnswer = await this.awi.system.writeFile( statePath, parameters.state, { encoding: 'utf8' } );
-                if ( stateAnswer.isError() )
-                    return this.replyError(stateAnswer, message, editor);
-            }
+            var statePath = this.projects[ parameters.handle ].path + '/.project/' + this.awi.files.convertToFileName( parameters.path ) + '.state';
+            var stateAnswer = await this.awi.system.writeFile( statePath, JSON.stringify(state), { encoding: 'utf8' } );
+            if ( stateAnswer.isError() )
+                return this.replyError(stateAnswer, message, editor);
             var answer = await this.updateFileTree( this.projects[ parameters.handle ] );
             if ( answer.isError() )
                 return this.replyError(answer, message, editor);
-            return this.replySuccess(this.newAnswer( file ), message, editor);
+            return this.replySuccess(this.newAnswer(true), message, editor);
         }
         return this.command_newFile( parameters, message, editor );
     }

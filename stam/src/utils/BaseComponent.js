@@ -31,6 +31,7 @@ export const MESSAGES = {
   LAYOUT_READY: 'LAYOUT_READY',
   MODE_CHANGED: 'MODE_CHANGED',
   MODE_CHANGE: 'MODE_CHANGE',
+  CAN_MODE_CHANGE: 'CAN_MODE_CHANGE',
   MODE_ENTER: 'MODE_ENTER',
   MODE_EXIT: 'MODE_EXIT',
   SIDEBAR_LAYOUT_CHANGED: 'SIDEBAR_LAYOUT_CHANGED',
@@ -161,14 +162,10 @@ export default class BaseComponent {
    */
   async handleMessage(messageType, messageData, senderId) {
     if (this.messageMap[messageType])
-    {
-      //console.log(`- ${messageType} received by ${this.componentId}, sent by ${senderId}`/*,messageData.data*/);
       return await this.messageMap[messageType].call(this,messageData.data,senderId);
-    }
-    return false;
+    return undefined;
   }
   async handleInit(data, senderId) {
-    // Initialize the component
     await this.init(data);
     return true;
   }

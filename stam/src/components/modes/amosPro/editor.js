@@ -19,35 +19,23 @@
 import { EditorView } from '@codemirror/view'
 
 class AMOSProEditor {
-  constructor(container) {
-    this.container = container;
+  constructor(root) {
+    this.root = root;
+    this.container = null;
     this.editorView = null;
+    this.className = 'AMOSProEditor'
   }
 
+  // Destroy
+  destroy() {
+    this.container = null;
+    this.editorView = null;
+  }
+  
   // Prepare the container with AMOS Pro-specific styling
-  prepareContainer() {
-    // Create a styled container for AMOS Pro without the header
-    this.container.innerHTML = `
-      <div class="amospro-editor">
-        <div id="amospro-editor-container" class="amospro-content"></div>
-      </div>
-    `;
-    
-    // Add custom styles for AMOS Pro
-    const style = document.createElement('style');
-    style.textContent = `
-      .amospro-editor {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        border: 2px solid #00AAAA;
-      }
-      .amospro-content {
-        flex-grow: 1;
-        overflow: auto;
-      }
-    `;
-    document.head.appendChild(style);
+  prepareContainer(container) {
+    this.container = container;
+    return container;    
   }
   
   // Return the parent element for the editor
@@ -101,8 +89,10 @@ class AMOSProEditor {
     
     return {
       extensions: [amosProTheme],
-      initialDoc: '10 REM AMOS Professional Program\n20 PRINT "Hello from AMOS Pro!"\n30 FOR I=1 TO 10\n40 PRINT "Loop: ";I\n50 NEXT I\n60 END',
-      multi: false
+      initialDoc: 'REM AMOS Professional',
+      multi: false,
+      css: null,
+      defaultFilename: this.root.messages.getMessage('stam:default-filename-amosPro')
     };
   }
   

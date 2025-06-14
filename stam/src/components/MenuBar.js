@@ -31,9 +31,9 @@ import { MESSAGESCOMMANDS } from './MessageManager.js';
 export const MENUCOMMANDS = {
   NEW_PROJECT: 'MENU_NEW_PROJECT',
   OPEN_PROJECT: 'MENU_OPEN_PROJECT',
-  SAVE_PROJECT: 'MENU_SAVE_PROJECT',
-  SAVE_AS_PROJECT: 'MENU_SAVEAS_PROJECT',
   CLOSE_PROJECT: 'MENU_CLOSE_PROJECT',
+  RENAME_PROJECT: 'MENU_RENAME_PROJECT',
+  DELETE_PROJECT: 'MENU_DELETE_PROJECT',
   NEW_FILE: 'MENU_NEW_FILE',
   OPEN_FILE: 'MENU_OPEN_FILE',
   OPEN_WITH: 'MENU_OPEN_WITH',
@@ -97,6 +97,7 @@ class MenuBar extends BaseComponent {
     this.activePopupMenu = null; 
     this.handleInterval = null;
     this.messageMap[MESSAGES.MODE_CHANGE] = this.handleModeChange;
+    this.messageMap[MESSAGES.LAYOUT_READY] = this.handleLayoutReady;
     this.messageMap[SOCKETMESSAGES.CONNECTED] = this.handleConnected;
     this.messageMap[SOCKETMESSAGES.CONNECTEDAWI] = this.handleConnectedAwi;
     this.messageMap[SOCKETMESSAGES.DISCONNECTED] = this.handleDisconnected;
@@ -113,13 +114,13 @@ class MenuBar extends BaseComponent {
       this.setMode(options.mode);
     }
     document.addEventListener('click', this.handleDocumentClick.bind(this));
+  }
 
-    // Update menu items based on connection state
+  async handleLayoutReady() {
     this.handleInterval = setInterval(() => {
       this.updateMenuItems();
     }, 250);
   }
-
   async updateMenuItems() {
     var socketInfo = await this.sendRequestTo('class:SocketSideWindow',SOCKETMESSAGES.GET_CONNECTION_INFO);
     this.menuMap[MENUCOMMANDS.LOGIN].disabled = socketInfo.loggedIn;
@@ -133,8 +134,8 @@ class MenuBar extends BaseComponent {
 
     this.menuMap[MENUCOMMANDS.NEW_PROJECT].disabled = !socketInfo.loggedIn;
     this.menuMap[MENUCOMMANDS.OPEN_PROJECT].disabled = !socketInfo.loggedIn;
-    this.menuMap[MENUCOMMANDS.SAVE_PROJECT].disabled = !socketInfo.loggedIn;
-    this.menuMap[MENUCOMMANDS.SAVE_AS_PROJECT].disabled = !socketInfo.loggedIn;
+    this.menuMap[MENUCOMMANDS.RENAME_PROJECT].disabled = !socketInfo.loggedIn;
+    this.menuMap[MENUCOMMANDS.DELETE_PROJECT].disabled = !socketInfo.loggedIn;
     this.menuMap[MENUCOMMANDS.CLOSE_PROJECT].disabled = !socketInfo.loggedIn;
     this.menuMap[MENUCOMMANDS.NEW_FILE].disabled = !socketInfo.loggedIn;
     this.menuMap[MENUCOMMANDS.OPEN_FILE].disabled = !socketInfo.loggedIn;
@@ -158,6 +159,11 @@ class MenuBar extends BaseComponent {
     if (socketInfo.loggedIn)
     {
       var projectInfo = this.root.project.getProjectInformation();
+      this.menuMap[MENUCOMMANDS.CLOSE_PROJECT].disabled = !projectInfo.projectLoaded;
+      this.menuMap[MENUCOMMANDS.OPEN_PROJECT].disabled = projectInfo.projectLoaded;
+      this.menuMap[MENUCOMMANDS.NEW_PROJECT].disabled = projectInfo.projectLoaded;
+      this.menuMap[MENUCOMMANDS.RENAME_PROJECT].disabled = !projectInfo.projectLoaded;
+      this.menuMap[MENUCOMMANDS.DELETE_PROJECT].disabled = !projectInfo.projectLoaded;
       this.menuMap[MENUCOMMANDS.NEW_FILE].disabled = !projectInfo.projectLoaded;
       this.menuMap[MENUCOMMANDS.OPEN_FILE].disabled = !projectInfo.projectLoaded;
       
@@ -303,13 +309,30 @@ class MenuBar extends BaseComponent {
       modeSelector.appendChild(option);
     });
     
-    modeSelector.addEventListener('change', (e) => {
+    modeSelector.addEventListener('change', async (e) => {
       const newMode = e.target.value;
-      
+      if (newMode==this.currentMode)
+        return;
+
+      // Can we change the mode?
+      var canChange = true;
+      var response = await this.broadcast(MESSAGES.CAN_MODE_CHANGE, { mode: newMode });
+      if (response){  
+        for ( var componentId in response)
+        {
+          if (!response[componentId]){
+            canChange=false;
+            break;
+          }
+        }
+      }
+      if ( !canChange ){
+        e.target.value=this.currentMode;
+        return;
+      }
+
       // Send mode change message DOWN toward the root (StamApp)
-      this.sendMessageToRoot('MODE_CHANGED', {
-        mode: newMode
-      });
+      this.sendMessageToRoot('MODE_CHANGED', { mode: newMode });
     });
     
     container.appendChild(modeSelector);
@@ -433,9 +456,9 @@ class MenuBar extends BaseComponent {
       { name: this.root.messages.getMessage('stam:menu-file'), items: [
         { name: this.root.messages.getMessage('stam:menu-new-project'), command: MENUCOMMANDS.NEW_PROJECT, disabled: false },
         { name: this.root.messages.getMessage('stam:menu-open-project'), command: MENUCOMMANDS.OPEN_PROJECT, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-save-project'), command: MENUCOMMANDS.SAVE_PROJECT, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-save-project-as'), command: MENUCOMMANDS.SAVE_AS_PROJECT, disabled: false },
         { name: this.root.messages.getMessage('stam:menu-close-project'), command: MENUCOMMANDS.CLOSE_PROJECT, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-rename-project'), command: MENUCOMMANDS.RENAME_PROJECT, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-delete-project'), command: MENUCOMMANDS.DELETE_PROJECT, disabled: false },
         '-',
         { name: this.root.messages.getMessage('stam:menu-new-file'), command: MENUCOMMANDS.NEW_FILE, disabled: false },
         { name: this.root.messages.getMessage('stam:menu-open-file'), command: MENUCOMMANDS.OPEN_FILE, disabled: false },

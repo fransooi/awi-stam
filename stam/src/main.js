@@ -187,6 +187,9 @@ class StamApp extends BaseComponent {
       return true;
     }
     
+    // Close current project
+    await this.sendMessageTo('class:ProjectManager', MENUCOMMANDS.CLOSE_PROJECT, { force: true });
+    
     // Send MODE_EXIT message with the old mode
     await this.broadcastUp(MESSAGES.MODE_EXIT, { oldMode: this.currentMode, newMode: mode });
     

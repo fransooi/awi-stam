@@ -19,11 +19,19 @@
 import { EditorView } from '@codemirror/view'
 
 class AMOS13Editor {
-  constructor(container) {
-    this.container = container;
+  constructor(root) {
+    this.root = root;
+    this.container = null;
     this.editorView = null;
+    this.className = 'AMOS13Editor';
   }
 
+  // Destroy
+  destroy() {
+    this.container = null;
+    this.editorView = null;
+  }
+  
   // Prepare the container with AMOS 1.3-specific styling
   prepareContainer() {
     // Create a styled container for AMOS 1.3 without the header
@@ -85,8 +93,10 @@ class AMOS13Editor {
     
     return {
       extensions: [amosTheme],
-      initialDoc: '10 REM AMOS 1.3 Program\n20 PRINT "Hello from AMOS 1.3!"\n30 FOR I=1 TO 10\n40 PRINT "Loop: ";I\n50 NEXT I\n60 END',
-      multi: false
+      initialDoc: 'REM AMOS 1.3 Program',
+      multi: false,
+      css: null,
+      defaultFilename: this.root.messages.getMessage('stam:default-filename-amos1_3')
     };
   }
   

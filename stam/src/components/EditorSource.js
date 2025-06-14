@@ -35,9 +35,10 @@ class EditorSource extends BaseComponent {
     this.activeTabIndex = -1; // Index of the currently active tab
     this.tabsContainer = null; // DOM element for the tabs bar
     this.editorContainer = null; // DOM element containing the editor
+    this.projectLoaded = false; // Project loaded flag
     
     // Single editor instance that will be reused for all tabs
-    this.editorInstance = null; // Mode-specific editor instance
+    this.editor = null; // Mode-specific editor instance
     this.editorView = null; // CodeMirror editor view
     this.modeConfig = null; // Current mode configuration
     
@@ -45,18 +46,24 @@ class EditorSource extends BaseComponent {
     this.messageMap[MESSAGES.MODE_CHANGE] = this.handleModeChange;    
   }
   
-  async init(options) {
+  async init(options={}) {
     if (await super.init(options))
       return;
-    this.currentMode = options?.mode || 'javascript';
+    if (typeof options.mode){
+      this.currentMode = options.mode;
+      await this.loadModeSpecificConfig(this.currentMode);
+    }
+    this.projectLoaded = false;
   }
 
   async destroy() {
-    // Clean up the editor instance if it exists
-    if (this.editorView) {
-      this.editorView.destroy();
-    }
     super.destroy();
+    this.projectLoaded = false;
+    if (this.editor && this.editor.destroy)
+      this.editor.destroy();
+    if (this.editorView)
+      this.editorView.destroy();
+    this.editorView = null;
   }
 
   async render(containerId) {
@@ -91,13 +98,11 @@ class EditorSource extends BaseComponent {
     this.editorContainer.style.backgroundColor = 'var(--container-background)';
     this.container.appendChild(this.editorContainer);
     
-    // Check if the current mode supports multi-file editing
-    const isMultiMode = this.modeConfig?.multi === true;
-    
+    // Replace tab css styles to document
+    this.replaceStyles(this.editorConfig.css);
+
     // Show or hide tabs based on the mode
-    this.tabsContainer.style.display = isMultiMode ? 'flex' : 'none';
-        
-    // Render all tabs and show the active one
+    this.tabsContainer.style.display = this.editorConfig.multi ? 'flex' : 'none';        
     this.renderTabs();
     this.showActiveTab();
     
@@ -119,39 +124,24 @@ class EditorSource extends BaseComponent {
         }
       }
       
-      // Always use the single editor container
-      const targetContainer = this.editorContainer;
-      
       // Create the mode-specific configuration
-      const editorInstance = new ConfigModule.default(targetContainer);
-      
-      // Get configuration from the mode-specific instance  
-      const modeConfig = editorInstance.getConfig ? 
-                        editorInstance.getConfig() : 
-                        { extensions: [], initialDoc: '', multi: true };
+      this.editor = new ConfigModule.default(this.root);
+      this.editorConfig = this.editor.getConfig();
       
       // Ensure multi property exists (default to true if not specified)
-      if (modeConfig.multi === undefined) {
-        modeConfig.multi = true; // Default to multi-file mode for backward compatibility
+      if (this.editorConfig.multi === undefined) {
+        this.editorConfig.multi = true; // Default to multi-file mode for backward compatibility
       }
       
-      // If we've changed from multi to single or vice versa, we may need to update the UI
-      if (this.container && this.tabsContainer && this.modeConfig?.multi !== modeConfig.multi) {
-        this.tabsContainer.style.display = modeConfig.multi ? 'flex' : 'none';
-      }
-                        
       // Get tab css from loaded mode
-      let css;
-      if (editorInstance.getTabCss)
-        css = editorInstance.getTabCss();      
-      else
-        css = this.getDefaultTabCss();
-      return { editorInstance, modeConfig, css };
+      if (!this.editorConfig.css)
+        this.editorConfig.css = this.getDefaultCss();
+      return true;
     } catch (error) {
       if (this.editorContainer) {
         this.editorContainer.innerHTML = `<div class="error-message">Failed to load editor for ${mode} mode</div>`;
       }
-      return { editorInstance: null, modeConfig: { multi: true } }; // Default to multi-file mode on error
+      return false;
     }
   }
   
@@ -163,21 +153,13 @@ class EditorSource extends BaseComponent {
    */
   async createEditor(tab,content) {
     try {     
-      // Clear the container first
       this.editorContainer.innerHTML = '';
       this.editorContainer.style.display = 'flex';
-      
-      // Load mode-specific configuration
-      const configResult = await this.loadModeSpecificConfig(tab.mode);
-      this.editorInstance = configResult.editorInstance;
-      this.modeConfig = configResult.modeConfig;
-      this.multi = configResult.modeConfig.multi;
-      
-      // Prepare container if mode requires it
-      await this.editorInstance.prepareContainer();
+      if (this.editor.prepareContainer)
+        this.editor.prepareContainer(this.editorContainer);
       
       // Replace tab css styles to document
-      this.replaceStyles(configResult.css);
+      this.replaceStyles(this.editorConfig.css);
       
       // Ensure all nested containers have proper width
       Array.from(this.editorContainer.children).forEach(child => {
@@ -194,15 +176,10 @@ class EditorSource extends BaseComponent {
         });
       });
 
-      // Get the parent element for the editor
-      const parent = this.editorInstance.getEditorParent ? 
-                     this.editorInstance.getEditorParent() : 
-                     this.editorContainer;
-      
       // Make sure the parent has proper styling
-      parent.style.flex = '1';
-      parent.style.width = '100%';
-      parent.style.height = '100%';
+      this.editorContainer.style.flex = '1';
+      this.editorContainer.style.width = '100%';
+      this.editorContainer.style.height = '100%';
       
       // Create base extensions that all editors need
       const baseExtensions = [
@@ -218,7 +195,7 @@ class EditorSource extends BaseComponent {
       ];
       
       // Combine base extensions with mode-specific extensions
-      const allExtensions = [...baseExtensions, ...(this.modeConfig.extensions || [])];
+      const allExtensions = [...baseExtensions, ...(this.editorConfig.extensions || [])];
       
       // If we already have an editor view, destroy it first
       if (this.editorView) {
@@ -236,18 +213,12 @@ class EditorSource extends BaseComponent {
       // Create editor view
       this.editorView = new EditorView({
         state: startState,
-        parent: parent
-      });
-      
-      // Let the mode-specific instance know about the editor view
-      this.editorInstance.setEditorView(this.editorView);
-      
-      // Update editor content
-      this.setContent(content);
-      
-      // Focus the editor immediately
+        parent: this.editorContainer
+      });      
+      this.editor.setEditorView(this.editorView);      
       this.editorView.focus();
-      
+
+      tab.state = this.editorView.state;
       return this.editorView;
     } catch (error) {
       this.editorContainer.innerHTML = `<div class="error-message">Failed to create editor: ${error.message}</div>`;
@@ -273,22 +244,24 @@ class EditorSource extends BaseComponent {
    * Saves the current state of the editor to the specified tab
    * @param {number} tabIndex - Index of the tab to save state for
    */
-  getTab(indexOrTab)
+  getTab(indexOrNameOrTab)
   { 
-    indexOrTab = indexOrTab || this.activeTabIndex;
-    if (typeof indexOrTab === 'number') {
-      if (indexOrTab < 0 || indexOrTab >= this.tabs.length || !this.editorView) {
+    indexOrNameOrTab = indexOrNameOrTab || this.activeTabIndex;
+    if (typeof indexOrNameOrTab === 'number') {
+      if (indexOrNameOrTab < 0 || indexOrNameOrTab >= this.tabs.length || !this.editorView) {
         return null;
       }  
-      return this.tabs[indexOrTab];
+      return this.tabs[indexOrNameOrTab];
     }
-    if (typeof indexOrTab === 'string') {
+    if (typeof indexOrNameOrTab === 'string') {
       for (let i = 0; i < this.tabs.length; i++) {
-        if (this.tabs[i].name === indexOrTab) {
+        if (this.tabs[i].name === indexOrNameOrTab) {
           return this.tabs[i];
         }
       }
     }
+    if ( typeof indexOrNameOrTab === 'object' && indexOrNameOrTab.id )
+      return indexOrNameOrTab;
     return null;
   }
   getTabFromPath(path)
@@ -319,28 +292,49 @@ class EditorSource extends BaseComponent {
     }
     this.renderTabs();
   }
-  saveTabState(tabIndex) {
+  getTabFileInfo(tabIndex)
+  {
+    const tab = this.getTab(tabIndex);
+    if (!tab)
+      return null;
+    const fileInfo = {
+      name: tab.name,
+      path: tab.path,
+      mode: tab.mode,
+      modified: tab.modified,
+      state: JSON.stringify(tab.state.toJSON()),
+      scrollTop: tab.scrollTop,
+      scrollLeft: tab.scrollLeft,
+    };
+    return fileInfo;
+  }
+  updateTabState(tabIndex) {
     const tab = this.getTab(tabIndex);
     if (!tab)
       return;
     
-    tab.state = this.editorView.state; //EditorState.fromJSON(this.editorView.state.toJSON());
+    tab.state = this.editorView.state; //
     tab.scrollTop = this.editorView.scrollDOM.scrollTop;
     tab.scrollLeft = this.editorView.scrollDOM.scrollLeft;
   }
-  loadTabState(tabIndex,content)
+  loadTabState(tabIndex,state,content)
   {
     const tab = this.getTab(tabIndex);
     if (!tab)
       return;
+    state = state || tab.state;
 
     this.editorView.scrollDOM.scrollTop = tab.scrollTop;
     this.editorView.scrollDOM.scrollLeft = tab.scrollLeft;
-    if (tab.state)
+    if (state)
+    {
       this.editorView.setState(tab.state);
+      if (content)
+        this.setContent(content);
+    }
     else
     {
-      const extensions = this.modeConfig?.extensions || [];
+      const extensions = this.editorConfig?.extensions || [];
       const freshState = EditorState.create({
         doc: content || '',
         extensions
@@ -348,6 +342,32 @@ class EditorSource extends BaseComponent {
       this.editorView.setState(freshState);
     }
   }  
+  getActiveTab() {
+    return this.getTab(this.activeTabIndex);
+  }
+  getContent() {
+    this.updateTabState(this.activeTabIndex);
+    const tab = this.getTab(this.activeTabIndex);
+    if (tab)
+        return tab.state.doc.toString();
+    return '';
+  }
+  setContent(content) {
+    const tab = this.getTab(this.activeTabIndex);
+    if (tab) {
+      const transaction = this.editorView.state.update({
+        changes: {
+          from: 0,
+          to: this.editorView.state.doc.length,
+          insert: content
+        }
+      });
+      this.updateTabState(this.activeTabIndex);
+      this.editorView.dispatch(transaction);
+      return;
+    }
+  }
+  
 
   /**
    * Updates the content of the existing editor without recreating it
@@ -382,14 +402,16 @@ class EditorSource extends BaseComponent {
     }
   }
 
+  ////////////////////////////////////////////////////////////////////////////
   // Tab management methods
+  ////////////////////////////////////////////////////////////////////////////
   async addNewTab(oldTab = {},content='') {
     var state = null;
     if (oldTab.state){
       state=oldTab.state;
     }
     const tab = {
-      id: `tab-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      id: this.root.utilities.getUniqueIdentifier( {}, 'editor' + this.currentMode ),
       name: oldTab.name || 'Untitled',
       path: oldTab.path || null,
       mode: oldTab.mode || this.currentMode,
@@ -400,15 +422,11 @@ class EditorSource extends BaseComponent {
       scrollLeft: 0,
     };
     
-    // Add to tabs array
     this.tabs.push(tab);    
     if (this.activeTabIndex !== -1 && this.editorView) 
-      this.saveTabState(this.activeTabIndex);      
+      this.updateTabState(this.activeTabIndex);      
     this.activeTabIndex = this.tabs.length - 1;      
     await this.createEditor(tab,content);
-    this.saveTabState(this.activeTabIndex);
-
-    // Update the tabs UI
     this.renderTabs();    
     setTimeout(() => {
       this.editorView.focus();
@@ -432,75 +450,79 @@ class EditorSource extends BaseComponent {
       scrollLeft: tab.scrollLeft,
     };
     return tabObj;    
-  }
-  getTabData(tabIndex) {
-    const tab = this.getTab(tabIndex);
-    if (!tab)
-      return null;
-    return {
-      name: tab.name,
-      path: tab.path,
-      mode: tab.mode,
-      state: tab.state,
-      content: tab.state.doc.toString(),
-      scrollTop: tab.scrollTop,
-      scrollLeft: tab.scrollLeft,
-    };
-  }
-  
-  /**
-   * Removes a tab
-   * @param {number} index - Index of the tab to remove
-   */
-  async removeTab(index) {
-    const tab = this.getTab(index);
-    if (!tab)
-      return;
-    
-    if (!tab.justLoaded && tab.modified) {
-      var answer = await this.root.alerts.showCustom('stam:save-changes', 'stam:file-modified', ['stam:no|negative', 'stam:yes|positive'], 'question');
-      if (answer === 1)
-      {
-        this.saveTabState(index);
-        var data = this.getTabData(index);
-        var response = await this.sendRequestTo('class:ProjectManager', PROJECTMESSAGES.SAVE_FILE, data);
-        if (response && !response.error)
-          this.closeTab(index);
-      }
-    } else {
-      this.closeTab(index);
-    }
-  }
-  
-  /**
-   * Closes the tab and removes it from the tabs array
-   * @param {number} index - Index of the tab to close
-   */
+  }    
   closeTab(index) {
-    // Remove from the tabs array
     this.tabs.splice(index, 1);
-    
-    // Update active tab index if needed
     if (this.tabs.length === 0) {
       this.activeTabIndex = -1;
-      if (this.editorView) {
-        this.updateEditorContent('');
-      }
+      if (this.editorView)
+        this.editorView.destroy();
     } else if (index === this.activeTabIndex) {
       this.activeTabIndex = Math.min(index, this.tabs.length - 1);
-      this.showActiveTab();
     } else if (index < this.activeTabIndex) {
       this.activeTabIndex--;
     }
-    
-    // Update the tabs UI
     this.renderTabs();
+    this.showActiveTab();
+    return true;
   }
-     
-  /**
-   * Switches to a specific tab
-   * @param {number} index - Index of the tab to switch to
-   */
+  async closeAllTabs() {
+    while (this.tabs.length > 0) {
+      this.closeTab(0);
+    }
+    return true;
+  }
+  async closeAndSaveAllTabs() {
+    for(var i=this.tabs.length-1;i>=0;i--)
+    {
+      if (!await this.ensureTabSaved(i))
+        return false;
+    }
+    await this.closeAllTabs();
+    return true;
+  }
+  async saveAllTabs() {
+    for(var i=this.tabs.length-1;i>=0;i--)
+    {
+      if (!await this.ensureTabSaved(i))
+        return false;
+    }
+    return true;
+  }
+  async ensureTabSaved(index){
+    const tab = this.getTab(index);
+    if (!tab)
+      return false;
+    
+    if (!tab.justLoaded && tab.modified) 
+    {
+      var answer = await this.root.alert.showCustom('stam:save-changes', 'stam:file-modified', ['stam:no|negative', 'stam:yes|positive'], 'question');
+      if (answer === 1)
+      {
+        this.updateTabState(index);
+        var fileInfo = this.getTabFileInfo(index);
+        var forceDialog = false;
+        if (!fileInfo.path)
+        {
+          fileInfo.path = this.editorConfig.defaultFilename;
+          fileInfo.name = this.editorConfig.defaultFilename;
+          forceDialog = true;
+        }
+        var response = await this.sendRequestTo('class:ProjectManager', PROJECTMESSAGES.SAVE_FILE, { fileInfo: fileInfo, forceDialog: forceDialog });
+        if (response.error)          
+          return false;
+        return true;
+      }
+      return false;
+    }
+    return true;
+  }
+  async closeTabIfSaved(index) {
+    if (!await this.ensureTabSaved(index))
+      return false;
+    this.closeTab(index);
+    return true;
+  }  
   async switchToTab(index) {
     const tab = this.getTab(index);
     if (!tab)
@@ -508,7 +530,7 @@ class EditorSource extends BaseComponent {
     
     // Save the state of the current tab before switching
     if (this.activeTabIndex >= 0) 
-      this.saveTabState(this.activeTabIndex);
+      this.updateTabState(this.activeTabIndex);
     
     // Update the active tab index
     this.activeTabIndex = index;
@@ -520,10 +542,6 @@ class EditorSource extends BaseComponent {
     // Show the newly active tab
     await this.showActiveTab();
   }
-  
-  /**
-   * Shows the currently active tab by updating the editor content and state
-   */
   async showActiveTab() {   
     // Check if we have a valid active tab
     const tab = this.getTab(this.activeTabIndex);
@@ -544,10 +562,6 @@ class EditorSource extends BaseComponent {
       }, 50);
     }
   }
-  
-  /**
-   * Renders the tab bar with all open tabs
-   */
   renderTabs() {
     if (!this.tabsContainer) return;
     
@@ -580,7 +594,7 @@ class EditorSource extends BaseComponent {
       tabElement.addEventListener('click', (e) => {
         // If the click was on the close button, remove the tab
         if (e.target === closeBtn) {
-          this.removeTab(index);
+          this.closeTabIfSaved(index);
         } else {
           // Otherwise switch to this tab
           this.switchToTab(index);
@@ -590,15 +604,18 @@ class EditorSource extends BaseComponent {
       this.tabsContainer.appendChild(tabElement);
     });
     
-    // Add a "new tab" button
-    const newTabBtn = document.createElement('div');
-    newTabBtn.className = 'editor-new-tab';
-    newTabBtn.textContent = '+';
-    newTabBtn.addEventListener('click', () => this.addNewTab({ setActive:true }));
-   this.tabsContainer.appendChild(newTabBtn);
+    // Add a "new tab" button if project loaded
+    if (this.projectLoaded)
+    {
+      const newTabBtn = document.createElement('div');
+      newTabBtn.className = 'editor-new-tab';
+      newTabBtn.textContent = '+';
+      newTabBtn.addEventListener('click', () => this.addNewTab({ setActive:true }));
+      this.tabsContainer.appendChild(newTabBtn);
+    }
   }
 
-  getDefaultTabCss() {
+  getDefaultCss() {
     return `
       .editor-new-tab {
         padding: 2px 12px;
@@ -667,36 +684,6 @@ class EditorSource extends BaseComponent {
     `;
   }
   
-  /**
-   * Gets the currently active tab object
-   * @returns {Object|null} The active tab object or null if none
-   */
-  getActiveTab() {
-    return this.getTab(this.activeTabIndex);
-  }
-  
-  // Core editor methods that all modes can use
-  getContent() {
-    const activeTab = this.getActiveTab();
-    if (activeTab)
-        return this.editorView.state.doc.toString();
-    return '';
-  }
-  setContent(content) {
-    const activeTab = this.getActiveTab();
-    if (activeTab) {
-      const transaction = this.editorView.state.update({
-        changes: {
-          from: 0,
-          to: this.editorView.state.doc.length,
-          insert: content
-        }
-      });
-      this.editorView.dispatch(transaction);
-      return;
-    }
-  }
-  
   // Message handlers  
   /**
    * Handle mode change by preserving tab state per mode and switching between them
@@ -713,12 +700,16 @@ class EditorSource extends BaseComponent {
       activeTab: this.getActiveTab()
     };
   }
+  async handleCanModeChange(data, sender){
+    return await this.handleCanCloseProject(data, sender);
+  }
   async handleModeChange(data, sender) {
     if (!data.mode) return false;
     
     const newMode = data.mode;
-    if (this.currentMode === newMode) return true; // Already in this mode
-    
+    if (this.currentMode === newMode && !data.force) return true; // Already in this mode
+
+
     // Store the current mode's state before switching
     if (!this.modeStates) {
       this.modeStates = {};
@@ -728,122 +719,96 @@ class EditorSource extends BaseComponent {
     this.modeStates[this.currentMode] = {
       tabs: this.tabs.map(tab => {
         // For the active tab, get the latest content from the editor
-        let content = tab.content;
-        if (this.activeTabIndex !== -1 && this.tabs[this.activeTabIndex] === tab && this.editorView) {
-          content = this.editorView.state.doc.toString();
-          // Update the tab's content to ensure it's saved correctly
-          tab.content = content;
+        if (this.activeTabIndex !== -1 && this.tabs[this.activeTabIndex] === tab) {
+          this.updateTabState(this.activeTabIndex);
         }
-        
-        // Create a deep copy of the tab object
         return { ...tab };
       }),
       activeTabIndex: this.activeTabIndex
     };
     
     // Destroy current interface
-    if (this.editorView) {
-      this.editorView.destroy();
-      this.editorView = null;
-    }
-    
-    // Clear the editor container
-    if (this.editorContainer) {
-      this.editorContainer.innerHTML = '';
-    }
+    this.destroy();
     
     // Update the current mode
     this.currentMode = newMode;
     
     // Load the mode-specific editor configuration
-    const { editorInstance, modeConfig } = await this.loadModeSpecificConfig(newMode);
-    this.editorInstance = editorInstance;
-    this.modeConfig = modeConfig;
-    
+    await this.loadModeSpecificConfig(this.currentMode);
+   
     // Show or hide tabs based on the mode's multi property
     if (this.tabsContainer) {
-      this.tabsContainer.style.display = modeConfig?.multi ? 'flex' : 'none';
+      this.tabsContainer.style.display = this.editorConfig.multi ? 'flex' : 'none';
     }
     
     // Check if we have previously saved state for this mode
-    if (this.modeStates[newMode]) {
-      // Restore the saved state
-      const savedState = this.modeStates[newMode];
+    if (this.modeStates[this.currentMode]) {
+      const savedState = this.modeStates[this.currentMode];
       this.tabs = savedState.tabs.map(tab => ({ ...tab })); // Deep copy
-      this.activeTabIndex = savedState.activeTabIndex;
-      
-      // Render the tabs
-      this.renderTabs();
-      
-      // Show the active tab
-      this.showActiveTab();
+      this.activeTabIndex = savedState.activeTabIndex;      
     } else {
-      // Create a new display with one tab for this mode
       this.tabs = [];
       this.activeTabIndex = -1;
-      
-      await this.addNewTab({
-        name: 'Untitled',
-        mode: newMode,
-        setActive: true
-      });
     }
-    
+    this.render();
+    return true;
+  }
+  
+  async handleLayoutReady(data, sender) {
+    if (this.editorConfig == null)
+      await this.loadModeSpecificConfig({ mode: this.currentMode, force: true });    
     return true;
   }
   
   async handleFileLoaded(file, sender) {
-    if (file.content) {
-      // Check if the current mode supports multi-file editing
-      const isMultiMode = this.modeConfig?.multi !== false;
-      
-      if (isMultiMode) {
-
-        // If already open-> activate
-        for (let index = 0; index < this.tabs.length; index++) {
-          if (this.tabs[index].path === file.path) {
-            this.switchToTab(index);
-            return true;
-          }
-        }
-        
-        // Create a new tab with the file content in multi-file mode
-        var data = {
-          name: file.name,
-          path: file.path,
-          state: file.state,
-          mode: this.currentMode,
-          setActive: true
-        }
-        await this.addNewTab(data, file.content);
-        return true;
-      } else {
-        // In single-file mode, replace the content of the current tab
-        const activeTab = this.getActiveTab();
-        if (activeTab) {
-          // Update the editor content
-          this.updateEditorContent(file.content);
-          
-          // Update the tab info
-          activeTab.name = file.name || 'Untitled';
-          activeTab.path = file.path || null;
-          activeTab.mode = this.currentMode;
-          activeTab.modified = false;
-          
-          // Render the tabs (even though they might be hidden)
-          this.renderTabs();
-        }
+    // Check if the current mode supports multi-file editing
+    if (this.editorConfig.multi) 
+    {
+      // If already open-> activate
+      for (let index = 0; index < this.tabs.length; index++) {
+        if (this.tabs[index].path === file.path) {
+          this.switchToTab(index);
+          return true;
+        } 
       }
+        
+      // Create a new tab with the file content in multi-file mode
+      var content = file.content;
+      if (file.state)
+        content = file.state.doc.toString();
+      var data = {
+        name: file.name,
+        path: file.path,
+        state: file.state,
+        mode: this.currentMode,
+        setActive: true
+      }
+      await this.addNewTab(data, content);
       return true;
+    } 
+    // In single-file mode, replace the content of the current tab
+    const activeTab = this.getActiveTab();
+    if (activeTab) {
+      // Update the tab info
+      activeTab.name = file.name || 'Untitled';
+      activeTab.path = file.path || null;
+      activeTab.mode = this.currentMode;
+      activeTab.state = file.state;
+      activeTab.modified = false;
+      this.loadTabState(activeTab, activeTab.state);          
+
+      // Render the tabs (even though they might be hidden)
+      this.renderTabs();
     }
-    return false;
+    return true;
   }
   
   async handleSaveAsFile(data, sender) {
     var tab = this.getActiveTab();
     if (tab) {
-      this.saveTabState(tab);
-      var response = await this.sendMessageTo('class:ProjectManager', PROJECTMESSAGES.SAVE_FILE, { fileInfo: tab, forceDialog: true });
+      this.updateTabState(tab);
+      var fileInfo = this.getTabFileInfo(tab);
+      var response = await this.sendRequestTo('class:ProjectManager', PROJECTMESSAGES.SAVE_FILE, { fileInfo: fileInfo, forceDialog: true });
       if (response && !response.error)
       {
         // Mark the file as saved
@@ -861,8 +826,10 @@ class EditorSource extends BaseComponent {
   async handleSaveFile(data, sender) {    
     var tab = this.getActiveTab();
     if (tab) {
-      this.saveTabState(tab);
-      var response = await this.sendRequestTo('class:ProjectManager', PROJECTMESSAGES.SAVE_FILE, { fileInfo: data, forceDialog: false });
+      this.updateTabState(tab);
+      var fileInfo = this.getTabFileInfo(tab);
+      var forceDialog = fileInfo.path == '';
+      var response = await this.sendRequestTo('class:ProjectManager', PROJECTMESSAGES.SAVE_FILE, { fileInfo: fileInfo, forceDialog: forceDialog });
       if (response && !response.error)
       {
         // Mark the file as saved
@@ -876,195 +843,69 @@ class EditorSource extends BaseComponent {
   }
   
   async handleRunProgram(data, sender) {
-    // Get the current content from the editor
-    const content = this.getContent();
-    
-    // Get the active tab info
-    const activeTab = this.getActiveTab();
-    if (activeTab) {
-      // Send a message to the parent component with the content to run
-      this.sendMessage(MESSAGES.RUN_PROGRAM_CONTENT, { 
-        content,
-        name: activeTab.name,
-        path: activeTab.path,
-        mode: activeTab.mode
-      });
-      return true;
+
+    // Force save all tabs
+    var saved = await this.saveAllTabs();
+    if (!saved)
+      return false;
+
+    var running = null;
+    if (this.editor.run)
+    {
+      running = await this.editor.run();
     }
-    
-    // Fallback if no active file
-    this.sendMessage(MESSAGES.RUN_PROGRAM_CONTENT, { content });
+    else
+    {
+      var tested = await this.sendRequestTo('class:ProjectManager', PROJECTMESSAGES.TEST_PROGRAM);
+      if (tested.error){
+        await this.root.alert.showError(tested.error);
+        return false;
+      }
+
+      this.setInterface('run');
+      var running = await this.sendRequestTo('class:ProjectManager', PROJECTMESSAGES.RUN_PROGRAM);
+      if (running.error) {
+        await this.root.alert.showError(running.error);
+        this.setInterface('source');
+        return false;
+      }
+    }
     return true;
   }
   
   async handleDebugProgram(data, sender) {
-    // Get the current content from the editor
-    const content = this.getContent();
-    
-    // Get the active tab info
-    const activeTab = this.getActiveTab();
-    if (activeTab) {
-      // Send a message to the parent component with the content to debug
-      this.sendMessage(MESSAGES.DEBUG_PROGRAM_CONTENT, { 
-        content,
-        name: activeTab.name,
-        path: activeTab.path,
-        mode: activeTab.mode
-      });
-      return true;
+    // Force save all tabs
+    var saved = await this.saveAllTabs();
+    if (!saved)
+      return false;
+
+    var debugging = null;
+    if (this.editor.debug)
+    {
+      debugging = await this.editor.debug();
     }
-    
-    // Fallback if no active file
-    this.sendMessage(MESSAGES.DEBUG_PROGRAM_CONTENT, { content });
+    else
+    {
+      this.setInterface('debug');
+      var debugging = await this.sendRequestTo('class:ProjectManager', PROJECTMESSAGES.DEBUG_PROGRAM);
+      if (debugging.error){
+        await this.root.alert.showError(debugging.error);
+        this.setInterface('source');
+        return false;
+      }
+      this.setInterface('debugging', debugging)
+    }
     return true;
   }
 
   async handleCloseFile(data, sender) {
     if (this.activeTabIndex >= 0 && this.activeTabIndex < this.tabs.length) 
-      return this.removeTab(this.activeTabIndex);
+      return this.closeTabIfSaved(this.activeTabIndex);
     return false;
   }
   
   
-  /**
-   * Shows a dialog asking the user what to do with modified file
-   * @param {Object} tab - The tab object with file information
-   * @returns {Promise} - Resolves with 'save', 'discard', or 'cancel'
-   */
-  async showFileModifiedDialog(tab) {
-    return new Promise((resolve) => {
-      // Create the modal overlay
-      const overlay = document.createElement('div');
-      overlay.className = 'modal-overlay';
-      overlay.style.position = 'fixed';
-      overlay.style.top = '0';
-      overlay.style.left = '0';
-      overlay.style.width = '100%';
-      overlay.style.height = '100%';
-      overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-      overlay.style.display = 'flex';
-      overlay.style.justifyContent = 'center';
-      overlay.style.alignItems = 'center';
-      overlay.style.zIndex = '9999';
-      
-      // Create the dialog box
-      const dialog = document.createElement('div');
-      dialog.className = 'file-modified-dialog';
-      dialog.style.backgroundColor = '#2a2a2a';
-      dialog.style.border = '1px solid #444';
-      dialog.style.borderRadius = '4px';
-      dialog.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
-      dialog.style.padding = '20px';
-      dialog.style.width = '400px';
-      dialog.style.maxWidth = '90%';
-      dialog.style.display = 'flex';
-      dialog.style.flexDirection = 'column';
-      dialog.style.gap = '15px';
-      
-      // Create dialog header
-      const header = document.createElement('div');
-      header.style.borderBottom = '1px solid #444';
-      header.style.paddingBottom = '10px';
-      
-      const title = document.createElement('h2');
-      title.textContent = 'Save Changes?';
-      title.style.margin = '0';
-      title.style.color = '#eee';
-      title.style.fontSize = '18px';
-      
-      header.appendChild(title);
-      dialog.appendChild(header);
-      
-      // Create dialog content
-      const content = document.createElement('div');
-      
-      const message = document.createElement('p');
-      message.textContent = `The file "${tab.name}" has unsaved changes. Do you want to save them?`;
-      message.style.color = '#ddd';
-      message.style.margin = '0 0 15px 0';
-      
-      content.appendChild(message);
-      dialog.appendChild(content);
-      
-      // Create dialog buttons
-      const buttonsContainer = document.createElement('div');
-      buttonsContainer.style.display = 'flex';
-      buttonsContainer.style.justifyContent = 'flex-end';
-      buttonsContainer.style.gap = '10px';
-      
-      // Function to close the dialog and clean up
-      const closeDialog = () => {
-        document.body.removeChild(overlay);
-      };
-      
-      // Save button
-      const saveButton = document.createElement('button');
-      saveButton.textContent = this.root.messages.getMessage('stam:yes');
-      saveButton.style.padding = '8px 16px';
-      saveButton.style.backgroundColor = '#4a6da7';
-      saveButton.style.color = '#fff';
-      saveButton.style.border = 'none';
-      saveButton.style.borderRadius = '4px';
-      saveButton.style.cursor = 'pointer';
-      saveButton.addEventListener('click', () => {
-        closeDialog();
-        resolve('save');
-      });
-      
-      // Discard button
-      const discardButton = document.createElement('button');
-      discardButton.textContent = this.root.messages.getMessage('stam:no');
-      discardButton.style.padding = '8px 16px';
-      discardButton.style.backgroundColor = '#a74a4a';
-      discardButton.style.color = '#fff';
-      discardButton.style.border = 'none';
-      discardButton.style.borderRadius = '4px';
-      discardButton.style.cursor = 'pointer';
-      discardButton.addEventListener('click', () => {
-        closeDialog();
-        resolve('discard');
-      });
-      
-      // Cancel button
-      const cancelButton = document.createElement('button');
-      cancelButton.textContent = this.root.messages.getMessage('stam:cancel');
-      cancelButton.style.padding = '8px 16px';
-      cancelButton.style.backgroundColor = '#3a3a3a';
-      cancelButton.style.color = '#ddd';
-      cancelButton.style.border = 'none';
-      cancelButton.style.borderRadius = '4px';
-      cancelButton.style.cursor = 'pointer';
-      cancelButton.addEventListener('click', () => {
-        closeDialog();
-        resolve('cancel');
-      });
-      
-      // Add buttons in order: Cancel, Discard, Save
-      buttonsContainer.appendChild(cancelButton);
-      buttonsContainer.appendChild(discardButton);
-      buttonsContainer.appendChild(saveButton);
-      dialog.appendChild(buttonsContainer);
-      
-      // Add keyboard navigation
-      overlay.tabIndex = 0;
-      overlay.focus();
-      overlay.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-          closeDialog();
-          resolve('cancel');
-        }
-      });
-      
-      // Add the dialog to the document body
-      document.body.appendChild(overlay);
-      overlay.appendChild(dialog);
-      
-      // Focus the save button by default
-      saveButton.focus();
-    });
-  }
-  
-  /**
+ /**
    * Apply layout information to restore the Editor state
    * @param {Object} layoutInfo - Layout information for this Editor
    */
@@ -1108,18 +949,40 @@ class EditorSource extends BaseComponent {
     this.renderTabs();
     this.layoutLoaded = true;
   }
-  
-  async handleProjectLoaded(data, sender) {
+
+  async handleCanCloseProject(data, sender) 
+  {
+    return await this.saveAllTabs(data, sender);
+  }
+  async handleProjectClosed(data, sender) 
+  {
+    if ( this.projectLoaded )
+    {
+      var closed = this.closeAllTabs();
+      if (closed)
+      {
+        this.destroy();
+        this.render()
+      }
+    }
+  }  
+  async handleProjectLoaded(data, sender) 
+  {
+    this.projectLoaded = true;
+    this.tabs = [];
+    this.activeTabIndex = -1;
+    this.renderTabs();
+    
+    // Reload all files...
     if (this.layoutLoaded)
     {
       for (let i = 0; i < this.tabs.length; i++) {
         const tab = this.tabs[i];
         if (tab.path)
         {
-          var file = await this.sendMessageTo('class:ProjectManager', PROJECTMESSAGES.RELOAD_FILE, { path: tab.path });          
-          tab.state = file.state;
-          tab.state.content = file.content;
-          tab.justLoaded = true;
+          var answer = await this.sendRequestTo('class:ProjectManager', MENUCOMMANDS.OPEN_FILE, { path: tab.path });
+          if ( answer.error )
+            break;
         }
       }
       this.layoutLoaded = false;

@@ -50,7 +50,7 @@ class ConnectorClassroomClient extends ConnectorBase
         if ( this. awi.awi.classroom && this.awi.awi.classroom.className == 'ConnectorClassroomServer' ) 
         {
             this.editor = args.editor;
-            this.userName = this.editor.userName;
+            this.userName = args.userName;
     
             var data = {};
             data[ this.token ] = {

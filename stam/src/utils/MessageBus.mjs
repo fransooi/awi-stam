@@ -185,7 +185,8 @@ class MessageBus {
    */
   async sendMessage(targetID, message, data = {}, senderId = null) {
     targetID = this.checkTargetId(targetID);
-    if ( targetID){
+  
+    if (targetID){
       if (Array.isArray(targetID)) {
         if (targetID.length > 1) {
           for (const id of targetID) {
@@ -203,7 +204,7 @@ class MessageBus {
       const { handler, context } = this.addressedHandlers.get(targetID);      
       return await handler.call(context, message, data, senderId);
     }    
-    return false;
+    return undefined;
   }
 
   /**
@@ -300,10 +301,10 @@ class MessageBus {
 
     // Send to all components starting from the root, excluding the sender
     const self = this;
+    var answers = {};    
+    var count = 0;
     const sendToAllExceptSender = async function(componentId)
-    {      
-      let count = 0;
-      
+    {            
       // Send to this component
       var toSend;
       if(includeCallback)
@@ -312,13 +313,14 @@ class MessageBus {
         toSend=(componentId !== fromComponentId);
       if (toSend) 
       {
-        const delivered = await self.sendMessage(componentId, message.type || 'MESSAGE', {
+        const response = await self.sendMessage(componentId, message.type || 'MESSAGE', {
           ...message,
           from: fromComponentId
         }, fromComponentId);
         
-        if (delivered) {
+        if (typeof response !== 'undefined') {
           count++;
+          answers[componentId]=response;
         }
       }
       
@@ -327,13 +329,12 @@ class MessageBus {
       if (component && component.children.length) {
         for(var child=0; child<component.children.length; child++)
         {
-          count += await sendToAllExceptSender(component.children[child]);
+          await sendToAllExceptSender(component.children[child]);
         }
       }
-      return count;
     };    
-
-    return await sendToAllExceptSender(fromComponentId);
+    await sendToAllExceptSender(fromComponentId);
+    return answers;
   };
   
   /**

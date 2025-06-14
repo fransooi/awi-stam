@@ -8,6 +8,8 @@ export const SERVERCOMMANDS = {
     OPEN_PROJECT: 'project:openProject',
     SAVE_PROJECT: 'project:saveProject',
     CLOSE_PROJECT: 'project:closeProject',
+    RENAME_PROJECT: 'project:renameProject',
+    DELETE_PROJECT: 'project:deleteProject',
     LOAD_FILE: 'project:loadFile',
     SAVE_FILE: 'project:saveFile',
     DELETE_FILE: 'project:deleteFile',

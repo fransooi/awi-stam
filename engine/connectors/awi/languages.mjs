@@ -24,7 +24,7 @@ class ConnectorLanguages extends ConnectorBase
     async registerEditor(args, basket, control)
     {
         this.editor = args.editor;
-        this.userName = this.editor.userName;
+        this.userName = args.userName;
 
         var data = {};
         data[ this.token ] = {

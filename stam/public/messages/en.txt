@@ -90,6 +90,12 @@ stam:filter-video                         Video: *.mp4,*.webm,*.ogv,*.mov,*.avi,
 stam:filter-text                          Text: *.txt,*.md,*.json,*.csv,*.tsv,*.xml,*.yaml,*.yml
 stam:filter-three                         Three.js: *.js,*.mjs,*.ts,*.tsx,*.json,*.html,*.css,*.md,*.txt
 stam:filter-assembly                      Assembly: *.asm,*.inc,*.bin
+stam:default-filename-phaser              untitled.js
+stam:default-filename-javascript          untitled.js
+stam:default-filename-stos                untitled.bas
+stam:default-filename-amos1_3             untitled.amos
+stam:default-filename-amosPro             untitled.amos
+stam:default-filename-c64                 untitled.bas
 stam:no-files-available                   No files available
 stam:file-exists-overwrite                File already exists, overwrite?
 stam:filename                             Filename
@@ -104,8 +110,8 @@ stam:project-dialog-box                   Project dialog box
 stam:menu-file                            File
 stam:menu-new-project                     New Project
 stam:menu-open-project                    Open Project
-stam:menu-save-project                    Save Project
-stam:menu-save-project-as                 Save Project As
+stam:menu-rename-project                  Rename Project
+stam:menu-delete-project                  Delete Project
 stam:menu-close-project                   Close Project
 stam:menu-new-file                        New File
 stam:menu-open-file                       Open File

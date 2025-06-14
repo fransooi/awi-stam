@@ -21,26 +21,19 @@ import { oneDark } from '@codemirror/theme-one-dark'
 import { EditorState } from '@codemirror/state'
 
 class PhaserEditor {
-  constructor(container) {
-    this.container = container;
+  constructor(root) {
+    this.root = root;
+    this.container = null;
+    this.editorView = null;
+    this.className = 'PhaserEditor';
+  }
+
+  // Destroy
+  destroy() {
+    this.container = null;
     this.editorView = null;
   }
 
-  // Prepare the container with appropriate styling
-  prepareContainer() {
-    // Create a styled container for the editor without the header
-    this.container.innerHTML = `
-      <div class="phaser-editor">
-        <div id="phaser-editor-container" class="phaser-content"></div>
-      </div>
-    `;
-  }
-  
-  // Return the parent element for the editor
-  getEditorParent() {
-    return document.getElementById('phaser-editor-container');
-  }
-  
   // Provide configuration for the main Editor component
   getConfig() {
     return {
@@ -50,10 +43,18 @@ class PhaserEditor {
         EditorState.allowMultipleSelections.of(true)
       ],
       initialDoc: '// Phaser Editor',
-      multi: true
+      multi: true,
+      css: null,
+      defaultFilename: this.root.messages.getMessage('stam:default-filename-phaser')
     };
   }
-
+  
+  // Prepare the container for a new editor
+  prepareContainer(container) {
+    this.container = container;
+    return container;    
+  }
+  
   // Store the editor view instance
   setEditorView(editorView) {
     this.editorView = editorView;

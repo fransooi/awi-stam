@@ -28,6 +28,7 @@ class ProjectSideWindow extends SideWindow {
     this.projectTree = [];
     this.messageMap[MESSAGES.CONTENT_HEIGHT_CHANGED] = this.handleContentHeightChanged;
     this.messageMap[PROJECTMESSAGES.PROJECT_LOADED] = this.handleProjectLoaded;
+    this.messageMap[PROJECTMESSAGES.PROJECT_CLOSED] = this.handleProjectClosed;
     this.messageMap[PROJECTMESSAGES.NEW_FILE_ADDED] = this.handleNewFileAdded;
     this.messageMap[PROJECTMESSAGES.FILE_DELETED] = this.handleFileDeleted;
     this.messageMap[PROJECTMESSAGES.FILE_RENAMED] = this.handleFileRenamed;
@@ -367,6 +368,12 @@ getFilePath(item) {
    * Handle a set project message
    * @param {Object} project - The project object
    */
+  async handleProjectClosed(data, sender) {
+    this.project = null;
+    this.setTitle('Project Files');
+    this.populateProjectTree();
+  }
+  
   async handleProjectLoaded(project, sender) {
     this.project = project;
     

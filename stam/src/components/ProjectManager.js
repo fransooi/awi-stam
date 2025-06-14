@@ -30,6 +30,7 @@ export const PROJECTMESSAGES = {
   UPDATE_PROJECT: 'PROJECT_UPDATE_PROJECT',
   PROJECT_LOADED: 'PROJECT_LOADED',
   CLOSE_PROJECT: 'PROJECT_CLOSE_PROJECT',
+  CAN_CLOSE_PROJECT: 'PROJECT_CAN_CLOSE_PROJECT',
   FILE_LOADED: 'PROJECT_FILE_LOADED',
   RELOAD_FILE: 'PROJECT_RELOAD_FILE',
   SAVE_FILE: 'PROJECT_SAVE_FILE',
@@ -41,6 +42,7 @@ export const PROJECTMESSAGES = {
   CHOOSE_PROJECT: 'PROJECT_CHOOSE_PROJECT',
   FILE_RENAMED: 'PROJECT_FILE_RENAMED',
   FILE_DELETED: 'PROJECT_FILE_DELETED',
+  PROJECT_CLOSED: 'PROJECT_CLOSED',
 };
 
 class ProjectManager extends BaseComponent {
@@ -58,6 +60,7 @@ class ProjectManager extends BaseComponent {
     this.messageMap[SOCKETMESSAGES.DISCONNECTED] = this.handleDisconnected;
     this.messageMap[MENUCOMMANDS.NEW_PROJECT] = this.handleNewProject;
     this.messageMap[MENUCOMMANDS.OPEN_PROJECT] = this.handleOpenProject;
+    this.messageMap[MENUCOMMANDS.CLOSE_PROJECT] = this.handleCloseProject;
     this.messageMap[MENUCOMMANDS.OPEN_FILE] = this.handleOpenFile;
     this.messageMap[PROJECTMESSAGES.RELOAD_FILE] = this.handleReloadFile;
     this.messageMap[MENUCOMMANDS.NEW_FILE] = this.handleNewFile;
@@ -176,7 +179,6 @@ class ProjectManager extends BaseComponent {
     var hostFile = this.findFile(file.path);
     if (hostFile)
     {
-      hostFile.content = file.content;
       hostFile.state = file.state;
     }   
   }
@@ -340,20 +342,30 @@ class ProjectManager extends BaseComponent {
     })
   }
 
-  async handleReloadFile(data, senderId){
-    if (!await this.checkProject() || !data.path)
-      return null;
+  async handleCloseProject(data, senderId) {
+    if ( !await this.sendRequestTo( 'class:SocketSideWindow', SOCKETMESSAGES.ENSURE_CONNECTED, {}))
+      return false;
 
-    data.mode = this.root.currentMode;
-    data.handle = this.project.handle;
-    var file = await this.root.server.loadFile(data)
-    if ( file )
-    {
-      this.setFileContent(file);
+    if (!this.project)
+      return false;
+    if (!data.force){
+      var canClose = await this.sendRequestTo( 'class:Editor', PROJECTMESSAGES.CAN_CLOSE_PROJECT, {});
+      if (!canClose)
+        return false;
     }
-    return file;
+
+    var answer = await this.root.server.closeProject({ mode: this.root.currentMode, handle: this.project.handle });
+    if (answer.error)
+    {
+      this.root.alert.showError(answer.error);
+      return false;
+    }
+    this.projectName = null;
+    this.project = null;
+    this.broadcast(PROJECTMESSAGES.PROJECT_CLOSED, {});
+    return true;
   }
-  
+
   async handleOpenFile(data, senderId) {
     if ( !await this.checkProject())
       return;
@@ -367,30 +379,33 @@ class ProjectManager extends BaseComponent {
           this.handleOpenFile(response, senderId);
         }
       });
-      return;
+      return false;
     }
 
     // If the file is already loaded-> display it
     var file = this.findFile(data.path);
-    if (file && file.content)
+    if (file && file.state)
     {
       this.broadcast(PROJECTMESSAGES.FILE_LOADED, file);
-      return;
+      return true;
     }
 
     // Load the file from the server
     data.mode = this.root.currentMode;
     data.handle = this.project.handle;
-    this.root.server.loadFile(data)
-    .then((file) => {
-      if (file && !file.error)
+    var file = await this.root.server.loadFile(data)
+    if (file)
+    {
+      if ( !file.error )
       {
         if (file.state)
           file.state=EditorState.fromJSON(JSON.parse(file.state));
-        this.setFileContent(file);
         this.broadcast(PROJECTMESSAGES.FILE_LOADED, file);
+        return true;
       }
-    })
+    }
+    this.root.alert.showError(file.error);
+    return false;
   }
   
   async handleNewFile(data, senderId) {
@@ -402,7 +417,6 @@ class ProjectManager extends BaseComponent {
     {
       data.path = path;
       data.name = this.root.utilities.getFileNameFromPath(path);
-      data.content = '';
       data.mode = this.root.currentMode;
       data.handle = this.project.handle;
       var newFile = await this.handleSaveFile(data, senderId);
@@ -420,7 +434,6 @@ class ProjectManager extends BaseComponent {
    * @param {Object} data - File data to save
    * @param {string} data.path - File path
    * @param {string} data.name - File name
-   * @param {string} data.content - File content
    * @param {string} data.mode - File mode
    * @param {string} data.handle - Project handle
    * @param {string} senderId - ID of the sender
@@ -442,14 +455,10 @@ class ProjectManager extends BaseComponent {
     }
     
     // Save the file on the server
-    var state = null;
-    if (data.fileInfo.state)
-      state = JSON.stringify(data.fileInfo.state.toJSON());
     var infoSave = {
       path: newPath,
       name: newName,
-      content: data.fileInfo.content,
-      state: state,
+      state: data.fileInfo.state,
       mode: this.root.currentMode,
       handle: this.project.handle
     };
@@ -460,7 +469,11 @@ class ProjectManager extends BaseComponent {
     }
     if (oldPath != infoSave.path)
     {
-      this.broadcast(PROJECTMESSAGES.NEW_FILE_ADDED, infoSave);
+      if ( !this.findFile(this.project, infoSave.path) )
+      {
+        this.addNewFile(infoSave);
+        this.broadcast(PROJECTMESSAGES.NEW_FILE_ADDED, infoSave);
+      }
     }
     return infoSave;
   }
@@ -1031,7 +1044,7 @@ class ProjectManager extends BaseComponent {
         <div class="form-group file-list-container">
           <div class="form-group-row">
             <label for="path-label">${this.root.messages.getMessage('stam:path-label')}</label>
-            <input type="text" id="path-input" class="form-control" value="/${currentPath}">
+            <input type="text" id="path-input" class="form-control" value="${currentPath}">
           </div>
           <div class="file-list" id="file-list">
             ${this._renderFileList(this.project?.files || [], userFilter, currentFilterId)}
@@ -1044,13 +1057,26 @@ class ProjectManager extends BaseComponent {
       var pathInput = content.querySelector('#path-input');
       pathInput?.addEventListener('input', (e) => {
         currentPath = e.target.value.trim();
-        if (currentPath.startsWith('/'))
-          currentPath = currentPath.substring(1);
-        var parts = currentPath.split('/');
-        currentFilename = parts[parts.length - 1];
-        dialog.buttons[ 1 ].element.disabled = !currentFilename.trim();
+        if (currentPath.length > 0)
+        {
+          if (currentPath.startsWith('/'))
+            currentPath = currentPath.substring(1);
+          if (currentPath.length > 0)
+          {
+            var parts = currentPath.split('/');
+            if (parts.length > 0)
+              currentFilename = parts[parts.length - 1];
+            else
+              currentFilename = '';
+          }
+          dialog.buttons[ 1 ].element.disabled = !currentFilename.trim();
+        }
+        else
+        {
+          currentFilename = '';
+          dialog.buttons[ 1 ].element.disabled = true;
+        }
       });
-
      
       // Set up event listeners for file and folder selection
       content.addEventListener('click', (e) => {
@@ -1076,7 +1102,7 @@ class ProjectManager extends BaseComponent {
           currentPath = filePath;
         }
         dialog.buttons[ 1 ].element.disabled = !currentFilename.trim();
-        pathInput.value = '/' + currentPath;
+        pathInput.value = currentPath;
         e.stopPropagation();
       });
 
@@ -1120,10 +1146,11 @@ class ProjectManager extends BaseComponent {
               if (fileExists) {
                 // Show confirmation dialog for overwrite
                 if (confirm(this.root.messages.getMessage('stam:file-exists-overwrite', { fileName: currentPath }))) {
-                  resolve(currentPath);
                   dialog.close();
+                  resolve(currentPath);
                 }
               } else {
+                dialog.close();
                 resolve(currentPath);
               }
             }

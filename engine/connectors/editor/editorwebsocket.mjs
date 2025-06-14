@@ -59,7 +59,7 @@ class EditorWebSocket extends EditorBase
             return this.replyError( answer, message );
         if ( !this.connectors )
         {
-            var answer = await this.awi.callConnectors( [ 'registerEditor', '*', { editor: this } ] );
+            var answer = await this.awi.callConnectors( [ 'registerEditor', '*', { editor: this, userName: options.accountInfo.userName } ] );
             if ( !answer.isSuccess() )
                 return this.replyError( this.newError( 'awi:cannot-register-editor', { value: options.accountInfo.userName } ), message );
             this.connectors=answer.data;
@@ -76,7 +76,8 @@ class EditorWebSocket extends EditorBase
             if (!answer.isSuccess())
                 return this.replyError( answer, message );
         }
-        this.replySuccess(this.newAnswer({userName: answer.data.accountInfo.userName, handle: this.handle, connectToAwi: answer.data.accountInfo.connectToAwi, key: answer.data.accountInfo.key}), message );
+        this.userName = options.accountInfo.userName;
+        this.replySuccess(this.newAnswer({userName: this.userName, handle: this.handle, connectToAwi: answer.data.accountInfo.connectToAwi, key: answer.data.accountInfo.key}), message );
         this.waitForInput();
         return true;
     }
