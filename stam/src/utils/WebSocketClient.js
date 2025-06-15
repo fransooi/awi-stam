@@ -239,7 +239,7 @@ class WebSocketClient {
    */
   send(command,parameters) {
     const message = {
-      id: this.root.utilities.getUniqueIdentifier( {}, 'message', 0, '', 3, 3 ),
+      id: this.root.utilities.getUniqueIdentifier( {}, 'message', 'YYYYMMDD_hhmmss' ),
       handle: this.handle,
       command: command,
       parameters: parameters
@@ -268,7 +268,7 @@ class WebSocketClient {
   requestResponse(command, parameters) {
     return new Promise((resolve, reject) => {
       const message = {
-        id: this.root.utilities.getUniqueIdentifier( {}, 'message', 0, '', 3, 3 ),
+        id: this.root.utilities.getUniqueIdentifier( {}, 'message', 'YYYYMMDD_hhmmss' ),
         handle: this.handle,
         command: command,
         parameters: parameters

@@ -34,6 +34,7 @@ export const MENUCOMMANDS = {
   CLOSE_PROJECT: 'MENU_CLOSE_PROJECT',
   RENAME_PROJECT: 'MENU_RENAME_PROJECT',
   DELETE_PROJECT: 'MENU_DELETE_PROJECT',
+  DOWNLOAD_PROJECT: 'MENU_DOWNLOAD_PROJECT',
   NEW_FILE: 'MENU_NEW_FILE',
   OPEN_FILE: 'MENU_OPEN_FILE',
   OPEN_WITH: 'MENU_OPEN_WITH',
@@ -121,6 +122,91 @@ class MenuBar extends BaseComponent {
       this.updateMenuItems();
     }, 250);
   }
+
+  getDefaultMenuStructure() {
+    var menu = [
+      { name: this.root.messages.getMessage('stam:menu-awi'), items: [
+        { name: this.root.messages.getMessage('stam:menu-login'), command: MENUCOMMANDS.LOGIN, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-logout'), command: MENUCOMMANDS.LOGOUT, disabled: true },
+        { name: this.root.messages.getMessage('stam:menu-create-account'), command: MENUCOMMANDS.CREATE_ACCOUNT, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-edit-account'), command: MENUCOMMANDS.EDIT_ACCOUNT, disabled: true },
+        '-',
+        { name: this.root.messages.getMessage('stam:menu-connect-awi-device'), command: MENUCOMMANDS.CONNECT_AWI_DEVICE, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-display-awi-devices'), command: MENUCOMMANDS.DISPLAY_AWI_DEVICES, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-remove-awi-device'), command: MENUCOMMANDS.REMOVE_AWI_DEVICE, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-about-awi-server'), command: MENUCOMMANDS.ABOUT_AWI_SERVER, disabled: false }
+      ] },
+      { name: this.root.messages.getMessage('stam:menu-file'), items: [
+        { name: this.root.messages.getMessage('stam:menu-new-project'), command: MENUCOMMANDS.NEW_PROJECT, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-open-project'), command: MENUCOMMANDS.OPEN_PROJECT, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-close-project'), command: MENUCOMMANDS.CLOSE_PROJECT, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-rename-project'), command: MENUCOMMANDS.RENAME_PROJECT, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-delete-project'), command: MENUCOMMANDS.DELETE_PROJECT, disabled: false },
+        
+        { name: this.root.messages.getMessage('stam:menu-download-project'), command: MENUCOMMANDS.DOWNLOAD_PROJECT, disabled: false },
+        '-',
+        { name: this.root.messages.getMessage('stam:menu-new-file'), command: MENUCOMMANDS.NEW_FILE, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-open-file'), command: MENUCOMMANDS.OPEN_FILE, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-save-file'), command: MENUCOMMANDS.SAVE_FILE, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-save-file-as'), command: MENUCOMMANDS.SAVE_AS_FILE, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-close-file'), command: MENUCOMMANDS.CLOSE_FILE, disabled: false }
+      ] },
+      { name: this.root.messages.getMessage('stam:menu-edit'), items: [
+        { name: this.root.messages.getMessage('stam:menu-undo'), command: MENUCOMMANDS.UNDO, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-redo'), command: MENUCOMMANDS.REDO, disabled: false },
+        '-',
+        { name: this.root.messages.getMessage('stam:menu-cut'), command: MENUCOMMANDS.CUT, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-copy'), command: MENUCOMMANDS.COPY, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-paste'), command: MENUCOMMANDS.PASTE, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-find'), command: MENUCOMMANDS.FIND, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-replace'), command: MENUCOMMANDS.REPLACE, disabled: false },
+        '-',
+        { name: this.root.messages.getMessage('stam:menu-theme'), command: MENUCOMMANDS.THEME, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-language'), command: MESSAGESCOMMANDS.CHOOSE_LANGUAGE, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-preferences'), command: MENUCOMMANDS.PREFERENCES, disabled: false }
+      ] },
+      { name: this.root.messages.getMessage('stam:menu-view'), items: [
+        { name: this.root.messages.getMessage('stam:menuleft-sidebar'), items: [
+          { name: this.root.messages.getMessage('stam:menu-view-project-window'), command: MENUCOMMANDS.VIEW_LEFT_PROJECT_WINDOW, disabled: false },
+          { name: this.root.messages.getMessage('stam:menu-view-output-window'), command: MENUCOMMANDS.VIEW_LEFT_OUTPUT_WINDOW, disabled: false },
+          { name: this.root.messages.getMessage('stam:menu-view-server-window'), command: MENUCOMMANDS.VIEW_LEFT_SERVER_WINDOW, disabled: false },
+          { name: this.root.messages.getMessage('stam:menu-view-awi-window'), command: MENUCOMMANDS.VIEW_LEFT_AWI_WINDOW, disabled: false },
+          { name: this.root.messages.getMessage('stam:menu-view-tv-window'), command: MENUCOMMANDS.VIEW_LEFT_TV_WINDOW, disabled: false }
+        ] },
+        { name: this.root.messages.getMessage('stam:menuright-sidebar'), items: [
+          { name: this.root.messages.getMessage('stam:menu-view-project-window'), command: MENUCOMMANDS.VIEW_RIGHT_PROJECT_WINDOW, disabled: false },
+          { name: this.root.messages.getMessage('stam:menu-view-output-window'), command: MENUCOMMANDS.VIEW_RIGHT_OUTPUT_WINDOW, disabled: false },
+          { name: this.root.messages.getMessage('stam:menu-view-server-window'), command: MENUCOMMANDS.VIEW_RIGHT_SERVER_WINDOW, disabled: false },
+          { name: this.root.messages.getMessage('stam:menu-view-awi-window'), command: MENUCOMMANDS.VIEW_RIGHT_AWI_WINDOW, disabled: false },
+          { name: this.root.messages.getMessage('stam:menu-view-tv-window'), command: MENUCOMMANDS.VIEW_RIGHT_TV_WINDOW, disabled: false },
+        ] },
+        { name: this.root.messages.getMessage('stam:menu-menubar'), command: MENUCOMMANDS.VIEW_MENUBAR, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-statusbar'), command: MENUCOMMANDS.VIEW_STATUSBAR, disabled: false },
+        '-',
+        { name: this.root.messages.getMessage('stam:menu-savelayout'), command: MENUCOMMANDS.SAVE_LAYOUT, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-loadlayout'), command: MENUCOMMANDS.LOAD_LAYOUT, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-resetlayout'), command: MENUCOMMANDS.RESET_LAYOUT, disabled: false }
+      ] }, 
+      { name: this.root.messages.getMessage('stam:menu-classroom'), items: [
+        { name: this.root.messages.getMessage('stam:menu-create-classroom'), command: CLASSROOMCOMMANDS.CREATE_CLASSROOM, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-join-classroom'), command: CLASSROOMCOMMANDS.JOIN_CLASSROOM, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-leave-classroom'), command: CLASSROOMCOMMANDS.LEAVE_CLASSROOM, disabled: false }
+      ] },
+      { name: this.root.messages.getMessage('stam:menu-help'), items: [
+        { name: this.root.messages.getMessage('stam:menu-help-documentation'), command: MENUCOMMANDS.DOCUMENTATION, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-help-about'), command: MENUCOMMANDS.ABOUT, disabled: false },
+      ] }
+    ];
+    // Add debug menu if in debug mode
+    if (this.root.debug != 0)
+      menu.push(
+        { name: this.root.messages.getMessage('stam:menu-help-debug'), items: [
+          { name: this.root.messages.getMessage('stam:menu-help-debug-debug1'), command: MENUCOMMANDS.DEBUG1, disabled: false },
+          { name: this.root.messages.getMessage('stam:menu-help-debug-debug2'), command: MENUCOMMANDS.DEBUG2, disabled: false }
+        ] } );
+    return menu;
+  }
+
   async updateMenuItems() {
     var socketInfo = await this.sendRequestTo('class:SocketSideWindow',SOCKETMESSAGES.GET_CONNECTION_INFO);
     this.menuMap[MENUCOMMANDS.LOGIN].disabled = socketInfo.loggedIn;
@@ -134,9 +220,10 @@ class MenuBar extends BaseComponent {
 
     this.menuMap[MENUCOMMANDS.NEW_PROJECT].disabled = !socketInfo.loggedIn;
     this.menuMap[MENUCOMMANDS.OPEN_PROJECT].disabled = !socketInfo.loggedIn;
+    this.menuMap[MENUCOMMANDS.CLOSE_PROJECT].disabled = !socketInfo.loggedIn;
     this.menuMap[MENUCOMMANDS.RENAME_PROJECT].disabled = !socketInfo.loggedIn;
     this.menuMap[MENUCOMMANDS.DELETE_PROJECT].disabled = !socketInfo.loggedIn;
-    this.menuMap[MENUCOMMANDS.CLOSE_PROJECT].disabled = !socketInfo.loggedIn;
+    this.menuMap[MENUCOMMANDS.DOWNLOAD_PROJECT].disabled = !socketInfo.loggedIn;
     this.menuMap[MENUCOMMANDS.NEW_FILE].disabled = !socketInfo.loggedIn;
     this.menuMap[MENUCOMMANDS.OPEN_FILE].disabled = !socketInfo.loggedIn;
     this.menuMap[MENUCOMMANDS.SAVE_FILE].disabled = !socketInfo.loggedIn;
@@ -164,6 +251,7 @@ class MenuBar extends BaseComponent {
       this.menuMap[MENUCOMMANDS.NEW_PROJECT].disabled = projectInfo.projectLoaded;
       this.menuMap[MENUCOMMANDS.RENAME_PROJECT].disabled = !projectInfo.projectLoaded;
       this.menuMap[MENUCOMMANDS.DELETE_PROJECT].disabled = !projectInfo.projectLoaded;
+      this.menuMap[MENUCOMMANDS.DOWNLOAD_PROJECT].disabled = !projectInfo.projectLoaded;
       this.menuMap[MENUCOMMANDS.NEW_FILE].disabled = !projectInfo.projectLoaded;
       this.menuMap[MENUCOMMANDS.OPEN_FILE].disabled = !projectInfo.projectLoaded;
       
@@ -440,87 +528,6 @@ class MenuBar extends BaseComponent {
     return loginButton;
   }
   
-  getDefaultMenuStructure() {
-    var menu = [
-      { name: this.root.messages.getMessage('stam:menu-awi'), items: [
-        { name: this.root.messages.getMessage('stam:menu-login'), command: MENUCOMMANDS.LOGIN, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-logout'), command: MENUCOMMANDS.LOGOUT, disabled: true },
-        { name: this.root.messages.getMessage('stam:menu-create-account'), command: MENUCOMMANDS.CREATE_ACCOUNT, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-edit-account'), command: MENUCOMMANDS.EDIT_ACCOUNT, disabled: true },
-        '-',
-        { name: this.root.messages.getMessage('stam:menu-connect-awi-device'), command: MENUCOMMANDS.CONNECT_AWI_DEVICE, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-display-awi-devices'), command: MENUCOMMANDS.DISPLAY_AWI_DEVICES, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-remove-awi-device'), command: MENUCOMMANDS.REMOVE_AWI_DEVICE, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-about-awi-server'), command: MENUCOMMANDS.ABOUT_AWI_SERVER, disabled: false }
-      ] },
-      { name: this.root.messages.getMessage('stam:menu-file'), items: [
-        { name: this.root.messages.getMessage('stam:menu-new-project'), command: MENUCOMMANDS.NEW_PROJECT, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-open-project'), command: MENUCOMMANDS.OPEN_PROJECT, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-close-project'), command: MENUCOMMANDS.CLOSE_PROJECT, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-rename-project'), command: MENUCOMMANDS.RENAME_PROJECT, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-delete-project'), command: MENUCOMMANDS.DELETE_PROJECT, disabled: false },
-        '-',
-        { name: this.root.messages.getMessage('stam:menu-new-file'), command: MENUCOMMANDS.NEW_FILE, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-open-file'), command: MENUCOMMANDS.OPEN_FILE, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-save-file'), command: MENUCOMMANDS.SAVE_FILE, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-save-file-as'), command: MENUCOMMANDS.SAVE_AS_FILE, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-close-file'), command: MENUCOMMANDS.CLOSE_FILE, disabled: false }
-      ] },
-      { name: this.root.messages.getMessage('stam:menu-edit'), items: [
-        { name: this.root.messages.getMessage('stam:menu-undo'), command: MENUCOMMANDS.UNDO, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-redo'), command: MENUCOMMANDS.REDO, disabled: false },
-        '-',
-        { name: this.root.messages.getMessage('stam:menu-cut'), command: MENUCOMMANDS.CUT, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-copy'), command: MENUCOMMANDS.COPY, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-paste'), command: MENUCOMMANDS.PASTE, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-find'), command: MENUCOMMANDS.FIND, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-replace'), command: MENUCOMMANDS.REPLACE, disabled: false },
-        '-',
-        { name: this.root.messages.getMessage('stam:menu-theme'), command: MENUCOMMANDS.THEME, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-language'), command: MESSAGESCOMMANDS.CHOOSE_LANGUAGE, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-preferences'), command: MENUCOMMANDS.PREFERENCES, disabled: false }
-      ] },
-      { name: this.root.messages.getMessage('stam:menu-view'), items: [
-        { name: this.root.messages.getMessage('stam:menuleft-sidebar'), items: [
-          { name: this.root.messages.getMessage('stam:menu-view-project-window'), command: MENUCOMMANDS.VIEW_LEFT_PROJECT_WINDOW, disabled: false },
-          { name: this.root.messages.getMessage('stam:menu-view-output-window'), command: MENUCOMMANDS.VIEW_LEFT_OUTPUT_WINDOW, disabled: false },
-          { name: this.root.messages.getMessage('stam:menu-view-server-window'), command: MENUCOMMANDS.VIEW_LEFT_SERVER_WINDOW, disabled: false },
-          { name: this.root.messages.getMessage('stam:menu-view-awi-window'), command: MENUCOMMANDS.VIEW_LEFT_AWI_WINDOW, disabled: false },
-          { name: this.root.messages.getMessage('stam:menu-view-tv-window'), command: MENUCOMMANDS.VIEW_LEFT_TV_WINDOW, disabled: false }
-        ] },
-        { name: this.root.messages.getMessage('stam:menuright-sidebar'), items: [
-          { name: this.root.messages.getMessage('stam:menu-view-project-window'), command: MENUCOMMANDS.VIEW_RIGHT_PROJECT_WINDOW, disabled: false },
-          { name: this.root.messages.getMessage('stam:menu-view-output-window'), command: MENUCOMMANDS.VIEW_RIGHT_OUTPUT_WINDOW, disabled: false },
-          { name: this.root.messages.getMessage('stam:menu-view-server-window'), command: MENUCOMMANDS.VIEW_RIGHT_SERVER_WINDOW, disabled: false },
-          { name: this.root.messages.getMessage('stam:menu-view-awi-window'), command: MENUCOMMANDS.VIEW_RIGHT_AWI_WINDOW, disabled: false },
-          { name: this.root.messages.getMessage('stam:menu-view-tv-window'), command: MENUCOMMANDS.VIEW_RIGHT_TV_WINDOW, disabled: false },
-        ] },
-        { name: this.root.messages.getMessage('stam:menu-menubar'), command: MENUCOMMANDS.VIEW_MENUBAR, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-statusbar'), command: MENUCOMMANDS.VIEW_STATUSBAR, disabled: false },
-        '-',
-        { name: this.root.messages.getMessage('stam:menu-savelayout'), command: MENUCOMMANDS.SAVE_LAYOUT, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-loadlayout'), command: MENUCOMMANDS.LOAD_LAYOUT, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-resetlayout'), command: MENUCOMMANDS.RESET_LAYOUT, disabled: false }
-      ] }, 
-      { name: this.root.messages.getMessage('stam:menu-classroom'), items: [
-        { name: this.root.messages.getMessage('stam:menu-create-classroom'), command: CLASSROOMCOMMANDS.CREATE_CLASSROOM, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-join-classroom'), command: CLASSROOMCOMMANDS.JOIN_CLASSROOM, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-leave-classroom'), command: CLASSROOMCOMMANDS.LEAVE_CLASSROOM, disabled: false }
-      ] },
-      { name: this.root.messages.getMessage('stam:menu-help'), items: [
-        { name: this.root.messages.getMessage('stam:menu-help-documentation'), command: MENUCOMMANDS.DOCUMENTATION, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-help-about'), command: MENUCOMMANDS.ABOUT, disabled: false },
-      ] }
-    ];
-    // Add debug menu if in debug mode
-    if (this.root.debug != 0)
-      menu.push(
-        { name: this.root.messages.getMessage('stam:menu-help-debug'), items: [
-          { name: this.root.messages.getMessage('stam:menu-help-debug-debug1'), command: MENUCOMMANDS.DEBUG1, disabled: false },
-          { name: this.root.messages.getMessage('stam:menu-help-debug-debug2'), command: MENUCOMMANDS.DEBUG2, disabled: false }
-        ] } );
-    return menu;
-  }
 
   makeMenuMap(menuBase) {
     var menuMap = {};

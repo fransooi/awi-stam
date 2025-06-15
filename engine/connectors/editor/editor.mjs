@@ -58,7 +58,7 @@ class ConnectorEditor extends ConnectorBase
         if ( !editor )
             return;
     
-        var handle = this.awi.utilities.getUniqueIdentifier( this.editors, handleName, 0 );
+        var handle = this.awi.utilities.getUniqueIdentifier( this.editors, handleName );
         editor.handle = handle;
         this.editors[ handle ] = editor;
         this.current = editor;		

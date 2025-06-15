@@ -368,10 +368,10 @@ class MessageManager extends BaseComponent {
         return prompt;
 
     var count = 0;
-    var start = prompt.lastIndexOf( '~{' );
+    var start = prompt.lastIndexOf( '${' );
     while( start >= 0 )
     {
-        var end = prompt.indexOf( '}~', start );
+        var end = prompt.indexOf( '}', start );
         if ( end >= start )
         {
             var key = prompt.substring( start + 2, end );
@@ -386,7 +386,7 @@ class MessageManager extends BaseComponent {
                     break;
             }
             if ( current && typeof current[ key ] != 'undefined' )
-                prompt = prompt.substring( 0, start ) + variables[ key ] + prompt.substring( end + 2 );
+                prompt = prompt.substring( 0, start ) + variables[ key ] + prompt.substring( end + 1 );
             else
                 prompt = prompt.substring( 0, start ) + 'ERROR! missing: ' + key + '!' + prompt.substring( end + 2 );
         }

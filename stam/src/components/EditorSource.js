@@ -40,7 +40,7 @@ class EditorSource extends BaseComponent {
     // Single editor instance that will be reused for all tabs
     this.editor = null; // Mode-specific editor instance
     this.editorView = null; // CodeMirror editor view
-    this.modeConfig = null; // Current mode configuration
+    this.editorConfig = null; // Current mode configuration
     
     // Set up message handlers
     this.messageMap[MESSAGES.MODE_CHANGE] = this.handleModeChange;    
@@ -496,7 +496,8 @@ class EditorSource extends BaseComponent {
     
     if (!tab.justLoaded && tab.modified) 
     {
-      var answer = await this.root.alert.showCustom('stam:save-changes', 'stam:file-modified', ['stam:no|negative', 'stam:yes|positive'], 'question');
+      var message = this.root.messages.getMessage('stam:file-modified', { name: tab.name });
+      var answer = await this.root.alert.showCustom('stam:save-changes', message, ['stam:no|negative', 'stam:yes|positive'], 'question');
       if (answer === 1)
       {
         this.updateTabState(index);
@@ -903,7 +904,12 @@ class EditorSource extends BaseComponent {
       return this.closeTabIfSaved(this.activeTabIndex);
     return false;
   }
-  
+
+  async handleGetDefaultFilename(data, sender) {
+    if ( this.editorConfig )
+      return this.editorConfig.defaultFilename;
+    return 'untitled.js';
+  }
   
  /**
    * Apply layout information to restore the Editor state

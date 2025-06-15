@@ -1,4 +1,4 @@
-stam:message-not-found                    Message not found (~{id}~)
+stam:message-not-found                    Message not found (${id})
 stam:delete-classroom                     Delete a Classroom
 stam:untitled-classroom                   Untitled classroom
 stam:classroom-description                Description
@@ -101,7 +101,7 @@ stam:file-exists-overwrite                File already exists, overwrite?
 stam:filename                             Filename
 stam:path-label                           Path: 
 stam:save-changes                         Save changes?
-stam:file-modified                        File has been modified, do you want to save the changes?
+stam:file-modified                        File ${name} has been modified, do you want to save the changes?
 stam:location                             Location
 stam:no-directories-available             No directories available
 stam:selected                             Selected
@@ -112,6 +112,7 @@ stam:menu-new-project                     New Project
 stam:menu-open-project                    Open Project
 stam:menu-rename-project                  Rename Project
 stam:menu-delete-project                  Delete Project
+stam:menu-download-project                Download Project
 stam:menu-close-project                   Close Project
 stam:menu-new-file                        New File
 stam:menu-open-file                       Open File
@@ -324,7 +325,13 @@ stam:password-invalid                     Password is invalid, 8 characters mini
 stam:passwords-do-not-match               Passwords do not match
 stam:create-account-dialog                Create STAM Account
 stam:update-awi-account                   Update AWI Account
-
-
-
+stam:rename-project-title                 Rename Project
+stam:new-name                             New name
+stam:delete-project-title                 Delete Project
+stam:delete-project-message               Are you sure you want to delete the ${name} project?
+stam:download-and-delete                  Download and delete
+stam:delete                               Delete
+stam:project-downloading                  Downloading project...
+stam:project-not-opened                   Project not opened
+stam:new-file-title                       New File
 

@@ -31,11 +31,29 @@ class ConnectorFiles extends ConnectorBase
 		this.className = 'ConnectorFiles';
         this.group = 'system';
 		this.version = '0.5';
+		this.tempDirectoryPath = null;
 	}
 	async connect( options )
 	{
 		super.connect( options, true );
         return this.setConnected( true );
+	}
+	async getTempPath( base, extension )
+	{
+		if ( !this.tempDirectoryPath )
+		{
+			this.tempDirectoryPath = this.awi.configuration.getDataPath() + '/temp';
+			await this.createDirectories( this.tempDirectoryPath );
+		}
+		for ( var n = 0; n < 10; n++ )
+		{
+			var name = base + '_' + Math.floor( Math.random() * 100000 ) + '.' + extension;
+			var path = this.tempDirectoryPath + '/' + name;
+			var answer = this.awi.system.exists( path );
+			if ( !answer.isSuccess() )
+				return this.newAnswer( path );
+		}
+        return this.newError( 'awi:file-error' );
 	}
 	async getPaths( file )
 	{
@@ -77,18 +95,6 @@ class ConnectorFiles extends ConnectorBase
 	isFileOfType( path, type )
 	{
 		return type = this.getFileType( path );
-	}
-	async getTempPath( base, extension )
-	{
-		for ( var n = 0; n < 10; n++ )
-		{
-			var name = base + '_' + Math.floor( Math.random() * 100000 ) + '.' + extension;
-			var path = this.tempDirectoryPath + '/' + name;
-			var answer = this.awi.system.exists( path );
-			if ( !answer.isSuccess() )
-				return this.newAnswer( path );
-		}
-        return this.newError( 'awi:file-error' );
 	}
 	async loadIfExist( path, options )
 	{

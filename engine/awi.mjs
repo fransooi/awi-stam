@@ -87,7 +87,7 @@ export default class Awi extends Base
         }
 		async function createBubble( type, group, name, config = {}, options = {} )
 		{
-			config.key = self.utilities.getUniqueIdentifier( idCheck, group + '_' + name, count++ );
+			config.key = self.utilities.getUniqueIdentifier( idCheck, group + '_' + name, '', count++ );
             idCheck[ config.key ] = true;
 
             var text = type + '-' + group + '-' + name;

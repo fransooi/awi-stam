@@ -1152,7 +1152,7 @@ class ClassroomManager extends BaseComponent {
 
       // Classroom URL
       const urlGroup = document.createElement('div');
-      var classroomId = this.root.utilities.generateRandomString(3);
+      var classroomId = this.root.utilities.getUniqueIdentifier({}, 'classroom', 'YYYYMMDD_hhmmss', 0, 3, 3);
       urlGroup.className = 'form-group';
       urlGroup.innerHTML = `
         <label class="dialog-label">${messages.getMessage('stam:classroom-url')}</label>

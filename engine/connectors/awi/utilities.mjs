@@ -19,6 +19,8 @@
 */
 import ConnectorBase from './../../connector.mjs'
 import HJSON from 'hjson'
+import pkg from 'number-to-words';
+const { toWords, toWordsOrdinal } = pkg;
 export { ConnectorUtilities as Connector }
 
 class ConnectorUtilities extends ConnectorBase
@@ -190,7 +192,71 @@ class ConnectorUtilities extends ConnectorBase
         return Buffer.from(result, 'binary').toString('base64');
     }
 
-    /**
+	convertStringToArrayBuffer( str )
+	{
+		var lookup = window.base64Lookup;
+		if ( !lookup )
+		{
+			var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+			lookup = new Uint8Array(256);
+			for ( var i = 0; i < chars.length; i++ )
+			{
+				lookup[ chars.charCodeAt( i ) ] = i;
+			}
+			window.base64Lookup = lookup;
+		}
+	
+		var bufferLength = str.length * 0.75, len = str.length, i, p = 0, encoded1, encoded2, encoded3, encoded4;
+		if ( str[ str.length - 1 ] === "=")
+		{
+			bufferLength--;
+			if ( str[ str.length - 2 ] === "=")
+			{
+				bufferLength--;
+			}
+		}
+	
+		var arraybuffer = new ArrayBuffer( bufferLength ),
+		bytes = new Uint8Array( arraybuffer );
+	
+		for ( i = 0; i < len; i += 4 )
+		{
+			encoded1 = lookup[str.charCodeAt(i)];
+			encoded2 = lookup[str.charCodeAt(i+1)];
+			encoded3 = lookup[str.charCodeAt(i+2)];
+			encoded4 = lookup[str.charCodeAt(i+3)];
+	
+			bytes[p++] = (encoded1 << 2) | (encoded2 >> 4);
+			bytes[p++] = ((encoded2 & 15) << 4) | (encoded3 >> 2);
+			bytes[p++] = ((encoded3 & 3) << 6) | (encoded4 & 63);
+		}
+		return arraybuffer;
+	};
+	convertArrayBufferToString( arrayBuffer )
+	{
+		var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+		var bytes = new Uint8Array( arrayBuffer ), i, len = bytes.length, base64 = "";
+	
+		for (i = 0; i < len; i+=3)
+		{
+			base64 += chars[bytes[i] >> 2];
+			base64 += chars[((bytes[i] & 3) << 4) | (bytes[i + 1] >> 4)];
+			base64 += chars[((bytes[i + 1] & 15) << 2) | (bytes[i + 2] >> 6)];
+			base64 += chars[bytes[i + 2] & 63];
+		}
+	
+		if ((len % 3) === 2)
+		{
+			base64 = base64.substring(0, base64.length - 1) + "=";
+		}
+		else if (len % 3 === 1)
+		{
+			base64 = base64.substring(0, base64.length - 2) + "==";
+		}
+		return base64;
+	};
+
+	/**
      * Decrypts a string that was encrypted with the encrypt method
      * @param {string} encryptedText - The encrypted text in Base64 format
      * @param {string} key - The decryption key (must match the encryption key)
@@ -760,38 +826,61 @@ class ConnectorUtilities extends ConnectorBase
         }
         return properties;
 	}
-	getUniqueIdentifier( toCheck = {}, root = '', count = 0, timeString = '', nNumbers = 3, nLetters = 3 )
+	convertNumberToWords(number) {
+		try {
+			return toWords(number);
+		} catch (error) {
+			return String(number); // fallback to string representation
+		}
+	}
+	convertNumberToWordsOrdinal(number) {
+		try {
+			return toWordsOrdinal(number);
+		} catch (error) {
+			return String(number); // fallback to string representation
+		}
+	}
+	formatDate(date, format = 'YYYY-MM-DD hh:mm:ss') {		
+		const d = date || new Date(date);    
+		const year = String(d.getFullYear());	
+		const month = String(d.getMonth() + 1).padStart(2, '0');
+		const day = String(d.getDate()).padStart(2, '0');
+		const hours = String(d.getHours()).padStart(2, '0');
+		const minutes = String(d.getMinutes()).padStart(2, '0');
+		const seconds = String(d.getSeconds()).padStart(2, '0');
+		return format
+			.replace('YYYY', year)
+			.replace('MM', month)
+			.replace('DD', day)
+			.replace('hh', hours)
+			.replace('mm', minutes)
+			.replace('ss', seconds);
+	}
+	getUniqueIdentifier( toCheck = {}, root = 'id', timeString = '', count = 0, nNumbers = 3, nLetters = 3 )
 	{
-		var id;
+		let id;
 		do
 		{
-			id = root + ( root ? '_' : '' ) + count;
+			id = root;
 			if ( timeString )
-			{
-				var currentdate = new Date();
-				var time = this.format( timeString,
-				{
-					day: currentdate.getDate(),
-					month: currentdate.getMonth(),
-					year:  currentdate.getFullYear(),
-					hour:  currentdate.getHours(),
-					minute:  currentdate.getMinutes(),
-					second: currentdate.getSeconds(),
-					milli: currentdate.getMilliseconds(),
-				} );
-				if ( time )
-					id += '_' + time;
-			}
-			var numbers = '';
-			for ( var n = 0; n < nNumbers; n++ )
+				id += '_' + this.formatDate( new Date(), timeString );
+			id += ( count ? '_' + count : '' );
+			let numbers = '';
+			for ( let n = 0; n < nNumbers; n++ )
 				numbers += String.fromCharCode( 48 + Math.floor( Math.random() * 10 ) );
 			id += '_' + numbers;
-			var letters = '';
-			for ( var n = 0; n < nLetters; n++ )
+			let letters = '';
+			for ( let n = 0; n < nLetters; n++ )
 				letters += String.fromCharCode( 65 + Math.floor( Math.random() * 26 ) );
 			id += letters;
+			if ( id.length == 0 )
+				break;
 		} while( toCheck[ id ] );
 		return id;
+	}
+	convertIntegerNumberToText( number )
+	{
+		return this.numbers[ number ];
 	}
 	matchRegex( text, regex )
 	{

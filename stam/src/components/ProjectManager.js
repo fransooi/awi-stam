@@ -43,6 +43,7 @@ export const PROJECTMESSAGES = {
   FILE_RENAMED: 'PROJECT_FILE_RENAMED',
   FILE_DELETED: 'PROJECT_FILE_DELETED',
   PROJECT_CLOSED: 'PROJECT_CLOSED',
+  PROJECT_RENAMED: 'PROJECT_RENAMED',
 };
 
 class ProjectManager extends BaseComponent {
@@ -61,6 +62,9 @@ class ProjectManager extends BaseComponent {
     this.messageMap[MENUCOMMANDS.NEW_PROJECT] = this.handleNewProject;
     this.messageMap[MENUCOMMANDS.OPEN_PROJECT] = this.handleOpenProject;
     this.messageMap[MENUCOMMANDS.CLOSE_PROJECT] = this.handleCloseProject;
+    this.messageMap[MENUCOMMANDS.RENAME_PROJECT] = this.handleRenameProject;
+    this.messageMap[MENUCOMMANDS.DELETE_PROJECT] = this.handleDeleteProject;
+    this.messageMap[MENUCOMMANDS.DOWNLOAD_PROJECT] = this.handleDownloadProject;
     this.messageMap[MENUCOMMANDS.OPEN_FILE] = this.handleOpenFile;
     this.messageMap[PROJECTMESSAGES.RELOAD_FILE] = this.handleReloadFile;
     this.messageMap[MENUCOMMANDS.NEW_FILE] = this.handleNewFile;
@@ -342,12 +346,106 @@ class ProjectManager extends BaseComponent {
     })
   }
 
+  async handleDeleteProject(data, senderId) {
+    if ( !await this.sendRequestTo( 'class:SocketSideWindow', SOCKETMESSAGES.ENSURE_CONNECTED, {}))
+      return false;
+    if ( !this.project)
+      return false;
+    if ( !data.force )
+    {
+      var message = this.root.messages.getMessage( 'stam:delete-project-message', { name: this.projectName });
+      var answer = await this.root.alert.showCustom('stam:delete-project-title', message, ['stam:cancel|neutral', 'stam:download-and-delete|positive', 'stam:delete|negative'], 'question');
+      if (answer == 0)
+        return false;
+      if (answer == 1)
+      {
+        answer = await this.handleDownloadProject(data, senderId);
+        if (!answer)
+          return false;
+      }
+    }
+    var projectHandle = this.project.handle;
+    var answer = await this.handleCloseProject(data, senderId);
+    if (!answer)
+      return false;
+    answer = await this.root.server.deleteProject({ mode: this.root.currentMode, handle: projectHandle });
+    if (answer.error)
+    {
+      this.root.alert.showError(answer.error);
+      return false;
+    }
+    return true;
+  }
+  async handleRenameProject(data, senderId) {
+    if ( !await this.sendRequestTo( 'class:SocketSideWindow', SOCKETMESSAGES.ENSURE_CONNECTED, {}))
+      return false;
+    if (!this.project)
+      return false;
+
+    var oldName = this.projectName;
+    var newName = oldName;
+    if (!data.newName){
+      newName = await this.root.alert.showEditBox('stam:rename-project-title', 'stam:new-name', oldName);
+      if (!newName)
+        return false;
+    }
+    if (newName==oldName)
+      return true;
+
+    var answer = await this.root.server.renameProject({ mode: this.root.currentMode, handle: this.project.handle, newName: newName });
+    if (answer.error)
+    {
+      this.root.alert.showError(answer.error);
+      return false;
+    }    
+    this.projectName = newName;
+    this.project.name = newName;
+    this.broadcast(PROJECTMESSAGES.PROJECT_RENAMED, this.project);
+    return true;
+  }
+  async handleDownloadProject(data, senderId) {
+    if ( !await this.sendRequestTo( 'class:SocketSideWindow', SOCKETMESSAGES.ENSURE_CONNECTED, {}))
+      return false;
+    
+    if (!this.project){
+      await this.root.alert.showError('stam:project-not-opened');
+      return false;
+    }
+    
+    // Download zip from server
+    await this.root.alert.showDownloading('stam:project-downloading');
+    var answer = await this.root.server.downloadProject({ mode: this.root.currentMode, handle: this.project.handle });
+    if (answer.error)
+    {
+      await this.root.alert.hideDownloading();
+      this.root.alert.showError(answer.error);
+      return false;
+    }    
+
+    // Unzip to buffer
+    var buffer = this.root.utilities.convertStringToArrayBuffer(answer.zipBase64);
+
+    // Using blob as we are in a browser, save as a file.
+    var blob = new Blob([buffer], { type: 'application/zip' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = this.projectName + '.zip';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    await this.root.alert.hideDownloading();
+    return true;
+  }
   async handleCloseProject(data, senderId) {
     if ( !await this.sendRequestTo( 'class:SocketSideWindow', SOCKETMESSAGES.ENSURE_CONNECTED, {}))
       return false;
 
-    if (!this.project)
+    if (!this.project){
+      await this.root.alert.showError('stam:project-not-opened');
       return false;
+    }
     if (!data.force){
       var canClose = await this.sendRequestTo( 'class:Editor', PROJECTMESSAGES.CAN_CLOSE_PROJECT, {});
       if (!canClose)
@@ -412,19 +510,24 @@ class ProjectManager extends BaseComponent {
     if ( !await this.checkProject())
       return;
 
-    var path = await this.showSaveFileDialog('New file.js', 'Create a new file');
+    var filename = await this.sendRequestTo( 'class:Editor', PROJECTMESSAGES.GET_DEFAULT_FILENAME, {});
+    if (!filename)
+      filename = 'untitled.js';
+    var path = await this.showSaveFileDialog(filename, this.root.messages.getMessage('stam:new-file-title'));
     if (path)
     {
-      data.path = path;
-      data.name = this.root.utilities.getFileNameFromPath(path);
-      data.mode = this.root.currentMode;
-      data.handle = this.project.handle;
-      var newFile = await this.handleSaveFile(data, senderId);
-      if ( !newFile.error )
+      var fileInfo = {
+        path: path,
+        name: this.root.utilities.getFileNameFromPath(path),
+        content: '',
+        state: null
+      };
+      var file = await this.handleSaveFile({ fileInfo }, senderId);
+      if (file && !file.error)
       {
-        this.addNewFile(newFile);
-        this.broadcast(PROJECTMESSAGES.NEW_FILE_ADDED, newFile);
-        return newFile;
+        if (data.fromIcon)
+          this.broadcast(PROJECTMESSAGES.FILE_LOADED, fileInfo);
+        return true;
       }
     }
     return false;
@@ -448,7 +551,7 @@ class ProjectManager extends BaseComponent {
     var oldName = data.fileInfo.name;
     var newName = oldName;
     if (data.forceDialog) {      
-      newPath = await this.showSaveFileDialog(oldPath);
+      newPath = await this.showSaveFileDialog(oldPath, this.root.messages.getMessage('stam:new-file-title'));
       if (!newPath)
         return null;
       newName = this.root.utilities.getFileNameFromPath(newPath);
@@ -458,6 +561,7 @@ class ProjectManager extends BaseComponent {
     var infoSave = {
       path: newPath,
       name: newName,
+      content: data.fileInfo.content,
       state: data.fileInfo.state,
       mode: this.root.currentMode,
       handle: this.project.handle
@@ -467,13 +571,10 @@ class ProjectManager extends BaseComponent {
       this.root.alert.showError(answer.error);
       return false;
     }
-    if (oldPath != infoSave.path)
+    if ( !this.findFile(this.project, infoSave.path) )
     {
-      if ( !this.findFile(this.project, infoSave.path) )
-      {
-        this.addNewFile(infoSave);
-        this.broadcast(PROJECTMESSAGES.NEW_FILE_ADDED, infoSave);
-      }
+      this.addNewFile(infoSave);
+      this.broadcast(PROJECTMESSAGES.NEW_FILE_ADDED, infoSave);
     }
     return infoSave;
   }

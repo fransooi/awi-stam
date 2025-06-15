@@ -53,6 +53,7 @@ class Editor extends BaseComponent {
     this.messageMap[EDITORMESSAGES.GET_INFORMATION] = this.handleGetInformation;
     this.messageMap[PROJECTMESSAGES.FILE_RENAMED] = this.handleFileRenamed;
     this.messageMap[PROJECTMESSAGES.FILE_DELETED] = this.handleFileDeleted;
+    this.messageMap[PROJECTMESSAGES.GET_DEFAULT_FILENAME] = this.handleGetDefaultFilename;
   }
   
   async init(options) {
@@ -193,6 +194,12 @@ class Editor extends BaseComponent {
   async handleGetInformation(data, sender) {
     if (this.editor && this.editor.handleGetInformation) {
       return await this.editor.handleGetInformation(data, sender);
+    }
+    return false;
+  }
+  async handleGetDefaultFilename(data, sender) {
+    if (this.editor && this.editor.handleGetDefaultFilename) {
+      return await this.editor.handleGetDefaultFilename(data, sender);
     }
     return false;
   }

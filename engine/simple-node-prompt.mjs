@@ -55,6 +55,7 @@ function getArguments()
 	var templatesPath = 'D:/Awi-Data/public/templates';
 	var httpRootDirectory = 'D:/Awi-Data/public';
     var configurationPath = 'D:/Awi-Data/configs';
+	var dataPath = 'D:/Awi-Data/data';
 	var answer =
 	{
 		prompt: 'fran',
@@ -62,9 +63,10 @@ function getArguments()
         [
             { name: 'connectors/system/node', config: { priority: 100 }, options: {} },
             { name: 'connectors/system/files', config: { priority: 100 }, options: {} },
+            { name: 'connectors/system/zip', config: { priority: 99 }, options: {} },
             { name: 'connectors/awi/messages', config: { priority: 99 }, options: {} },
             { name: 'connectors/awi/utilities', config: { priority: 99 }, options: {} },
-            { name: 'connectors/awi/configuration', config: { priority: 99, configurationPath: configurationPath }, options: { } },
+            { name: 'connectors/awi/configuration', config: { priority: 99, configurationPath: configurationPath, dataPath: dataPath }, options: { } },
             { name: 'connectors/awi/time', config: { priority: 99  }, options: {} },
             { name: 'connectors/editor/editor', config: { priority: 99 }, options: { default: 'commandline', config: {} } },
             { name: 'connectors/network/websocketserver', config: { priority: 99 }, options: { 

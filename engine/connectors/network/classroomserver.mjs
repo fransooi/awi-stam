@@ -132,7 +132,7 @@ class ConnectorClassroomServer extends ConnectorBase
                 return this.replyError(this.newError('awi:classroom-already-exists', { name: parameters.classroomInfo.name }), message, editor);
             }
         }
-        let classroomId = this.awi.utilities.getUniqueIdentifier(this.classrooms, 'classroom', this.classroomCount++);
+        let classroomId = this.awi.utilities.getUniqueIdentifier(this.classrooms, 'classroom', '', this.classroomCount++);
         var classroomInfo = parameters.classroomInfo;
         var pos = classroomInfo.iconUrl.indexOf('/awi-templates/');
         if (pos > -1)
@@ -211,7 +211,7 @@ class ConnectorClassroomServer extends ConnectorBase
         }
         // Add teacher to classroom
         if (parameters.type == 'teacher') {
-            const teacherHandle = this.awi.utilities.getUniqueIdentifier(this.classrooms, 'teacher', this.classroomCount++);
+            const teacherHandle = this.awi.utilities.getUniqueIdentifier(this.classrooms, 'teacher', '', this.classroomCount++);
             classroom.teacherHandle = teacherHandle;
             classroom.teacherName = parameters.displayName;
             classroom.teacherState = 'idle';
@@ -219,7 +219,7 @@ class ConnectorClassroomServer extends ConnectorBase
             return this.replySuccess(this.newAnswer({ classroomId, teacherHandle, teacherName: classroom.teacherName, classroomInfo: classroom.classroomInfo }), message, editor);
         }        
         // Add student to classroom
-        const studentHandle = this.awi.utilities.getUniqueIdentifier(this.classrooms, 'student', this.classroomCount++);
+        const studentHandle = this.awi.utilities.getUniqueIdentifier(this.classrooms, 'student', '', this.classroomCount++);
         classroom.students[studentHandle] = {
             handle: studentHandle,
             studentName: parameters.displayName,

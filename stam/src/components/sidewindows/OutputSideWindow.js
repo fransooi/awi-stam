@@ -127,7 +127,7 @@ class OutputSideWindow extends SideWindow {
       this.modeImplementation.handleContentHeightChanged(height);
     }
   }
-  
+
   /**
    * Update the output window with new data
    * @param {Object} data - The data to update with

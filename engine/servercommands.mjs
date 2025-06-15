@@ -19,6 +19,7 @@ export const SERVERCOMMANDS = {
     CREATE_FOLDER: 'project:createFolder',
     DELETE_FOLDER: 'project:deleteFolder',
     RENAME_FOLDER: 'project:renameFolder',
+    DOWNLOAD_PROJECT: 'project:downloadProject',
     COPY_FOLDER: 'project:copyFolder',
     MOVE_FOLDER: 'project:moveFolder',
     GET_TEMPLATES: 'project:getTemplates',

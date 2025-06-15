@@ -24,6 +24,7 @@ class PhaserOutput extends BaseOutput {
     super('PhaserOutput',parentId,containerId,initialHeight);
     this.modeName = 'phaser';
     this.messageMap[PROJECTMESSAGES.PROJECT_LOADED] = this.handleProjectLoaded;
+    this.messageMap[PROJECTMESSAGES.PROJECT_CLOSED] = this.handleProjectClosed;
     this.projectUrl = null;
   }
   
@@ -58,9 +59,7 @@ class PhaserOutput extends BaseOutput {
     this.container.appendChild(this.projectDisplay);
     
     // If we already have a project URL, display it
-    if (this.projectUrl) {
-      this.displayProjectUrl(this.projectUrl);
-    }
+    this.displayProjectUrl(this.projectUrl);
     
     return this.container;
   }
@@ -155,14 +154,37 @@ class PhaserOutput extends BaseOutput {
   }
   
   /**
+   * Handle the PROJECT_CLOSED message from ProjectManager
+   * @param {Object} project - The project object containing URL and other properties
+   * @param {string} senderId - ID of the component that sent the message
+   */
+  handleProjectClosed(project, senderId) {
+    this.projectUrl = null;
+    this.runUrl = null;
+    if (this.projectDisplay) {
+      this.displayProjectUrl(this.runUrl);
+    }
+  }
+  
+  /**
    * Display the project URL in an iframe
    * @param {string} url - The URL to display
    */
   displayProjectUrl(url) {
-    if (!url) return;
     
     // Clear any existing content
     this.projectDisplay.innerHTML = '';
+
+    // Display black
+    if (!url)
+    {
+      const div = document.createElement('div');
+      div.style.width = '100%';
+      div.style.height = '100%';
+      div.style.backgroundColor = 'black';
+      this.projectDisplay.appendChild(div);
+      return;
+    }
     
     // Create an iframe to display the project
     const iframe = document.createElement('iframe');

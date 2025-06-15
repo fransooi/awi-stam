@@ -54,8 +54,6 @@ class ConnectorNode extends ConnectorBase
 	}
 	async quit()
 	{
-		if ( this.tempDirectoryPath )
-			this.awi.utilities.deleteDirectory( this.tempDirectoryPath, { recursive: true, keepRoot: false } );
 		process.exit( 0 );
 	}
 	async connect( options )

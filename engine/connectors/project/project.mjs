@@ -64,6 +64,7 @@ class ConnectorProject extends ConnectorBase
                 closeProject: this.command_closeProject.bind(this),
                 renameProject: this.command_renameProject.bind(this),
                 deleteProject: this.command_deleteProject.bind(this),
+                downloadProject: this.command_downloadProject.bind(this),
                 newFile: this.command_newFile.bind(this),
                 loadFile: this.command_loadFile.bind(this),
                 saveFile: this.command_saveFile.bind(this),
@@ -235,6 +236,10 @@ class ConnectorProject extends ConnectorBase
             return this[ 'command_' + message.command ]( message.parameters, message, editor );
         return this.replyError( this.newError( 'awi:command-not-found', message.command ), message, editor );
     }
+    convertToFilename( name )
+    {
+        return name.replace( /[^a-zA-Z0-9]/g, '_' );
+    }
 
     // PROJECTS COMMANDS
     ////////////////////////////////////////////////////////////////////////////////////
@@ -321,7 +326,7 @@ class ConnectorProject extends ConnectorBase
     async command_newProject( parameters, message, editor )
     {
         // Create the directory
-        var projectHandle = this.awi.files.convertToFileName( parameters.name );
+        var projectHandle = this.awi.utilities.getUniqueIdentifier({}, this.convertToFilename( parameters.name ), 'DDhhmmss' );
         var projectPath = this.projectsPath + '/' + this.userName + '/' + parameters.mode + '/' + projectHandle;
         if ( this.awi.system.exists( projectPath ).isSuccess() )
         {
@@ -384,10 +389,14 @@ class ConnectorProject extends ConnectorBase
     }
     async command_openProject( parameters, message, editor )
     {
-        var projectHandle = parameters.handle || this.awi.files.convertToFileName( parameters.name );
+        var projectHandle = parameters.handle;
+        if (!projectHandle)
+            return this.replyError(this.newError( 'awi:project-not-open', { value: parameters.name ? parameters.name : parameters.handle } ), message, editor);
+        if ( this.projects[ projectHandle ] )
+            return this.replyError(this.newError( 'awi:project-already-open', { value: parameters.name ? parameters.name : projectHandle } ), message, editor);
         var projectPath = this.projectsPath + '/' + this.userName + '/' + parameters.mode + '/' + projectHandle;
         if ( !this.awi.system.exists( projectPath ).isSuccess() )
-            return this.replyError(this.newError( 'awi:project-not-found', parameters.projectHandle ), message, editor);
+            return this.replyError(this.newError( 'awi:project-not-found', { value: parameters.name ? parameters.name : projectHandle } ), message, editor);
         // Load the project.json file
         var answer = await this.awi.files.loadJSON( projectPath + '/.project/project.json' );
         if ( answer.isError() )
@@ -406,86 +415,100 @@ class ConnectorProject extends ConnectorBase
     }
     async command_closeProject( parameters, message, editor )
     {
-        var projectHandle = parameters.handle || this.awi.files.convertToFileName( parameters.name );
-        if ( !this.projects[ projectHandle ] )
-            return this.replyError(this.newError( 'awi:project-not-open', parameters.projectHandle ), message, editor);
+        // Make sure the project is open
+        var projectHandle = parameters.handle;
+        if (!projectHandle)
+            return this.replyError(this.newError( 'awi:project-not-open', { value: parameters.name ? parameters.name : parameters.handle } ), message, editor);
+        var project = this.projects[ projectHandle ];
+        if ( !project )
+            return this.replyError(this.newError( 'awi:project-not-open', { value: parameters.name ? parameters.name : projectHandle } ), message, editor);
+        // Save project
+        var answer = await this.command_saveProject( { handle: projectHandle } );
+        if ( answer.isError() )
+            return this.replyError(answer, message, editor );
         // Reset project
-        this.projects[ projectHandle ] = null;
+        delete this.projects[ projectHandle ];
         return this.replySuccess(this.newAnswer( true ), message, editor);
     }
     async command_saveProject( parameters, message, editor )
     {
-        if ( !parameters.handle || !this.projects[ parameters.handle ] )
-            return this.replyError( this.newError( 'awi:project-not-open' ) );
-        var projectPath = this.projectsPath + '/' + this.userName + '/' + parameters.mode + '/' + parameters.handle;
-        var answer = await this.awi.files.saveJSON( projectPath + '/.project/project.json', this.projects[ parameters.handle ] );
+        // Make sur a project is open
+        var projectHandle = parameters.handle;
+        if (!projectHandle)
+            return this.replyError(this.newError( 'awi:project-not-open', { value: parameters.name ? parameters.name : parameters.handle } ), message, editor);
+        var project = this.projects[ projectHandle ];
+        if ( !project )
+            return this.replyError(this.newError( 'awi:project-not-open', { value: parameters.name ? parameters.name : projectHandle } ), message, editor);
+
+        var projectPath = this.projectsPath + '/' + this.userName + '/' + project.type + '/' + projectHandle;
+        var answer = await this.awi.files.saveJSON( projectPath + '/.project/project.json', project );
         if ( answer.isError() )
             return this.replyError(answer, message, editor );
         return this.replySuccess(this.newAnswer(true), message, editor);
     }
-    async command_renameProject( parameters, message, editor )
+    async command_renameProject(parameters, message, editor)
     {
-        // Rename project
-        if ( !parameters.handle || !this.projects[ parameters.handle ] )
-            return this.replyError(this.newError( 'awi:project-not-open' ), message, editor );
-    
-        // Create the directory
-        var oldProjectHandle = parameters.handle;
-        var oldProjectPath = this.projectsPath + '/' + this.userName + '/' + parameters.mode + '/' + oldProjectHandle;
-        var newProjectHandle = this.awi.files.convertToFileName( parameters.newName );
-        var newProjectPath = this.projectsPath + '/' + this.userName + '/' + parameters.mode + '/' + newProjectHandle;
-        if ( this.awi.system.exists( newProjectPath ).isSuccess() )
-            return this.replyError(this.newError( 'awi:project-exists', parameters.newName ), message, editor );
-        // Create new project directory
-        var answer = await this.awi.files.createDirectories( newProjectPath );
-        if ( answer.isError() )
-            return this.replyError(answer, message, editor);
-        var answer = await this.awi.files.createDirectories( newProjectPath + '/.project' );
-        if ( answer.isError() )
-            return this.replyError(answer, message, editor);
-        // Copy project files
-        answer = await this.awi.files.copyDirectory( oldProjectPath, newProjectPath );
-        if ( answer.isError() )
-            return this.replyError(answer, message, editor);
-        // Delete old project directory
-        answer = await this.awi.files.deleteDirectory( oldProjectPath, { keepRoot: false, recursive: true } );
-        if ( answer.isError() )
-            return this.replyError(answer, message, editor);
-        // Update new project configuration
-        answer = await this.awi.files.loadJSON( newProjectPath + '/.project/project.json' );
+        // Make sur the project is open
+        var projectHandle = parameters.handle;
+        if (!projectHandle)
+            return this.replyError(this.newError( 'awi:project-not-open', { value: parameters.name ? parameters.name : parameters.handle } ), message, editor);
+        var project = this.projects[ projectHandle ];
+        if ( !project )
+            return this.replyError(this.newError( 'awi:project-not-open', { value: parameters.name ? parameters.name : projectHandle } ), message, editor);
+        
+        // Rename project without changing handle
+        project.name = parameters.newName;
+        var projectConfigPath = this.projectsPath + '/' + this.userName + '/' + project.type + '/' + projectHandle + '/.project/project.json';
+        var answer = await this.awi.files.loadJSON( projectConfigPath );
         if ( answer.isError() )
             return this.replyError(answer, message, editor);
         var newProject = answer.data;
         newProject.name = parameters.newName;
-        newProject.handle = newProjectHandle;
-        newProject.url = this.projectsUrl + '/' + this.userName + '/' + parameters.mode + '/' + newProjectHandle;
-        newProject.runUrl = this.runUrl + '/' + this.userName + '/' + parameters.mode + '/' + newProjectHandle;
         newProject.files = [];
-        answer = await this.updateFileTree( newProject, newProjectHandle );
+        answer = await this.updateFileTree( newProject, projectHandle );
         if ( answer.isError() )
             return this.replyError(answer, message, editor);
-        answer = await this.awi.files.saveJSON( newProjectPath + '/.project/project.json', newProject );
+        answer = await this.awi.files.saveJSON( projectConfigPath, newProject );
         if ( answer.isError() )
             return this.replyError(answer, message, editor);
-        // Update project handle
-        this.projects[ newProjectHandle ] = newProject;
-        this.projects[ oldProjectHandle ] = null;
-        // Returns the project
-        var projectToSend = this.awi.utilities.copyObject( newProject );
-        projectToSend.path = '';
-        return this.replySuccess(this.newAnswer( newProject ), message, editor);
+        return this.replySuccess(this.newAnswer(true), message, editor);
+    }
+    async command_downloadProject( parameters, message, editor )
+    {
+        // Make sure the project is open
+        var projectHandle = parameters.handle;
+        if (!projectHandle)
+            return this.replyError(this.newError( 'awi:project-not-open', { value: parameters.name ? parameters.name : parameters.handle } ), message, editor);
+        var project = this.projects[ projectHandle ];
+        if ( !project )
+            return this.replyError(this.newError( 'awi:project-not-open', { value: parameters.name ? parameters.name : parameters.handle } ), message, editor);
+        // Save project
+        var answer = await this.command_saveProject( { handle: projectHandle } );
+        if ( answer.isError() )
+            return this.replyError(answer, message, editor );
+
+        // Zip the project directory        
+        var answer  = await this.awi.zip.zipDirectory( project.path, null, { recursive: true } );
+        if ( answer.isError() )
+            return this.replyError(answer, message, editor );
+        return this.replySuccess(answer, message, editor);
     }
     async command_deleteProject( parameters, message, editor )
     {
-        // Delete project
-        if ( !parameters.handle )
-            return this.replyError(this.newError( 'awi:project-not-found' ), message, editor );
+        if (!parameters.handle)
+            return this.replyError(this.newError( 'awi:project-not-open', { value: parameters.name ? parameters.name : parameters.handle } ), message, editor);
+        // If project is open, close it
+        var projectHandle = parameters.handle;
+        if ( this.projects[ projectHandle ] ){
+            var answer = await this.command_closeProject( { handle: projectHandle } );
+            if ( answer.isError() )
+                return this.replyError(answer, message, editor );
+        }
         // Delete project directory
-        var answer = await this.awi.files.deleteDirectory( this.projectsPath + '/' + this.userName + '/' + parameters.mode + '/' + parameters.handle, { keepRoot: true, recursive: true } );
+        var projectPath = this.projectsPath + '/' + this.userName + '/' + parameters.mode + '/' + projectHandle;
+        var answer = await this.awi.files.deleteDirectory( projectPath, { keepRoot: false, recursive: true } );
         if ( answer.isError() )
             return this.replyError(answer, message, editor );
-        // Reset project
-        this.projects[ parameters.handle ] = null;
         return this.replySuccess(this.newAnswer( true ), message, editor);
     }
 
@@ -509,7 +532,7 @@ class ConnectorProject extends ConnectorBase
                     return this.replyError(state, message, editor);
                 state = state.data;
                 content = state.doc;
-                var statePath = this.projects[ parameters.handle ].path + '/.project/' + this.awi.files.convertToFileName( parameters.path ) + '.state';
+                var statePath = this.projects[ parameters.handle ].path + '/.project/' + this.convertToFilename( parameters.path ) + '.state';
                 answer = await this.awi.system.writeFile( statePath, parameters.state, { encoding: 'utf8' } );
                 if ( answer.isError() )
                     return this.replyError(answer, message, editor );
@@ -541,7 +564,7 @@ class ConnectorProject extends ConnectorBase
             if ( answer.isError() )
                 return this.replyError(answer, message, editor );
             var content = answer.data;
-            var statePath = this.projects[ parameters.handle ].path + '/.project/' + this.awi.files.convertToFileName( parameters.path ) + '.state';
+            var statePath = this.projects[ parameters.handle ].path + '/.project/' + this.convertToFilename( parameters.path ) + '.state';
             var stateAnswer = await this.awi.system.readFile( statePath, { encoding: 'utf8' } );
             if ( stateAnswer.isSuccess() )
                 response.state = stateAnswer.data;
@@ -569,7 +592,7 @@ class ConnectorProject extends ConnectorBase
             var answer = await this.awi.system.writeFile( path, state.doc, { encoding: 'utf8' } );
             if ( answer.isError() )
                 return this.replyError(answer, message, editor);
-            var statePath = this.projects[ parameters.handle ].path + '/.project/' + this.awi.files.convertToFileName( parameters.path ) + '.state';
+            var statePath = this.projects[ parameters.handle ].path + '/.project/' + this.convertToFilename( parameters.path ) + '.state';
             var stateAnswer = await this.awi.system.writeFile( statePath, JSON.stringify(state), { encoding: 'utf8' } );
             if ( stateAnswer.isError() )
                 return this.replyError(stateAnswer, message, editor);
@@ -596,8 +619,8 @@ class ConnectorProject extends ConnectorBase
             var answer = await this.awi.system.rename( file.path, newPath );
             if ( answer.isError() )
                 return this.replyError(answer, message, editor );
-            var oldStatePath = this.projects[ parameters.handle ].path + '/.project/' + this.awi.files.convertToFileName( parameters.path ) + '.state';
-            var newStatePath = this.projects[ parameters.handle ].path + '/.project/' + this.awi.files.convertToFileName( parameters.newPath ) + '.state';
+            var oldStatePath = this.projects[ parameters.handle ].path + '/.project/' + this.convertToFilename( parameters.path ) + '.state';
+            var newStatePath = this.projects[ parameters.handle ].path + '/.project/' + this.convertToFilename( parameters.newPath ) + '.state';
             await this.awi.system.rename( oldStatePath, newStatePath );
             // Update file tree
             file.name = newName;
@@ -619,7 +642,7 @@ class ConnectorProject extends ConnectorBase
             var answer = await this.awi.system.delete( file.path );
             if ( answer.isError() )
                 return this.replyError(answer, message, editor );
-            var statePath = this.projects[ parameters.handle ].path + '/.project/' + this.awi.files.convertToFileName( parameters.path ) + '.state';
+            var statePath = this.projects[ parameters.handle ].path + '/.project/' + this.convertToFilename( parameters.path ) + '.state';
             await this.awi.system.delete( statePath );
             answer = await this.updateFileTree( this.projects[ parameters.handle ] );
             if ( answer.isError() )
@@ -641,8 +664,8 @@ class ConnectorProject extends ConnectorBase
             var answer = await this.copyFile( file.path, parameters.newPath );
             if ( answer.isError() )
                 return this.replyError(answer, message, editor );
-            var statePath = this.projects[ parameters.handle ].path + '/.project/' + this.awi.files.convertToFileName( parameters.path ) + '.state';
-            var newStatePath = this.projects[ parameters.handle ].path + '/.project/' + this.awi.files.convertToFileName( parameters.newPath ) + '.state';
+            var statePath = this.projects[ parameters.handle ].path + '/.project/' + this.convertToFilename( parameters.path ) + '.state';
+            var newStatePath = this.projects[ parameters.handle ].path + '/.project/' + this.convertToFilename( parameters.newPath ) + '.state';
             await this.awi.system.copy( statePath, newStatePath );
             answer = await this.deleteFile( file.path );
             if ( answer.isError() )
@@ -693,7 +716,7 @@ class ConnectorProject extends ConnectorBase
                 return this.replyError(answer, message, editor );
             // Delete state files
             var statePath = this.projects[ parameters.handle ].path + '/.project/';
-            var stateFilter = this.awi.files.convertToFileName( parameters.path ) + '_*.state';
+            var stateFilter = this.convertToFilename( parameters.path ) + '_*.state';
             var answer = await this.awi.files.getDirectory( statePath, { recursive: false, filters: stateFilter, noStats: true, noPaths: false } );
             if ( answer.isError() )
                 return answer;
@@ -725,13 +748,13 @@ class ConnectorProject extends ConnectorBase
                 return this.replyError(answer, message, editor);
             // Rename state files
             var statePath = this.projects[ parameters.handle ].path + '/.project/';
-            var stateFilter = this.awi.files.convertToFileName( parameters.path ) + '_*.state';
+            var stateFilter = this.convertToFilename( parameters.path ) + '_*.state';
             var answer = await this.awi.files.getDirectory( statePath, { recursive: false, filters: stateFilter, noStats: true, noPaths: false } );
             if ( answer.isError() )
                 return answer;
             var stateFiles = answer.getValue();
             for ( var f = 0; f < stateFiles.length; f++ )
-                await this.awi.system.rename( stateFiles[ f ].path, statePath + this.awi.files.convertToFileName( parameters.newPath ) + '_*.state' );
+                await this.awi.system.rename( stateFiles[ f ].path, statePath + this.convertToFilename( parameters.newPath ) + '_*.state' );
             // Update file tree
             answer = await this.updateFileTree( this.projects[ parameters.handle ] );
             if ( answer.isError() )
@@ -757,13 +780,13 @@ class ConnectorProject extends ConnectorBase
                 return this.replyError(answer, message, editor );
             // Copy state files
             var statePath = this.projects[ parameters.handle ].path + '/.project/';
-            var stateFilter = this.awi.files.convertToFileName( parameters.path ) + '_*.state';
+            var stateFilter = this.convertToFilename( parameters.path ) + '_*.state';
             var answer = await this.awi.files.getDirectory( statePath, { recursive: false, filters: stateFilter, noStats: true, noPaths: false } );
             if ( answer.isError() )
                 return answer;
             var stateFiles = answer.getValue();
             for ( var f = 0; f < stateFiles.length; f++ )
-                await this.awi.system.copy( stateFiles[ f ].path, statePath + this.awi.files.convertToFileName( parameters.newPath ) + '_*.state' );
+                await this.awi.system.copy( stateFiles[ f ].path, statePath + this.convertToFilename( parameters.newPath ) + '_*.state' );
             // Update file tree
             answer = await this.updateFileTree( this.projects[ parameters.handle ] );
             if ( answer.isError() )
@@ -787,13 +810,13 @@ class ConnectorProject extends ConnectorBase
             return this.replyError(answer, message, editor );
         // Rename the state files
         var statePath = this.projects[ parameters.handle ].path + '/.project/';
-        var stateFilter = this.awi.files.convertToFileName( parameters.path ) + '_*.state';
+        var stateFilter = this.convertToFilename( parameters.path ) + '_*.state';
         var answer = await this.awi.files.getDirectory( statePath, { recursive: false, filters: stateFilter, noStats: true, noPaths: false } );
         if ( answer.isError() )
             return answer;
         var stateFiles = answer.getValue();
         for ( var f = 0; f < stateFiles.length; f++ )
-            await this.awi.system.rename( stateFiles[ f ].path, statePath + this.awi.files.convertToFileName( parameters.newPath ) + '_*.state' );
+            await this.awi.system.rename( stateFiles[ f ].path, statePath + this.convertToFilename( parameters.newPath ) + '_*.state' );
         // Update file tree
         answer = await this.updateFileTree( this.projects[ parameters.handle ] );
         if ( answer.isError() )

@@ -192,7 +192,7 @@ class PhaserIcons extends BaseComponent {
     styles.forEach(style => style.remove());
   }
   handleButtonClick(action) {
-    this.broadcast(action);    
+    this.broadcast(action, { fromIcon: true });    
   }
   
   /**

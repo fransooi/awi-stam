@@ -444,4 +444,27 @@ class ConnectorTime extends ConnectorBase
 			return true;
 		return false;
 	}
+	/**
+	 * Format a date to a string
+	 * 
+	 * @param {Date} date - The date to format
+	 * @param {string} format - The format to use (default: 'YYYY-MM-DD HH:mm:ss')
+	 * @returns {string} - The formatted date
+	 */
+	formatDate(date, format = 'YYYY-MM-DD hh:mm:ss') {		
+		const d = date || new Date(date);    
+		const year = String(d.getFullYear());	
+		const month = String(d.getMonth() + 1).padStart(2, '0');
+		const day = String(d.getDate()).padStart(2, '0');
+		const hours = String(d.getHours()).padStart(2, '0');
+		const minutes = String(d.getMinutes()).padStart(2, '0');
+		const seconds = String(d.getSeconds()).padStart(2, '0');
+		return format
+			.replace('YYYY', year)
+			.replace('MM', month)
+			.replace('DD', day)
+			.replace('hh', hours)
+			.replace('mm', minutes)
+			.replace('ss', seconds);
+	}
 }

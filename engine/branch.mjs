@@ -65,7 +65,7 @@ export default class BranchBase extends BubbleBase
 		parameters = ( typeof options.parameters == 'undefined' ? parameters : options.parameters );
 		var group =  ( typeof command.group == 'undefined' ? 'awi' : command.group );
 		var exits =  ( typeof command.exits == 'undefined' ? { success: 'end' } : command.exits );
-		var key = ( command.key ? command.key : this.awi.utilities.getUniqueIdentifier( this.bubbleMap, group + '_' + command.token, this.keyCount++ ) );
+		var key = ( command.key ? command.key : this.awi.utilities.getUniqueIdentifier( this.bubbleMap, group + '_' + command.token, '', this.keyCount++ ) );
 		return new this.awi.classes[ parentClass ][ group ][ command.token ].Bubble( this.awi, { key: key, branch: this, parent: parent, exits: exits, config: command.config, parameters: parameters } );
 	}
 	addTokens( argsIn, basket, control = {} )

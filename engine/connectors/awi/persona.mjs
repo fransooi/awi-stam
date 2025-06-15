@@ -41,14 +41,14 @@ export default class ConnectorPersona extends ConnectorBase
     connect( options )
     {
         super.connect( options );
-        this.memories[ 'audios' ] = new this.awi.classes.memories.awi.audio.Bubble( this.awi, { key: this.awi.utilities.getUniqueIdentifier( {}, 'memory_awi_audio', 0 ), parent: '' } );
-        this.memories[ 'conversations' ] = new this.awi.classes.memories.awi.conversation.Bubble( this.awi, { key: this.awi.utilities.getUniqueIdentifier( {}, 'memory_awi_conversations', 1 ), parent: '' } );
-        this.memories[ 'documents' ] = new this.awi.classes.memories.awi.document.Bubble( this.awi, { key: this.awi.utilities.getUniqueIdentifier( {}, 'memory_awidocuments', 2 ), parent: '' } );
-        this.memories[ 'images' ] = new this.awi.classes.memories.awi.image.Bubble( this.awi, { key: this.awi.utilities.getUniqueIdentifier( {}, 'memory_awi_image', 3 ), parent: '' } );
-        this.memories[ 'mails' ] = new this.awi.classes.memories.awi.mail.Bubble( this.awi, { key: this.awi.utilities.getUniqueIdentifier( {}, 'memory_awi_mail', 4 ), parent: '' } );
-        this.memories[ 'messenger' ] = new this.awi.classes.memories.awi.messenger.Bubble( this.awi, { key: this.awi.utilities.getUniqueIdentifier( {}, 'memory_awi_messenger', 5 ), parent: '' } );
-        this.memories[ 'photos' ] = new this.awi.classes.memories.awi.photo.Bubble( this.awi, { key: this.awi.utilities.getUniqueIdentifier( {}, 'memory_awi_photo', 6 ), parent: '' } );
-        this.memories[ 'videos' ] = new this.awi.classes.memories.awi.video.Bubble( this.awi, { key: this.awi.utilities.getUniqueIdentifier( {}, 'memory_generic_video', 7 ), parent: '' } );
+        this.memories[ 'audios' ] = new this.awi.classes.memories.awi.audio.Bubble( this.awi, { key: this.awi.utilities.getUniqueIdentifier( {}, 'memory_awi_audio', '', 0 ), parent: '' } );
+        this.memories[ 'conversations' ] = new this.awi.classes.memories.awi.conversation.Bubble( this.awi, { key: this.awi.utilities.getUniqueIdentifier( {}, 'memory_awi_conversations', '', 1 ), parent: '' } );
+        this.memories[ 'documents' ] = new this.awi.classes.memories.awi.document.Bubble( this.awi, { key: this.awi.utilities.getUniqueIdentifier( {}, 'memory_awidocuments', '', 2 ), parent: '' } );
+        this.memories[ 'images' ] = new this.awi.classes.memories.awi.image.Bubble( this.awi, { key: this.awi.utilities.getUniqueIdentifier( {}, 'memory_awi_image', '', 3 ), parent: '' } );
+        this.memories[ 'mails' ] = new this.awi.classes.memories.awi.mail.Bubble( this.awi, { key: this.awi.utilities.getUniqueIdentifier( {}, 'memory_awi_mail', '', 4 ), parent: '' } );
+        this.memories[ 'messenger' ] = new this.awi.classes.memories.awi.messenger.Bubble( this.awi, { key: this.awi.utilities.getUniqueIdentifier( {}, 'memory_awi_messenger', '', 5 ), parent: '' } );
+        this.memories[ 'photos' ] = new this.awi.classes.memories.awi.photo.Bubble( this.awi, { key: this.awi.utilities.getUniqueIdentifier( {}, 'memory_awi_photo', '', 6 ), parent: '' } );
+        this.memories[ 'videos' ] = new this.awi.classes.memories.awi.video.Bubble( this.awi, { key: this.awi.utilities.getUniqueIdentifier( {}, 'memory_generic_video', '', 7 ), parent: '' } );
         return this.setConnected( true );
     }
 	setPrompt( prompt )

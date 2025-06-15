@@ -152,7 +152,7 @@ class EditorWebSocket extends EditorBase
             handle: lastMessage ? lastMessage.handle : this.lastMessage.handle,
             responseTo: lastMessage ? lastMessage.command : this.lastMessage.command,            
             callbackId: lastMessage ? lastMessage.id : this.lastMessage.id,
-            id: this.awi.utilities.getUniqueIdentifier( {}, 'message', 0 ),
+            id: this.awi.utilities.getUniqueIdentifier( {}, 'message' ),
             parameters: parameters
         };
         var text = 'REPLY  : "' + message.responseTo + '" to user: ' + this.userName;
@@ -171,11 +171,11 @@ class EditorWebSocket extends EditorBase
             handle: this.handle,
             command: command, 
             parameters: parameters,
-            id: this.awi.utilities.getUniqueIdentifier( {}, 'message', 0 )
+            id: this.awi.utilities.getUniqueIdentifier( {}, 'message' )
         };
         if ( callback )
         {
-            message.callbackId = this.awi.utilities.getUniqueIdentifier( this.callbacks, 'awi', 0 );
+            message.callbackId = this.awi.utilities.getUniqueIdentifier( this.callbacks, 'awi' );
             this.callbacks[ message.callbackId ] = callback;
         }
         var text = 'MESSAGE: "' + command + '" to user: ' + this.userName;
@@ -207,8 +207,14 @@ class EditorWebSocket extends EditorBase
             var userName = message.parameters.userName || this.userName;
             var text = 'COMMAND: "' + message.command + '" from user: ' + userName;
             var parameters = '';
-            for ( var key in message.parameters )
-                parameters += '.        ' + key + ': ' + message.parameters[ key ].toString().substring( 0, 60 ) + ', \n';
+            for ( var key in message.parameters ){
+                if (message.parameters[ key ] && message.parameters[ key ].toString)
+                    parameters += '.        ' + key + ': ' + message.parameters[ key ].toString().substring( 0, 60 ) + ', \n';
+                else if (message.parameters[ key ] === null)
+                    parameters += '.        ' + key + ': null, \n';
+                else
+                    parameters += '.        ' + key + ': undefined, \n';
+            }
             if ( parameters )
                 text += '\n' + parameters;
             if ( this[ 'command_' + message.command ] )

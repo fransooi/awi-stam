@@ -29,6 +29,7 @@ class ProjectSideWindow extends SideWindow {
     this.messageMap[MESSAGES.CONTENT_HEIGHT_CHANGED] = this.handleContentHeightChanged;
     this.messageMap[PROJECTMESSAGES.PROJECT_LOADED] = this.handleProjectLoaded;
     this.messageMap[PROJECTMESSAGES.PROJECT_CLOSED] = this.handleProjectClosed;
+    this.messageMap[PROJECTMESSAGES.PROJECT_RENAMED] = this.handleProjectRenamed;
     this.messageMap[PROJECTMESSAGES.NEW_FILE_ADDED] = this.handleNewFileAdded;
     this.messageMap[PROJECTMESSAGES.FILE_DELETED] = this.handleFileDeleted;
     this.messageMap[PROJECTMESSAGES.FILE_RENAMED] = this.handleFileRenamed;
@@ -140,6 +141,7 @@ class ProjectSideWindow extends SideWindow {
           padding-left: 20px;
           width: 100%;
           display: block;
+          font-weight: normal;
         }
         
         .project-folder-collapsed .project-folder-contents {
@@ -373,17 +375,14 @@ getFilePath(item) {
     this.setTitle('Project Files');
     this.populateProjectTree();
   }
-  
+
+  async handleProjectRenamed(project, sender) {
+    this.setTitle(project.name);
+  }
+
   async handleProjectLoaded(project, sender) {
     this.project = project;
-    
-    // Update the window title to the project name
-    if (project && project.name) {
-      this.setTitle(project.name);
-    } else {
-      this.setTitle('Project Files');
-    }
-    
+    this.setTitle(project.name);
     this.populateProjectTree(project);
   }
   

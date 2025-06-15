@@ -135,9 +135,10 @@ class ConnectorWebSocketServer extends ConnectorBase
             [
                 { name: 'connectors/system/node', config: { priority: 100 }, options: {} },
                 { name: 'connectors/system/files', config: { priority: 100 }, options: {} },
+                { name: 'connectors/system/zip', config: { priority: 99 }, options: {} },
                 { name: 'connectors/awi/messages', config: { priority: 99 }, options: {} },
                 { name: 'connectors/awi/utilities', config: { priority: 99 }, options: {} },
-                { name: 'connectors/awi/configuration', config: { priority: 99, configurationPath: this.awi.configuration.getConfigurationPath() }, options: {} },
+                { name: 'connectors/awi/configuration', config: { priority: 99, configurationPath: this.awi.configuration.getConfigurationPath(), dataPath: this.awi.configuration.getDataPath() }, options: {} },
                 { name: 'connectors/awi/time', config: { priority: 99  }, options: {} },
                 { name: 'bubbles/awi/*', config: {}, options: {} },
                 { name: 'souvenirs/awi/*', config: {}, options: {} },
