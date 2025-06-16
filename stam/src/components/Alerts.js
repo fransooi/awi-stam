@@ -72,7 +72,7 @@ class Alerts extends BaseComponent {
     return await this.showCustom('stam:question', message, ['stam:no|negative', 'stam:yes|positive'], 'question');
   }
   async showConfirm(message) {
-    return await this.showCustom('stam:question', message, ['stam:no|negative', 'stam:yes|positive'], 'question');
+    return await this.showCustom('stam:confirm', message, ['stam:no|negative', 'stam:yes|positive'], 'question');
   }
   async showSuccess(message) {
     return await this.showCustom('stam:success', message, ['stam:ok|positive'], 'success');

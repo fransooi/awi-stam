@@ -54,6 +54,7 @@ class Editor extends BaseComponent {
     this.messageMap[PROJECTMESSAGES.FILE_RENAMED] = this.handleFileRenamed;
     this.messageMap[PROJECTMESSAGES.FILE_DELETED] = this.handleFileDeleted;
     this.messageMap[PROJECTMESSAGES.GET_DEFAULT_FILENAME] = this.handleGetDefaultFilename;
+    this.messageMap[MENUCOMMANDS.UPDATE_MENU_ITEMS] = this.handleUpdateMenuItems;
   }
   
   async init(options) {
@@ -117,6 +118,13 @@ class Editor extends BaseComponent {
   }
   
   // Message handlers - forward to editor
+  
+  async handleUpdateMenuItems(data, sender) {
+    if (this.editor && this.editor.handleUpdateMenuItems) {
+      return await this.editor.handleUpdateMenuItems(data, sender);
+    }
+    return false;
+  }
   
   async handleModeChange(data, sender) {
     this.currentMode = data.mode;

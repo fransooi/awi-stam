@@ -494,11 +494,16 @@ class EditorSource extends BaseComponent {
     if (!tab)
       return false;
     
-    if (!tab.justLoaded && tab.modified) 
+    if (!tab.justLoaded && tab.modified)       
     {
-      var message = this.root.messages.getMessage('stam:file-modified', { name: tab.name });
-      var answer = await this.root.alert.showCustom('stam:save-changes', message, ['stam:no|negative', 'stam:yes|positive'], 'question');
-      if (answer === 1)
+      var fileName = tab.name;
+      if (!tab.path)
+        fileName = '';
+      var message = this.root.messages.getMessage('stam:file-modified-message', { name: fileName });
+      var answer = await this.root.alert.showCustom('stam:save-changes', message, ['stam:cancel|neutral', 'stam:no|negative', 'stam:yes|positive'], 'question');
+      if (answer == 0)
+        return false;
+     if (answer === 2)
       {
         this.updateTabState(index);
         var fileInfo = this.getTabFileInfo(index);
@@ -512,9 +517,7 @@ class EditorSource extends BaseComponent {
         var response = await this.sendRequestTo('class:ProjectManager', PROJECTMESSAGES.SAVE_FILE, { fileInfo: fileInfo, forceDialog: forceDialog });
         if (response.error)          
           return false;
-        return true;
       }
-      return false;
     }
     return true;
   }

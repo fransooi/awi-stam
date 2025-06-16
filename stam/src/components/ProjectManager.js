@@ -442,10 +442,11 @@ class ProjectManager extends BaseComponent {
     if ( !await this.sendRequestTo( 'class:SocketSideWindow', SOCKETMESSAGES.ENSURE_CONNECTED, {}))
       return false;
 
-    if (!this.project){
-      await this.root.alert.showError('stam:project-not-opened');
-      return false;
-    }
+    // If already closed-> job done!
+    if (!this.project)
+      return true;
+
+    // If not forced-> ask for confirmation
     if (!data.force){
       var canClose = await this.sendRequestTo( 'class:Editor', PROJECTMESSAGES.CAN_CLOSE_PROJECT, {});
       if (!canClose)
@@ -1241,18 +1242,21 @@ class ProjectManager extends BaseComponent {
             label: this.root.messages.getMessage('stam:save'),
             className: 'btn btn-positive',
             disabled: !currentFilename.trim(),
-            onClick: () => {
+            onClick: async () => {
               // Check if file exists
               const fileExists = this._findFileByPath(this.project?.files || [], currentPath);              
               if (fileExists) {
                 // Show confirmation dialog for overwrite
-                if (confirm(this.root.messages.getMessage('stam:file-exists-overwrite', { fileName: currentPath }))) {
-                  dialog.close();
+                var message = this.root.messages.getMessage('stam:file-exists-overwrite', { name: currentPath });
+                var answer = await this.root.alert.showConfirm(message);
+                if (answer === 1)
                   resolve(currentPath);
-                }
-              } else {
+                else
+                  resolve(null);
                 dialog.close();
+              } else {
                 resolve(currentPath);
+                dialog.close();
               }
             }
           }

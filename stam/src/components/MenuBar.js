@@ -82,7 +82,8 @@ export const MENUCOMMANDS = {
   VIEW_RIGHT_AWI_WINDOW: 'MENU_VIEW_RIGHT_AWI_WINDOW',
   VIEW_RIGHT_TV_WINDOW: 'MENU_VIEW_RIGHT_TV_WINDOW',
   VIEW_MENUBAR: 'MENU_VIEW_MENUBAR',
-  VIEW_STATUSBAR: 'MENU_VIEW_STATUSBAR'
+  VIEW_STATUSBAR: 'MENU_VIEW_STATUSBAR',
+  UPDATE_MENU_ITEMS: 'MENU_UPDATE_MENU_ITEMS'
 };
 
 
@@ -243,9 +244,10 @@ class MenuBar extends BaseComponent {
     this.menuMap[CLASSROOMCOMMANDS.LEAVE_CLASSROOM].disabled = !socketInfo.loggedIn;
     this.updateButtonDisable(this.classroomButton, !socketInfo.loggedIn);
 
+    var projectInfo, classroomInfo, editorInfo;
     if (socketInfo.loggedIn)
     {
-      var projectInfo = this.root.project.getProjectInformation();
+      projectInfo = this.root.project.getProjectInformation();
       this.menuMap[MENUCOMMANDS.CLOSE_PROJECT].disabled = !projectInfo.projectLoaded;
       this.menuMap[MENUCOMMANDS.OPEN_PROJECT].disabled = projectInfo.projectLoaded;
       this.menuMap[MENUCOMMANDS.NEW_PROJECT].disabled = projectInfo.projectLoaded;
@@ -255,12 +257,12 @@ class MenuBar extends BaseComponent {
       this.menuMap[MENUCOMMANDS.NEW_FILE].disabled = !projectInfo.projectLoaded;
       this.menuMap[MENUCOMMANDS.OPEN_FILE].disabled = !projectInfo.projectLoaded;
       
-      var classroomInfo = this.root.classroom.getInformation();
+      classroomInfo = this.root.classroom.getInformation();
       this.menuMap[CLASSROOMCOMMANDS.CREATE_CLASSROOM].disabled = classroomInfo.classroomOpen;
       this.menuMap[CLASSROOMCOMMANDS.JOIN_CLASSROOM].disabled = classroomInfo.classroomOpen;
       this.menuMap[CLASSROOMCOMMANDS.LEAVE_CLASSROOM].disabled = !classroomInfo.classroomOpen;
 
-      var editorInfo = await this.sendRequestTo('class:Editor',EDITORMESSAGES.GET_INFORMATION);
+      editorInfo = await this.sendRequestTo('class:Editor',EDITORMESSAGES.GET_INFORMATION);
       this.menuMap[MENUCOMMANDS.SAVE_FILE].disabled = editorInfo.numberOfTabs==0;
       this.menuMap[MENUCOMMANDS.SAVE_AS_FILE].disabled = editorInfo.numberOfTabs==0;
       this.menuMap[MENUCOMMANDS.CLOSE_FILE].disabled = editorInfo.numberOfTabs==0;
@@ -272,6 +274,8 @@ class MenuBar extends BaseComponent {
       this.menuMap[MENUCOMMANDS.FIND].disabled = editorInfo.numberOfTabs==0;
       this.menuMap[MENUCOMMANDS.REPLACE].disabled = editorInfo.numberOfTabs==0;
     }    
+    this.sendMessageTo('class:Editor', MENUCOMMANDS.UPDATE_MENU_ITEMS, { socketInfo, projectInfo, classroomInfo, editorInfo })
+    this.sendMessageTo('class:IconBar', MENUCOMMANDS.UPDATE_MENU_ITEMS, { socketInfo, projectInfo, classroomInfo, editorInfo })
   }
   
   async destroy() {

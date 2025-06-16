@@ -22,6 +22,7 @@ import { MENUCOMMANDS } from '../../MenuBar.js';
 class PhaserIcons extends BaseComponent {
   constructor(parentId,containerId) {
     super('PhaserIcons', parentId, containerId);
+    this.messageMap[MENUCOMMANDS.UPDATE_MENU_ITEMS] = this.handleUpdateMenuItems;
     this.buttons = [];
   }
 
@@ -122,6 +123,10 @@ class PhaserIcons extends BaseComponent {
       .phaser-button:hover {
         background-color: var(--icon-button-background-hover);
       }
+      .phaser-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
       .phaser-button-new {
         background-color: var(--icon-button-background);
         color: #90CAF9;
@@ -193,6 +198,33 @@ class PhaserIcons extends BaseComponent {
   }
   handleButtonClick(action) {
     this.broadcast(action, { fromIcon: true });    
+  }
+  findButtonFromClassname(className) {
+    return this.buttons.find(button => button.className.includes(className));
+  }
+  handleUpdateMenuItems(data, sender) {
+    this.buttons.forEach(button => {
+      button.disabled = !data.socketInfo.loggedIn;
+    });
+    if (data.socketInfo.loggedIn)
+    {
+      if (data.projectInfo.projectLoaded){
+        this.findButtonFromClassname('phaser-button-new').disabled = false;
+        this.findButtonFromClassname('phaser-button-open').disabled = false;
+        this.findButtonFromClassname('phaser-button-save').disabled = data.editorInfo.numberOfTabs==0;
+        this.findButtonFromClassname('phaser-button-run').disabled = false;
+        this.findButtonFromClassname('phaser-button-debug').disabled = false;
+        this.findButtonFromClassname('phaser-button-share').disabled = false;
+        this.findButtonFromClassname('phaser-button-help').disabled = false;
+      }
+      else
+      {
+        this.buttons.forEach(button => {
+          button.disabled = true;
+        });
+      }
+    }    
+
   }
   
   /**

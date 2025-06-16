@@ -14,7 +14,9 @@ stam:abort                                Abort
 stam:alert                                Alert
 stam:information                          Information
 stam:warning                              Warning
+stam:question                             Question
 stam:error                                Error
+stam:confirm                              Please confirm...
 stam:success                              Success
 stam:new                                  New
 stam:new-text                             New File
@@ -334,4 +336,4 @@ stam:delete                               Delete
 stam:project-downloading                  Downloading project...
 stam:project-not-opened                   Project not opened
 stam:new-file-title                       New File
-
+stam:file-modified-message                The file ${name} has been modified, do you want to save the changes?

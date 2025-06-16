@@ -21,6 +21,7 @@
 * for handling status updates and temporary status messages.
 */
 import BaseComponent, { MESSAGES } from '../utils/BaseComponent.js';
+import { MENUCOMMANDS } from './MenuBar.js';
 
 // Define message types for preference handling
 export const ICONACTIONS = {
@@ -41,6 +42,7 @@ class IconBar extends BaseComponent {
     this.modeSpecificIconsCache = {};
     this.currentMode='';
     this.messageMap[MESSAGES.MODE_CHANGE] = this.handleModeChange;
+    this.messageMap[MENUCOMMANDS.UPDATE_MENU_ITEMS] = this.handleUpdateMenuItems;
   }
 
   async init(options) {
@@ -105,6 +107,12 @@ class IconBar extends BaseComponent {
     }
   }
   
+  handleUpdateMenuItems(data, sender) {
+    if (this.modeSpecificIcons && this.modeSpecificIcons.handleUpdateMenuItems)
+      this.modeSpecificIcons.handleUpdateMenuItems(data, sender);
+    return true;
+  }
+
   /**
    * Handle mode change message
    * @param {Object} data - Message data
