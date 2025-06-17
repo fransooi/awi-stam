@@ -671,18 +671,25 @@ class SideWindow extends BaseComponent {
     if (!this.enlargedDialog) return;
     
     // Replace the placeholder with the original content
-    if (this.contentPlaceholder && this.contentPlaceholder.parentNode) {
+    if (this.content && this.contentPlaceholder && this.contentPlaceholder.parentNode) {
+      // Ensure the content is visible when restoring
+      this.content.style.display = 'block';
       this.originalContentParent.replaceChild(this.content, this.contentPlaceholder);
     }
     
-    // Remove the dialog from the DOM
-    if (!this.enlargedDialogContentHeight)
+    // Store the dialog content height before removing it
+    if (this.dialogContent && !this.enlargedDialogContentHeight) {
       this.enlargedDialogContentHeight = this.dialogContent.offsetHeight;
-    this.enlargedDialog.remove();
+    }
+    
+    // Remove the dialog from the DOM
+    if (this.enlargedDialog.parentNode) {
+      this.enlargedDialog.remove();
+    }
     this.enlargedDialog = null;
     
     // Update the enlarge button
-    const enlargeButton = this.container.querySelector('.side-window-enlarge');
+    const enlargeButton = this.container?.querySelector('.side-window-enlarge');
     if (enlargeButton) {
       enlargeButton.innerHTML = '⤢';
       enlargeButton.title = this.root.messages.getMessage('stam:enlarge');
@@ -690,6 +697,11 @@ class SideWindow extends BaseComponent {
     
     // Update content height to match container size
     this.updateContentHeight();
+    
+    // Force a reflow to ensure the layout is updated
+    if (this.content) {
+      void this.content.offsetHeight;
+    }
   }
   
   /**

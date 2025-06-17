@@ -165,7 +165,7 @@ class SocketSideWindow extends SideWindow {
     
     // Create connection indicator button
     this.connectionIndicator = document.createElement('span');
-    this.connectionIndicator.className = 'socket-indicator connection-indicator disconnected';
+    this.connectionIndicator.className = 'socket-indicator connection-indicator';
     this.connectionIndicator.title = this.root.messages.getMessage('stam:connection-status-disconnected');
     this.connectionIndicator.addEventListener('click', () => this.toggleConnection());
     
@@ -264,22 +264,90 @@ class SocketSideWindow extends SideWindow {
   }
   
   /**
-   * Handle content height changes
-   * @param {number} height - New content height
+   * Update content height to fill available space in the parent container
+   * @param {number} [height] - Optional explicit height, will be calculated if not provided
+   * @param {HTMLElement} [wrapper] - Optional wrapper element, will use container if not provided
+   * @returns {number} The calculated height
    */
-  async handleContentHeightChanged(height, senderId) {
-    // Update the message container height
-    if (this.messageContainer) {
-      // Calculate available height for messages (content height minus controls height)
-      const controlsHeight = this.content.querySelector('.socket-controls')?.offsetHeight || 0;
-      const statusHeight = this.statusElement?.offsetHeight || 0;
-      const messageHeight = height - controlsHeight - statusHeight - 20; // 20px for padding/margins
+  async updateContentHeight(height, wrapper = null) {
+    // Get the base height from parent class
+    const baseHeight = await super.updateContentHeight(height, wrapper);
+    const container = wrapper || this.container;
+    if (!container) return baseHeight;
+    
+    const contentElement = this.content;
+    if (!contentElement) return baseHeight;
+    
+    const messageContainer = contentElement.querySelector('.socket-messages');
+    
+    if (this.enlarged) {
+      // For enlarged state, let the content flow naturally
+      contentElement.style.overflow = 'auto';
+      contentElement.style.width = '100%';
+      contentElement.style.boxSizing = 'border-box';
       
-      if (messageHeight > 0) {
-        this.messageContainer.style.height = `${messageHeight}px`;
-        this.messageContainer.style.maxHeight = `${messageHeight}px`;
+      if (messageContainer) {
+        messageContainer.style.height = 'auto';
+        messageContainer.style.maxHeight = 'none';
+        messageContainer.style.overflowY = 'auto';
+        messageContainer.style.flex = '1 1 auto';
+      }
+    } else {
+      // For normal state, calculate the height for the message container
+      contentElement.style.overflow = 'hidden'; // Prevent double scrollbars
+      
+      if (messageContainer) {
+        try {
+          // Get all fixed height elements that take up space
+          const statusBar = contentElement.querySelector('.socket-status-container');
+          const inputArea = contentElement.querySelector('.socket-button-row');
+          
+          // Calculate total height of fixed elements
+          const fixedElementsHeight = [
+            statusBar?.offsetHeight || 0,
+            inputArea?.offsetHeight || 0
+          ].reduce((sum, h) => sum + h, 0);
+          
+          // Add padding/margins (using getComputedStyle for accuracy)
+          const style = window.getComputedStyle(contentElement);
+          const padding = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) || 0;
+          const margins = parseFloat(style.marginTop) + parseFloat(style.marginBottom) || 0;
+          const borders = parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth) || 0;
+          
+          // Calculate available height for messages
+          const messageHeight = Math.max(100, baseHeight - fixedElementsHeight - padding - margins - borders - 5);
+          
+          // Apply the calculated height
+          messageContainer.style.height = `${messageHeight}px`;
+          messageContainer.style.maxHeight = `${messageHeight}px`;
+          messageContainer.style.overflowY = 'auto';
+          
+          // Force a reflow to ensure the layout is updated
+          void messageContainer.offsetHeight;
+          
+        } catch (error) {
+          console.error('Error updating message container height:', error);
+          // Fallback to flex layout if calculation fails
+          messageContainer.style.height = '100%';
+          messageContainer.style.overflowY = 'auto';
+        }
       }
     }
+    
+    // Ensure the content element itself fills its container
+    contentElement.style.display = 'flex';
+    contentElement.style.flexDirection = 'column';
+    contentElement.style.height = '100%';
+    contentElement.style.width = '100%';
+    contentElement.style.boxSizing = 'border-box';
+    
+    // Ensure the container has proper width and height
+    if (container) {
+      container.style.width = '100%';
+      container.style.height = '100%';
+    }
+    
+    return baseHeight;
   }
   
   /**
@@ -292,7 +360,7 @@ class SocketSideWindow extends SideWindow {
     // Set the content container to use flex layout
     this.content.className = 'socket-content';
     
-    // Create status element with connection indicator
+    // Create status container and element
     const statusContainer = document.createElement('div');
     statusContainer.className = 'socket-status-container';
     
@@ -300,20 +368,7 @@ class SocketSideWindow extends SideWindow {
     this.statusElement.className = 'socket-status';
     this.updateStatusDisplay();
     
-    // Create connection indicator
-    const connectionIndicator = document.createElement('div');
-    connectionIndicator.className = 'socket-connection-indicator';
-    if (this.isConnected) {
-      connectionIndicator.classList.add('connected');
-    } else if (this.isConnecting) {
-      connectionIndicator.classList.add('connecting');
-    }
-    
-    // Add tooltip to connection indicator
-    connectionIndicator.title = this.isConnected ? 'Connected' : 'Disconnected';
-    
-    // Add elements to status container
-    statusContainer.appendChild(connectionIndicator);
+    // Add status element to container
     statusContainer.appendChild(this.statusElement);
     
     // Create message container (console-like)
@@ -332,7 +387,6 @@ class SocketSideWindow extends SideWindow {
     // Display existing messages
     this.displayMessages();
   }
-  
   /**
    * Add styles for the socket UI
    */
@@ -429,14 +483,19 @@ class SocketSideWindow extends SideWindow {
         
         /* Console-like message display - scrollable area */
         .socket-messages {
-          flex: 1;
+          flex: 1 1 auto;
+          min-height: 0; /* Allows the flex item to shrink below its content size */
           padding: 3px;
-          overflow-y: auto; /* Only the message area scrolls */
+          overflow-y: auto;
+          overflow-x: hidden; /* Prevent horizontal scrollbar */
           background-color: #000;
           color: #fff;
           font-family: monospace;
           font-size: 0.85em;
           line-height: 1.2;
+          display: flex;
+          flex-direction: column;
+          height: 100%;
         }
         
         .socket-message {
@@ -635,21 +694,21 @@ class SocketSideWindow extends SideWindow {
     if (!this.statusElement) return;
     
     if (this.isConnected) {
-      this.statusElement.innerHTML = '<span class="status-connected">Connected</span>';
+      this.statusElement.textContent = 'Connected';
       this.statusElement.classList.add('connected');
       this.statusElement.classList.remove('disconnected');
       
       if (this.connectButton) this.connectButton.disabled = true;
       if (this.disconnectButton) this.disconnectButton.disabled = false;
     } else if (this.isConnecting) {
-      this.statusElement.innerHTML = '<span class="status-connecting">Connecting...</span>';
+      this.statusElement.textContent = 'Connecting...';
       this.statusElement.classList.add('connecting');
       this.statusElement.classList.remove('connected', 'disconnected');
       
       if (this.connectButton) this.connectButton.disabled = true;
       if (this.disconnectButton) this.disconnectButton.disabled = true;
     } else {
-      this.statusElement.innerHTML = '<span class="status-disconnected">Disconnected</span>';
+      this.statusElement.textContent = 'Disconnected';
       this.statusElement.classList.add('disconnected');
       this.statusElement.classList.remove('connected', 'connecting');
       
