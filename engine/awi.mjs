@@ -213,6 +213,10 @@ export default class Awi extends Base
         }
         return result;
     }
+    getConnectorByToken( token )
+    {
+        return this[ token ];
+    }
     async callParentConnector( name, functionName, argsIn )
     {
         var awi = this;

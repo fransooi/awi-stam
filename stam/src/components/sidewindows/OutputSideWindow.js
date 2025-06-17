@@ -19,6 +19,7 @@
 import SideWindow from './SideWindow.js';
 import BaseOutput from './BaseOutput.js';
 import { MESSAGES } from '../../utils/BaseComponent.js';
+import { PROJECTMESSAGES } from '../ProjectManager.js';
 
 class OutputSideWindow extends SideWindow {
   constructor(parentId, containerId, initialHeight = 200) {
@@ -31,6 +32,8 @@ class OutputSideWindow extends SideWindow {
     this.modeImplementationsCache = {};   
     this.messageMap[MESSAGES.CONTENT_HEIGHT_CHANGED] = this.handleContentHeightChanged; 
     this.messageMap[MESSAGES.MODE_CHANGE] = this.handleModeChange;
+    this.messageMap[PROJECTMESSAGES.PROJECT_RAN] = this.handleProjectRan;
+    this.messageMap[PROJECTMESSAGES.PROJECT_DEBUGGED] = this.handleProjectDebugged;
   }
   
   /**
@@ -128,6 +131,10 @@ class OutputSideWindow extends SideWindow {
     }
   }
 
+  handleProjectRan(data, senderId) {
+    this.update(data);
+  }
+  
   /**
    * Update the output window with new data
    * @param {Object} data - The data to update with

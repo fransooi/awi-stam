@@ -18,11 +18,10 @@
 * @short Phaser connector.
 *
 */
-import ConnectorBase from '../../connector.mjs'
-import { SERVERCOMMANDS } from '../../servercommands.mjs';
+import ConnectorProjectBase from './projectBase.mjs';
 export { ConnectorPhaser as Connector }
 
-class ConnectorPhaser extends ConnectorBase
+class ConnectorPhaser extends ConnectorProjectBase
 {
 	constructor( awi, config = {} )
 	{

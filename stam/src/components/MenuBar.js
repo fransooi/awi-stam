@@ -41,6 +41,7 @@ export const MENUCOMMANDS = {
   OPEN_FOLDER: 'MENU_OPEN_FOLDER',
   SAVE_FILE: 'MENU_SAVE_FILE',
   SAVE_AS_FILE: 'MENU_SAVEAS_FILE',
+  SAVE_ALL_FILES: 'MENU_SAVEALL_FILES',
   CLOSE_FILE: 'MENU_CLOSE_FILE',
   UNDO: 'MENU_UNDO',
   REDO: 'MENU_REDO',
@@ -54,11 +55,6 @@ export const MENUCOMMANDS = {
   THEME: 'MENU_THEME',
   LANGUAGE: 'MENU_LANGUAGE',
   PREFERENCES: 'MENU_PREFERENCES',
-  RUN: 'MENU_RUN',
-  DEBUG: 'MENU_DEBUG',
-  STOP: 'MENU_STOP',
-  BUILD: 'MENU_BUILD',
-  DOCUMENTATION: 'MENU_DOCUMENTATION',
   ABOUT: 'MENU_ABOUT',
   HELP: 'MENU_HELP',
   DEBUG1: 'MENU_DEBUG1',
@@ -150,7 +146,8 @@ class MenuBar extends BaseComponent {
         { name: this.root.messages.getMessage('stam:menu-open-file'), command: MENUCOMMANDS.OPEN_FILE, disabled: false },
         { name: this.root.messages.getMessage('stam:menu-save-file'), command: MENUCOMMANDS.SAVE_FILE, disabled: false },
         { name: this.root.messages.getMessage('stam:menu-save-file-as'), command: MENUCOMMANDS.SAVE_AS_FILE, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-close-file'), command: MENUCOMMANDS.CLOSE_FILE, disabled: false }
+        { name: this.root.messages.getMessage('stam:menu-close-file'), command: MENUCOMMANDS.CLOSE_FILE, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-save-all-files'), command: MENUCOMMANDS.SAVE_ALL_FILES, disabled: false }
       ] },
       { name: this.root.messages.getMessage('stam:menu-edit'), items: [
         { name: this.root.messages.getMessage('stam:menu-undo'), command: MENUCOMMANDS.UNDO, disabled: false },
@@ -230,6 +227,7 @@ class MenuBar extends BaseComponent {
     this.menuMap[MENUCOMMANDS.SAVE_FILE].disabled = !socketInfo.loggedIn;
     this.menuMap[MENUCOMMANDS.SAVE_AS_FILE].disabled = !socketInfo.loggedIn;
     this.menuMap[MENUCOMMANDS.CLOSE_FILE].disabled = !socketInfo.loggedIn;
+    this.menuMap[MENUCOMMANDS.SAVE_ALL_FILES].disabled = !socketInfo.loggedIn;
 
     this.menuMap[MENUCOMMANDS.UNDO].disabled = !socketInfo.loggedIn;
     this.menuMap[MENUCOMMANDS.REDO].disabled = !socketInfo.loggedIn;
@@ -265,6 +263,7 @@ class MenuBar extends BaseComponent {
       editorInfo = await this.sendRequestTo('class:Editor',EDITORMESSAGES.GET_INFORMATION);
       this.menuMap[MENUCOMMANDS.SAVE_FILE].disabled = editorInfo.numberOfTabs==0;
       this.menuMap[MENUCOMMANDS.SAVE_AS_FILE].disabled = editorInfo.numberOfTabs==0;
+      this.menuMap[MENUCOMMANDS.SAVE_ALL_FILES].disabled = editorInfo.numberOfTabs==0;
       this.menuMap[MENUCOMMANDS.CLOSE_FILE].disabled = editorInfo.numberOfTabs==0;
       this.menuMap[MENUCOMMANDS.UNDO].disabled = editorInfo.numberOfTabs==0;
       this.menuMap[MENUCOMMANDS.REDO].disabled = editorInfo.numberOfTabs==0;

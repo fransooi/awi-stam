@@ -18,11 +18,10 @@
 * @short STOS connector.
 *
 */
-import ConnectorBase from '../../connector.mjs'
-import { SERVERCOMMANDS } from '../../servercommands.mjs';
+import ConnectorProjectBase from './projectBase.mjs';
 export { ConnectorSTOS as Connector }
 
-class ConnectorSTOS extends ConnectorBase
+class ConnectorSTOS extends ConnectorProjectBase
 {
 	constructor( awi, config = {} )
 	{

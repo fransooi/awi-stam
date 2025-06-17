@@ -18,11 +18,10 @@
 * @short C64 connector.
 *
 */
-import ConnectorBase from '../../connector.mjs'
-import { SERVERCOMMANDS } from '../../servercommands.mjs';
+import ConnectorProjectBase from './projectBase.mjs';
 export { ConnectorC64 as Connector }
 
-class ConnectorC64 extends ConnectorBase
+class ConnectorC64 extends ConnectorProjectBase
 {
 	constructor( awi, config = {} )
 	{

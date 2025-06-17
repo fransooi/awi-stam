@@ -32,18 +32,29 @@ export const PROJECTMESSAGES = {
   CLOSE_PROJECT: 'PROJECT_CLOSE_PROJECT',
   CAN_CLOSE_PROJECT: 'PROJECT_CAN_CLOSE_PROJECT',
   FILE_LOADED: 'PROJECT_FILE_LOADED',
-  RELOAD_FILE: 'PROJECT_RELOAD_FILE',
   SAVE_FILE: 'PROJECT_SAVE_FILE',
+  CLOSE_FILE: 'PROJECT_CLOSE_FILE',
   FILE_SAVED: 'PROJECT_FILE_SAVED',
   NEW_FILE_ADDED: 'PROJECT_NEW_FILE_ADDED',
-  GET_PROJECT: 'PROJECT_GET_PROJECT',
   GET_TEMPLATE: 'PROJECT_GET_TEMPLATE',
   CHOOSE_TEMPLATE: 'PROJECT_CHOOSE_TEMPLATE',
   CHOOSE_PROJECT: 'PROJECT_CHOOSE_PROJECT',
   FILE_RENAMED: 'PROJECT_FILE_RENAMED',
   FILE_DELETED: 'PROJECT_FILE_DELETED',
+  FILE_CLOSED: 'PROJECT_FILE_CLOSED',
   PROJECT_CLOSED: 'PROJECT_CLOSED',
   PROJECT_RENAMED: 'PROJECT_RENAMED',
+  RUN_PROJECT: 'PROJECT_RUN_PROJECT',
+  STOP_PROJECT: 'PROJECT_STOP_PROJECT',
+  DEBUG_PROJECT: 'PROJECT_DEBUG_PROJECT',
+  TEST_CODE: 'PROJECT_TEST_CODE',
+  FORMAT_CODE: 'PROJECT_FORMAT_CODE',
+  COMPILE_PROJECT: 'PROJECT_COMPILE_PROJECT',
+  PROJECT_STOPPED: 'PROJECT_STOPPED',
+  PROJECT_RUNNED: 'PROJECT_RUNNED',
+  PROJECT_DEBUGGED: 'PROJECT_DEBUGGED',
+  PROJECT_TESTED: 'PROJECT_TESTED',
+  PROJECT_COMPILED: 'PROJECT_COMPILED',
 };
 
 class ProjectManager extends BaseComponent {
@@ -55,7 +66,9 @@ class ProjectManager extends BaseComponent {
     super('Project', parentId,containerId);      
     this.projectName = null;
     this.project = null;
-    this.expandedFolders = new Set(); // Track expanded folders by their path
+    this.expandedFolders = new Set(); // Track expanded folders by their path\
+    this.compileMode = 'debug';
+    this.runMode = 'run';
 
     this.messageMap[SOCKETMESSAGES.CONNECTED] = this.handleConnected;
     this.messageMap[SOCKETMESSAGES.DISCONNECTED] = this.handleDisconnected;
@@ -66,14 +79,19 @@ class ProjectManager extends BaseComponent {
     this.messageMap[MENUCOMMANDS.DELETE_PROJECT] = this.handleDeleteProject;
     this.messageMap[MENUCOMMANDS.DOWNLOAD_PROJECT] = this.handleDownloadProject;
     this.messageMap[MENUCOMMANDS.OPEN_FILE] = this.handleOpenFile;
-    this.messageMap[PROJECTMESSAGES.RELOAD_FILE] = this.handleReloadFile;
     this.messageMap[MENUCOMMANDS.NEW_FILE] = this.handleNewFile;
     this.messageMap[PROJECTMESSAGES.SAVE_FILE] = this.handleSaveFile;
-    this.messageMap[PROJECTMESSAGES.GET_PROJECT] = this.handleGetProject;
+    this.messageMap[MENUCOMMANDS.SAVE_ALL_FILES] = this.handleSaveAllFiles;
+    this.messageMap[PROJECTMESSAGES.CLOSE_FILE] = this.handleCloseFile;
     this.messageMap[PROJECTMESSAGES.GET_TEMPLATE] = this.handleGetTemplate;
     this.messageMap[PROJECTMESSAGES.CHOOSE_TEMPLATE] = this.handleChooseTemplate;
     this.messageMap[PROJECTMESSAGES.CHOOSE_PROJECT] = this.handleChooseProject;
-    
+    this.messageMap[PROJECTMESSAGES.RUN_PROJECT] = this.handleRunProject;
+    this.messageMap[PROJECTMESSAGES.STOP_PROJECT] = this.handleStopProject;
+    this.messageMap[PROJECTMESSAGES.DEBUG_PROJECT] = this.handleDebugProject;
+    this.messageMap[PROJECTMESSAGES.TEST_CODE] = this.handleTestCode;
+    this.messageMap[PROJECTMESSAGES.FORMAT_CODE] = this.handleFormatCode;
+    this.messageMap[PROJECTMESSAGES.COMPILE_PROJECT] = this.handleCompileProject;
   }
 
   async init(options = {}) {
@@ -190,9 +208,9 @@ class ProjectManager extends BaseComponent {
   async checkProject() {
     if ( !await this.sendRequestTo( 'class:SocketSideWindow', SOCKETMESSAGES.ENSURE_CONNECTED, {}))
       return false;
-    if ( !this.project)
+    if (!this.project)
     {
-      console.error('No project loaded');
+      this.root.alert.showError('stam:roject-not-opened');
       return false;
     }
     return true;
@@ -313,7 +331,26 @@ class ProjectManager extends BaseComponent {
         {
           this.projectName = project.name;
           this.project = project;
+          // Create options folder
+          if (!this.project.compileOptions)
+          {
+            this.project.compileOptions = {
+              debug: {},
+              run: {},
+            };
+            this.project.runOptions = {
+              run: { autoRun: true },
+            };
+            this.project.debugOptions = {
+              run: {},
+            };
+            this.project.compileMode = 'debug';
+            this.project.debugMode = 'run';
+            this.project.runMode = 'run';
+          }
           this.broadcast(PROJECTMESSAGES.PROJECT_LOADED, project);
+          if ( project.runOptions[ project.runMode ].autoRun)
+            this.handleRunProject(project, senderId);
         }
       })
       .catch((error) => {
@@ -499,6 +536,7 @@ class ProjectManager extends BaseComponent {
       {
         if (file.state)
           file.state=EditorState.fromJSON(JSON.parse(file.state));
+        file.open = true;
         this.broadcast(PROJECTMESSAGES.FILE_LOADED, file);
         return true;
       }
@@ -506,7 +544,21 @@ class ProjectManager extends BaseComponent {
     this.root.alert.showError(file.error);
     return false;
   }
+  async handleCloseFile(data, senderId) {
+    if ( !await this.checkProject())
+      return;
   
+    // If the file is already loaded-> display it
+    var file = this.findFile(data.path);
+    if (file && file.open)
+    {
+      file.open = false;
+      this.broadcast(PROJECTMESSAGES.FILE_CLOSED, file);
+      return true;
+    }
+    return false;
+  }
+ 
   async handleNewFile(data, senderId) {
     if ( !await this.checkProject())
       return;
@@ -526,6 +578,7 @@ class ProjectManager extends BaseComponent {
       var file = await this.handleSaveFile({ fileInfo }, senderId);
       if (file && !file.error)
       {
+        file.open = true;
         if (data.fromIcon)
           this.broadcast(PROJECTMESSAGES.FILE_LOADED, fileInfo);
         return true;
@@ -533,6 +586,18 @@ class ProjectManager extends BaseComponent {
     }
     return false;
   }
+  
+  async handleSaveAllFiles(data, senderId) {
+    if ( !await this.checkProject())
+      return;
+    
+    // Save all files
+    var saved = await this.sendRequestTo( 'class:Editor', MENUCOMMANDS.SAVE_ALL_FILES, { force: true });
+    if (!saved)
+      return false;
+    return true;
+  }
+  
   /**
    * Handle save file command
    * @param {Object} data - File data to save
@@ -579,7 +644,146 @@ class ProjectManager extends BaseComponent {
     }
     return infoSave;
   }
-  
+  ///////////////////////////////////////////////////////////
+  // COMPILATION / RUNNING / DEBUGGING / TESTING / SHARING
+  ///////////////////////////////////////////////////////////
+  async handleRunProject(data, senderId) {
+    if ( !await this.checkProject())
+      return;
+
+    // Save all files
+    var saved = await this.sendRequestTo( 'class:Editor', MENUCOMMANDS.SAVE_ALL_FILES, { force: true });
+    if (!saved)
+      return false;
+    
+    // Compile project
+    var compileOptions = {
+      mode: this.root.currentMode,
+      handle: this.project.handle,
+      compileMode: 'run',
+      options: this.project.compileOptions['run'],
+    }
+    var answer = await this.root.server.compileProject(compileOptions );
+    if (answer.error){
+      this.root.alert.showError(answer.error);
+      return false;
+    }
+
+    // Run project
+    var runOptions = {
+      mode: this.root.currentMode,
+      handle: this.project.handle,
+      runMode: this.project.runMode,
+      options: this.project.runOptions[this.project.runMode],
+    }
+    var answer = await this.root.server.runProject(runOptions);
+    if (answer.error){
+      this.root.alert.showError(answer.error);
+      return false;
+    }
+    this.project.running = true;
+    this.broadcast(PROJECTMESSAGES.PROJECT_RUNNED, answer);
+    return true;
+  }
+  async handleStopProject(data, senderId) {
+    if ( !await this.checkProject())
+      return;
+
+    if (this.project.running)
+    {
+      this.project.running = false;
+      this.broadcast(PROJECTMESSAGES.PROJECT_STOPPED, {});
+      return true;
+    }
+    return false;
+  }
+
+  async handleDebugProject(data, senderId) {
+    if ( !await this.checkProject())
+      return;
+    
+    // Save all files
+    var saved = await this.sendRequestTo( 'class:Editor', MENUCOMMANDS.SAVE_ALL_FILES, { force: true });
+    if (!saved)
+      return false;
+    
+    // Compile project
+    var compileOptions = {
+      mode: this.root.currentMode,
+      handle: this.project.handle,
+      compileMode: 'debug',
+      options: this.project.compileOptions['debug'],
+    }
+    var answer = await this.root.server.compileProject(compileOptions);
+    if (answer.error){
+      this.root.alert.showError(answer.error);
+      return false;
+    }
+
+    // Debug project
+    var debugOptions = {
+      mode: this.root.currentMode,
+      handle: this.project.handle,
+      compileMode: 'debug',
+      debugMode: 'run',
+      options: this.project.debugOptions['run'],
+    }
+    var answer = await this.root.server.debugProject(debugOptions);
+    if (answer.error){
+      this.root.alert.showError(answer.error);
+      return false;
+    }
+    this.broadcast(PROJECTMESSAGES.PROJECT_DEBUGGED, answer);
+    return true;
+  }
+  async handleTestProject(data, senderId) {
+    if ( !await this.checkProject())
+      return;
+    
+    // Save all files
+    var saved = await this.sendRequestTo( 'class:Editor', MENUCOMMANDS.SAVE_ALL_FILES, { force: true });
+    if (!saved)
+      return false;
+    
+    // Test project
+    var testOptions = {
+      mode: this.root.currentMode,
+      handle: this.project.handle,
+      compileMode: this.project.compileMode,
+      options: this.project.compileOptions[this.project.compileMode],
+    }
+    var answer = await this.root.server.testProject(testOptions);
+    if (answer.error){
+      this.root.alert.showError(answer.error);
+      return false;
+    }
+    this.broadcast(PROJECTMESSAGES.PROJECT_TESTED, answer);
+    return true;
+  }
+  async handleCompileProject(data, senderId) {
+    if ( !await this.checkProject())
+      return;
+    
+    // Save all files
+    var saved = await this.sendRequestTo( 'class:Editor', MENUCOMMANDS.SAVE_ALL_FILES, { force: true });
+    if (!saved)
+      return false;
+    
+    // Compile project
+    var compileOptions = {
+      mode: this.root.currentMode,
+      handle: this.project.handle,
+      compileMode: this.project.compileMode,
+      options: this.project.compileOptions[this.project.compileMode],
+    }
+    var answer = await this.root.server.compileProject(compileOptions);
+    if (answer.error){
+      this.root.alert.showError(answer.error);
+      return false;
+    }
+    this.broadcast(PROJECTMESSAGES.PROJECT_COMPILED, answer);
+    return true;
+  }
   async getLayoutInfo() {
     const layoutInfo = await super.getLayoutInfo();
     layoutInfo.projectName = this.projectName;

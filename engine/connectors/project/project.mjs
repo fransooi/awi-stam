@@ -76,6 +76,15 @@ class ConnectorProject extends ConnectorBase
                 renameFolder: this.command_renameFolder.bind(this),
                 copyFolder: this.command_copyFolder.bind(this),
                 moveFolder: this.command_moveFolder.bind(this),
+                compileProject: this.command_compileProject.bind(this),
+                runProject: this.command_runProject.bind(this),
+                stopProject: this.command_stopProject.bind(this),
+                debugProject: this.command_debugProject.bind(this),
+                testProject: this.command_testProject.bind(this),
+                shareProject: this.command_shareProject.bind(this),
+                helpProject: this.command_helpProject.bind(this),
+                testCode: this.command_testCode.bind(this),
+                formatCode: this.command_formatCode.bind(this),
             }
         }
         return this.newAnswer( data );
@@ -411,6 +420,10 @@ class ConnectorProject extends ConnectorBase
         // Returns the project
         var projectToSend = this.awi.utilities.copyObject( project );
         projectToSend.path = '';
+        // Find the project connector
+        this.projectConnector = this.awi.getConnectorByToken( project.type );
+        if ( !this.projectConnector )
+            return this.replyError(this.newError( 'awi:project-not-found', { value: parameters.name ? parameters.name : projectHandle } ), message, editor);
         return this.replySuccess(this.newAnswer( projectToSend ), message, editor);
     }
     async command_closeProject( parameters, message, editor )
@@ -428,6 +441,7 @@ class ConnectorProject extends ConnectorBase
             return this.replyError(answer, message, editor );
         // Reset project
         delete this.projects[ projectHandle ];
+        this.projectConnector = null;
         return this.replySuccess(this.newAnswer( true ), message, editor);
     }
     async command_saveProject( parameters, message, editor )
@@ -510,6 +524,97 @@ class ConnectorProject extends ConnectorBase
         if ( answer.isError() )
             return this.replyError(answer, message, editor );
         return this.replySuccess(this.newAnswer( true ), message, editor);
+    }
+
+    async command_runProject(parameters, message, editor){
+        // Project exists?
+        if ( !parameters.handle || !this.projects[ parameters.handle ] )
+            return this.replyError(this.newError( 'awi:project-not-open', parameters.handle ), message, editor );
+        // Run project
+        var answer = await this.projectConnector.command_runProject(parameters);
+        if ( answer.isError() )
+            return this.replyError(answer, message, editor);
+        return this.replySuccess(answer, message, editor);
+    }
+    async command_stopProject(parameters, message, editor){
+        // Project exists?
+        if ( !parameters.handle || !this.projects[ parameters.handle ] )
+            return this.replyError(this.newError( 'awi:project-not-open', parameters.handle ), message, editor );
+        // Run project
+        var answer = await this.projectConnector.command_stopProject(parameters);
+        if ( answer.isError() )
+            return this.replyError(answer, message, editor);
+        return this.replySuccess(answer, message, editor);
+    }
+    async command_debugProject(parameters, message, editor){
+        // Project exists?
+        if ( !parameters.handle || !this.projects[ parameters.handle ] )
+            return this.replyError(this.newError( 'awi:project-not-open', parameters.handle ), message, editor );
+        // Debug project
+        var answer = await this.projectConnector.command_debugProject(parameters);
+        if ( answer.isError() )
+            return this.replyError(answer, message, editor);
+        return this.replySuccess(answer, message, editor);
+    }
+    async command_testProject(parameters, message, editor){
+        // Project exists?
+        if ( !parameters.handle || !this.projects[ parameters.handle ] )
+            return this.replyError(this.newError( 'awi:project-not-open', parameters.handle ), message, editor );
+        // Test code
+        var answer = await this.projectConnector.command_testProject(parameters);
+        if ( answer.isError() )
+            return this.replyError(answer, message, editor);
+        return this.replySuccess(answer, message, editor);
+    }    
+    async command_compileProject(parameters, message, editor){
+        // Project exists?
+        if ( !parameters.handle || !this.projects[ parameters.handle ] )
+            return this.replyError(this.newError( 'awi:project-not-open', parameters.handle ), message, editor );
+        // Compile project
+        var answer = await this.projectConnector.command_compileProject(parameters);
+        if ( answer.isError() )
+            return this.replyError(answer, message, editor);
+        return this.replySuccess(answer, message, editor);
+    }
+    async command_shareProject(parameters, message, editor){
+        // Project exists?
+        if ( !parameters.handle || !this.projects[ parameters.handle ] )
+            return this.replyError(this.newError( 'awi:project-not-open', parameters.handle ), message, editor );
+        // Share project
+        var answer = await this.projectConnector.command_shareProject(parameters);
+        if ( answer.isError() )
+            return this.replyError(answer, message, editor);
+        return this.replySuccess(answer, message, editor);
+    }
+    async command_helpProject(parameters, message, editor){
+        // Project exists?
+        if ( !parameters.handle || !this.projects[ parameters.handle ] )
+            return this.replyError(this.newError( 'awi:project-not-open', parameters.handle ), message, editor );
+        // Help project
+        var answer = await this.projectConnector.command_helpProject(parameters);
+        if ( answer.isError() )
+            return this.replyError(answer, message, editor);
+        return this.replySuccess(answer, message, editor);
+    }
+    async command_testCode(parameters, message, editor){
+        // Project exists?
+        if ( !parameters.handle || !this.projects[ parameters.handle ] )
+            return this.replyError(this.newError( 'awi:project-not-open', parameters.handle ), message, editor );
+        // Test code
+        var answer = await this.projectConnector.command_testCode(parameters);
+        if ( answer.isError() )
+            return this.replyError(answer, message, editor);
+        return this.replySuccess(answer, message, editor);
+    }
+    async command_formatCode(parameters, message, editor){
+        // Project exists?
+        if ( !parameters.handle || !this.projects[ parameters.handle ] )
+            return this.replyError(this.newError( 'awi:project-not-open', parameters.handle ), message, editor );
+        // Format code
+        var answer = await this.projectConnector.command_formatCode(parameters);
+        if ( answer.isError() )
+            return this.replyError(answer, message, editor);
+        return this.replySuccess(answer, message, editor);
     }
 
     // FILE COMMANDS 

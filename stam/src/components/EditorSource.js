@@ -254,9 +254,20 @@ class EditorSource extends BaseComponent {
       return this.tabs[indexOrNameOrTab];
     }
     if (typeof indexOrNameOrTab === 'string') {
-      for (let i = 0; i < this.tabs.length; i++) {
-        if (this.tabs[i].name === indexOrNameOrTab) {
-          return this.tabs[i];
+      if (indexOrNameOrTab.indexOf('/') < 0)
+      {
+        for (let i = 0; i < this.tabs.length; i++) {
+          if (this.tabs[i].name === indexOrNameOrTab) {
+            return this.tabs[i];
+          }
+        }
+      }
+      else
+      {
+        for (let i = 0; i < this.tabs.length; i++) {
+          if (this.tabs[i].path === indexOrNameOrTab) {
+            return this.tabs[i];
+          }
         }
       }
     }
@@ -308,12 +319,13 @@ class EditorSource extends BaseComponent {
     };
     return fileInfo;
   }
-  updateTabState(tabIndex) {
-    const tab = this.getTab(tabIndex);
+  updateCurrentTabState() {
+    if (this.activeTabIndex < 0)
+      return;
+    const tab = this.getTab(this.activeTabIndex);
     if (!tab)
       return;
-    
-    tab.state = this.editorView.state; //
+    tab.state = this.editorView.state; 
     tab.scrollTop = this.editorView.scrollDOM.scrollTop;
     tab.scrollLeft = this.editorView.scrollDOM.scrollLeft;
   }
@@ -346,7 +358,7 @@ class EditorSource extends BaseComponent {
     return this.getTab(this.activeTabIndex);
   }
   getContent() {
-    this.updateTabState(this.activeTabIndex);
+    this.updateCurrentTabState();
     const tab = this.getTab(this.activeTabIndex);
     if (tab)
         return tab.state.doc.toString();
@@ -362,7 +374,7 @@ class EditorSource extends BaseComponent {
           insert: content
         }
       });
-      this.updateTabState(this.activeTabIndex);
+      this.updateCurrentTabState();
       this.editorView.dispatch(transaction);
       return;
     }
@@ -423,8 +435,7 @@ class EditorSource extends BaseComponent {
     };
     
     this.tabs.push(tab);    
-    if (this.activeTabIndex !== -1 && this.editorView) 
-      this.updateTabState(this.activeTabIndex);      
+    this.updateCurrentTabState();      
     this.activeTabIndex = this.tabs.length - 1;      
     await this.createEditor(tab,content);
     this.renderTabs();    
@@ -489,12 +500,37 @@ class EditorSource extends BaseComponent {
     }
     return true;
   }
+  async saveAllTabsForce() {
+    var redrawTabs = false;
+    this.updateCurrentTabState();
+    for(var i=this.tabs.length-1;i>=0;i--)
+    {
+      if (!this.tabs[i].modified)
+        continue;
+      var fileInfo = this.getTabFileInfo(i);
+      var forceDialog = false;
+      if (!fileInfo.path)
+      {
+        fileInfo.path = this.editorConfig.defaultFilename;
+        fileInfo.name = this.editorConfig.defaultFilename;
+        forceDialog = true;
+      }
+      var response = await this.sendRequestTo('class:ProjectManager', PROJECTMESSAGES.SAVE_FILE, { fileInfo: fileInfo, forceDialog: forceDialog });
+      if (response.error)          
+        return false;
+      this.tabs[i].modified = false;
+      redrawTabs = true;
+    }
+    if (redrawTabs)
+      this.renderTabs();
+    return true;
+  }
   async ensureTabSaved(index){
     const tab = this.getTab(index);
     if (!tab)
       return false;
     
-    if (!tab.justLoaded && tab.modified)       
+    if (tab.modified)       
     {
       var fileName = tab.name;
       if (!tab.path)
@@ -503,9 +539,10 @@ class EditorSource extends BaseComponent {
       var answer = await this.root.alert.showCustom('stam:save-changes', message, ['stam:cancel|neutral', 'stam:no|negative', 'stam:yes|positive'], 'question');
       if (answer == 0)
         return false;
-     if (answer === 2)
+      if (answer === 2)
       {
-        this.updateTabState(index);
+        if (index == this.activeTabIndex)
+          this.updateCurrentTabState(); 
         var fileInfo = this.getTabFileInfo(index);
         var forceDialog = false;
         if (!fileInfo.path)
@@ -533,8 +570,7 @@ class EditorSource extends BaseComponent {
       return;
     
     // Save the state of the current tab before switching
-    if (this.activeTabIndex >= 0) 
-      this.updateTabState(this.activeTabIndex);
+    this.updateCurrentTabState();
     
     // Update the active tab index
     this.activeTabIndex = index;
@@ -560,9 +596,7 @@ class EditorSource extends BaseComponent {
       setTimeout(() => {
         try {
           this.editorView.focus();
-        } catch (error) {
-          console.error('Error focusing editor:', error);
-        }
+        } catch (error) {}
       }, 50);
     }
   }
@@ -720,12 +754,9 @@ class EditorSource extends BaseComponent {
     }
     
     // Save current mode state including all tabs and their content
+    this.updateCurrentTabState();
     this.modeStates[this.currentMode] = {
       tabs: this.tabs.map(tab => {
-        // For the active tab, get the latest content from the editor
-        if (this.activeTabIndex !== -1 && this.tabs[this.activeTabIndex] === tab) {
-          this.updateTabState(this.activeTabIndex);
-        }
         return { ...tab };
       }),
       activeTabIndex: this.activeTabIndex
@@ -806,11 +837,20 @@ class EditorSource extends BaseComponent {
     }
     return true;
   }
+  async handleFileClosed(data, sender)
+  {
+    let tab = this.findTab(data.path);
+    if ( tab ){
+      this.closeTab(tab);
+      return true;
+    }
+    return false;
+  }
   
   async handleSaveAsFile(data, sender) {
     var tab = this.getActiveTab();
     if (tab) {
-      this.updateTabState(tab);
+      this.updateCurrentTabState();
       var fileInfo = this.getTabFileInfo(tab);
       var response = await this.sendRequestTo('class:ProjectManager', PROJECTMESSAGES.SAVE_FILE, { fileInfo: fileInfo, forceDialog: true });
       if (response && !response.error)
@@ -830,7 +870,7 @@ class EditorSource extends BaseComponent {
   async handleSaveFile(data, sender) {    
     var tab = this.getActiveTab();
     if (tab) {
-      this.updateTabState(tab);
+      this.updateCurrentTabState();
       var fileInfo = this.getTabFileInfo(tab);
       var forceDialog = fileInfo.path == '';
       var response = await this.sendRequestTo('class:ProjectManager', PROJECTMESSAGES.SAVE_FILE, { fileInfo: fileInfo, forceDialog: forceDialog });
@@ -845,7 +885,7 @@ class EditorSource extends BaseComponent {
     }
     return false;
   }
-  
+
   async handleRunProgram(data, sender) {
 
     // Force save all tabs
@@ -959,6 +999,12 @@ class EditorSource extends BaseComponent {
     this.layoutLoaded = true;
   }
 
+  async handleSaveAllFiles(data, sender) 
+  {
+    if ( data.force )
+      return await this.saveAllTabsForce();
+    return await this.saveAllTabs();
+  }
   async handleCanCloseProject(data, sender) 
   {
     return await this.saveAllTabs(data, sender);

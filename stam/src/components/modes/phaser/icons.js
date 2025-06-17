@@ -18,11 +18,14 @@
 */
 import BaseComponent from '../../../utils/BaseComponent.js';
 import { MENUCOMMANDS } from '../../MenuBar.js';
+import { PROJECTMESSAGES } from '../../ProjectManager.js';
 
 class PhaserIcons extends BaseComponent {
   constructor(parentId,containerId) {
     super('PhaserIcons', parentId, containerId);
     this.messageMap[MENUCOMMANDS.UPDATE_MENU_ITEMS] = this.handleUpdateMenuItems;
+    this.messageMap[PROJECTMESSAGES.PROJECT_RUNNED] = this.handleProjectRunned;
+    this.messageMap[PROJECTMESSAGES.PROJECT_STOPPED] = this.handleProjectStopped;
     this.buttons = [];
   }
 
@@ -64,14 +67,25 @@ class PhaserIcons extends BaseComponent {
     this.addButton('stam:new-text', MENUCOMMANDS.NEW_FILE, 'new', 'fa-file');
     this.addButton('stam:open-text', MENUCOMMANDS.OPEN_FILE, 'open', 'fa-folder-open');
     this.addButton('stam:save-text', MENUCOMMANDS.SAVE_FILE, 'save', 'fa-save');
-    this.addButton('stam:run-text', MENUCOMMANDS.RUN_PROGRAM, 'run', 'fa-play');
-    this.addButton('stam:debug-text', MENUCOMMANDS.DEBUG_PROGRAM, 'debug', 'fa-bug');
-    this.addButton('stam:share-text', MENUCOMMANDS.SHARE_PROGRAM, 'share', 'fa-share-alt');
+    this.addButton('stam:run-text', PROJECTMESSAGES.RUN_PROJECT, 'run', 'fa-play');
+    this.addButton('stam:debug-text', PROJECTMESSAGES.DEBUG_PROJECT, 'debug', 'fa-bug');
+    this.addButton('stam:share-text', PROJECTMESSAGES.SHARE_PROJECT, 'share', 'fa-share-alt');
     this.addButton('stam:help-text', MENUCOMMANDS.HELP, 'help', 'fa-question-circle');
   
     return this.parentContainer;
   }
   
+  replaceButton(oldClassName, newClassName, text, action, iconClass) {
+    let button = this.buttons.find(button => button.className.includes(oldClassName));
+    if (!button)
+      return;
+    button.className = `phaser-button phaser-button-${newClassName}`;
+    button.title = this.root.messages.getMessage(text);
+    button.dataset.action=action;
+    let icon = button.querySelector('.phaser-icon');
+    if (icon)
+      icon.className = `fas ${iconClass} phaser-icon`;
+  }
   addButton(text, action,className, iconClass) {
     const button = document.createElement('button');
     button.className = `phaser-button phaser-button-${className}`;
@@ -83,13 +97,21 @@ class PhaserIcons extends BaseComponent {
     icon.className = `fas ${iconClass} phaser-icon`;
     icon.style.fontSize = '24px'; // Double size icons
     button.appendChild(icon);
-    
+
+    // Store action inelement datazone
+    button.dataset.action = action;
+
     // No text span anymore, just the icon    
-    button.addEventListener('click', () => this.handleButtonClick(action));
+    button.addEventListener('click', () => this.handleButtonClick(button.dataset.action));
     this.layoutContainer.appendChild(button);
     this.buttons.push(button);
   }
-
+  handleProjectRunned(data, sender) {
+    this.replaceButton('run', 'stop', 'stam:stop-text', PROJECTMESSAGES.STOP_PROJECT, 'fa-stop');
+  }
+  handleProjectStopped(data, sender) {
+    this.replaceButton('stop', 'run', 'stam:run-text', PROJECTMESSAGES.RUN_PROJECT, 'fa-play');
+  }
   // add styles to document if not present
   addStyles() {
     const styles = document.querySelectorAll('style[data-phaser-style]');
@@ -212,7 +234,12 @@ class PhaserIcons extends BaseComponent {
         this.findButtonFromClassname('phaser-button-new').disabled = false;
         this.findButtonFromClassname('phaser-button-open').disabled = false;
         this.findButtonFromClassname('phaser-button-save').disabled = data.editorInfo.numberOfTabs==0;
-        this.findButtonFromClassname('phaser-button-run').disabled = false;
+        let buttonRun = this.findButtonFromClassname('phaser-button-run');
+        if (buttonRun)
+          buttonRun.disabled = false;
+        let buttonStop = this.findButtonFromClassname('phaser-button-stop');
+        if (buttonStop)
+          buttonStop.disabled = false;
         this.findButtonFromClassname('phaser-button-debug').disabled = false;
         this.findButtonFromClassname('phaser-button-share').disabled = false;
         this.findButtonFromClassname('phaser-button-help').disabled = false;

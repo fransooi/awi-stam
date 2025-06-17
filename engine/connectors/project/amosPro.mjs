@@ -18,11 +18,10 @@
 * @short Amos Pro connector.
 *
 */
-import ConnectorBase from '../../connector.mjs'
-import { SERVERCOMMANDS } from '../../servercommands.mjs';
+import ConnectorProjectBase from './projectBase.mjs';
 export { ConnectorAmosPro as Connector }
 
-class ConnectorAmosPro extends ConnectorBase
+class ConnectorAmosPro extends ConnectorProjectBase
 {
 	constructor( awi, config = {} )
 	{

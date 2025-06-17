@@ -45,14 +45,18 @@ class Editor extends BaseComponent {
     this.messageMap[MESSAGES.CAN_MODE_CHANGE] = this.handleCanModeChange;
     this.messageMap[PROJECTMESSAGES.PROJECT_LOADED] = this.handleProjectLoaded;
     this.messageMap[PROJECTMESSAGES.PROJECT_CLOSED] = this.handleProjectClosed;
+    this.messageMap[PROJECTMESSAGES.PROJECT_RUNNED] = this.handleProjectRunned;
+    this.messageMap[PROJECTMESSAGES.PROJECT_STOPPED] = this.handleProjectStopped;
     this.messageMap[PROJECTMESSAGES.CAN_CLOSE_PROJECT] = this.handleCanCloseProject;
     this.messageMap[PROJECTMESSAGES.FILE_LOADED] = this.handleFileLoaded;
     this.messageMap[MENUCOMMANDS.SAVE_FILE] = this.handleSaveFile;
+    this.messageMap[MENUCOMMANDS.SAVE_ALL_FILES] = this.handleSaveAllFiles;
     this.messageMap[MENUCOMMANDS.SAVE_AS_FILE] = this.handleSaveAsFile;
     this.messageMap[MENUCOMMANDS.CLOSE_FILE] = this.handleCloseFile;
     this.messageMap[EDITORMESSAGES.GET_INFORMATION] = this.handleGetInformation;
     this.messageMap[PROJECTMESSAGES.FILE_RENAMED] = this.handleFileRenamed;
     this.messageMap[PROJECTMESSAGES.FILE_DELETED] = this.handleFileDeleted;
+    this.messageMap[PROJECTMESSAGES.FILE_CLOSED] = this.handleFileClosed;
     this.messageMap[PROJECTMESSAGES.GET_DEFAULT_FILENAME] = this.handleGetDefaultFilename;
     this.messageMap[MENUCOMMANDS.UPDATE_MENU_ITEMS] = this.handleUpdateMenuItems;
   }
@@ -151,6 +155,12 @@ class Editor extends BaseComponent {
     }
     return false;
   }
+  async handleSaveAllFiles(data, sender) {
+    if (this.editor && this.editor.handleSaveAllFiles) {
+      return await this.editor.handleSaveAllFiles(data, sender);
+    }
+    return false;
+  }
   async handleCloseFile(data, sender) {
     if (this.editor && this.editor.handleCloseFile) {
       return await this.editor.handleCloseFile(data, sender);
@@ -175,6 +185,18 @@ class Editor extends BaseComponent {
     }
     return false;
   }
+  async handleProjectRunned(data, sender) {
+    if (this.editor && this.editor.handleProjectRunned) {
+      return await this.editor.handleProjectRunned(data, sender);
+    }
+    return false;    
+  }
+  async handleProjectStopped(data, sender) {
+    if (this.editor && this.editor.handleProjectStopped) {
+      return await this.editor.handleProjectStopped(data, sender);
+    }
+    return false;    
+  }
   async handleCanCloseProject(data, sender) {
     if (this.editor && this.editor.handleCanCloseProject) {
       return await this.editor.handleCanCloseProject(data, sender);
@@ -187,9 +209,21 @@ class Editor extends BaseComponent {
     }
     return false;
   }
+  async handleCloseFile(data, sender) {
+    if (this.editor && this.editor.handleCloseFile) {
+      return await this.editor.handleCloseFile(data, sender);
+    }
+    return false;
+  }
   async handleFileDeleted(data, sender) {
     if (this.editor && this.editor.handleFileDeleted) {
       return await this.editor.handleFileDeleted(data, sender);
+    }
+    return false;
+  }
+  async handleFileClosed(data, sender) {
+    if (this.editor && this.editor.handleFileDeleted) {
+      return await this.editor.handleFileClosed(data, sender);
     }
     return false;
   }

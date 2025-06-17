@@ -44,4 +44,13 @@ export const SERVERCOMMANDS = {
     LOAD_LANGUAGE: 'languages:loadLanguage',
     DELETE_LANGUAGE: 'languages:deleteLanguage',
     TRANSLATE_LANGUAGE: 'languages:translateLanguage',
+    RUN_PROJECT: 'project:runProject',
+    DEBUG_PROJECT: 'project:debugProject',
+    STOP_PROJECT: 'project:stopProject',
+    TEST_PROJECT: 'project:testProject',
+    COMPILE_PROJECT: 'project:compileProject',
+    SHARE_PROJECT: 'project:shareProject',
+    HELP_PROJECT: 'project:helpProject',
+    TEST_CODE: 'project:testCode',
+    FORMAT_CODE: 'project:formatCode',
 };

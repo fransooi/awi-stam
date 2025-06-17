@@ -121,6 +121,7 @@ stam:menu-open-file                       Open File
 stam:menu-save-file                       Save File
 stam:menu-save-file-as                    Save File As
 stam:menu-close-file                      Close File
+stam:menu-save-all-files                  Save All Files
 stam:menu-edit                            Edit
 stam:menu-undo                            Undo
 stam:menu-redo                            Redo

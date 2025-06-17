@@ -18,11 +18,10 @@
 * @short JavaScript connector.
 *
 */
-import ConnectorBase from '../../connector.mjs'
-import { SERVERCOMMANDS } from '../../servercommands.mjs';
+import ConnectorProjectBase from './projectBase.mjs';
 export { ConnectorJavaScript as Connector }
 
-class ConnectorJavaScript extends ConnectorBase
+class ConnectorJavaScript extends ConnectorProjectBase
 {
 	constructor( awi, config = {} )
 	{

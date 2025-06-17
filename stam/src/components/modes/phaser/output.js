@@ -25,6 +25,8 @@ class PhaserOutput extends BaseOutput {
     this.modeName = 'phaser';
     this.messageMap[PROJECTMESSAGES.PROJECT_LOADED] = this.handleProjectLoaded;
     this.messageMap[PROJECTMESSAGES.PROJECT_CLOSED] = this.handleProjectClosed;
+    this.messageMap[PROJECTMESSAGES.PROJECT_RUNNED] = this.handleProjectRunned;
+    this.messageMap[PROJECTMESSAGES.PROJECT_STOPPED] = this.handleProjectStopped;
     this.projectUrl = null;
   }
   
@@ -144,12 +146,8 @@ class PhaserOutput extends BaseOutput {
    * @param {string} senderId - ID of the component that sent the message
    */
   handleProjectLoaded(project, senderId) {
-    if (project && project.url) {
-      this.projectUrl = project.url;
-      this.runUrl = project.runUrl;
-      if (this.projectDisplay) {
-        this.displayProjectUrl(this.runUrl);
-      }
+    if (project) {
+      this.project = project;
     }
   }
   
@@ -159,19 +157,29 @@ class PhaserOutput extends BaseOutput {
    * @param {string} senderId - ID of the component that sent the message
    */
   handleProjectClosed(project, senderId) {
-    this.projectUrl = null;
-    this.runUrl = null;
-    if (this.projectDisplay) {
-      this.displayProjectUrl(this.runUrl);
-    }
+    this.project = null;
+    this.displayProjectUrl(null);
   }
   
+  handleProjectRunned(project, senderId) {
+    if (this.project) {
+      this.displayProjectUrl(this.project.runUrl);
+    }
+  }
+  handleProjectStopped(project, senderId) {
+    if (this.project) {
+      this.displayProjectUrl(null);
+    }
+  }
   /**
    * Display the project URL in an iframe
    * @param {string} url - The URL to display
    */
   displayProjectUrl(url) {
     
+    if (!this.projectDisplay)
+      return;
+
     // Clear any existing content
     this.projectDisplay.innerHTML = '';
 
