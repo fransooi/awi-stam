@@ -195,32 +195,7 @@ class C64Output extends BaseOutput {
     if (super.destroy) {
       super.destroy();
     }
-  }
-  
-  /**
-   * Override getLayoutInfo to include C64-specific output information
-   * @returns {Object} Layout information for this OutputSideWindow
-   */
-  async getLayoutInfo() {
-    const baseInfo = await super.getLayoutInfo();
-    
-    // Add C64-specific layout information
-    return {
-      ...baseInfo,
-      modeName: this.modeName
-    };
-  }
-  
-  /**
-   * Set the layout from saved information
-   * @param {Object} layoutInfo - The layout information to apply
-   */
-  setLayout(layoutInfo) {
-    // Call the parent class's setLayout method if it exists
-    if (super.setLayout) {
-      super.setLayout(layoutInfo);
-    }
-  }
+  }  
 }
 
 // Export the class

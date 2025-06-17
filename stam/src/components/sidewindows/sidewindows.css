@@ -1041,10 +1041,10 @@
   background-color: var(--container-background);
   border-radius: 6px;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-  width: 80%;
-  height: 80%;
-  max-width: 1200px;
-  max-height: 800px;
+  width: 90%;
+  height: 90%;
+  max-width: 5600px;
+  max-height: 5600px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1099,7 +1099,7 @@
   color: var(--text-neutral);
   font-style: italic;
   text-align: center;
-  padding: 20px;
+  padding: 0px;
 }
 
 .placeholder-message {
@@ -1111,5 +1111,5 @@
   color: #999;
   font-style: italic;
   text-align: center;
-  padding: 20px;
+  padding: 0px;
 }

@@ -124,28 +124,12 @@ class PhaserOutput extends BaseOutput {
       document.head.appendChild(style);
     }
   }
-  
-  /**
-   * Override getLayoutInfo to include Phaser-specific output information
-   * @returns {Object} Layout information for this OutputSideWindow
-   */
-  async getLayoutInfo() {
-    const baseInfo = await super.getLayoutInfo();
-    
-    // Add Phaser-specific layout information
-    return {
-      ...baseInfo,
-      modeName: this.modeName,
-      projectUrl: this.projectUrl
-    };
-  }
-  
+
   /**
    * Handle the PROJECT_LOADED message from ProjectManager
    * @param {Object} project - The project object containing URL and other properties
-   * @param {string} senderId - ID of the component that sent the message
    */
-  handleProjectLoaded(project, senderId) {
+  handleProjectLoaded(project) {
     if (project) {
       this.project = project;
     }

@@ -92,9 +92,8 @@ class OutputSideWindow extends SideWindow {
       }
       // Create and initialize the mode-specific implementation
       const modeImplementation = new OutputImplementation(this.componentId, this.containerId, this.height);
-      if (typeof modeImplementation.init === 'function') {
-        await modeImplementation.init({ mode });
-      }
+      await modeImplementation.init({ mode });
+
       // Cache the instance and assign
       this.modeImplementationsCache[mode] = modeImplementation;
       this.modeImplementation = modeImplementation;
@@ -116,21 +115,20 @@ class OutputSideWindow extends SideWindow {
    */
   async render(containerId) {
     // First, let the parent class handle the basic window rendering
-    await super.render(containerId);
-   
+    this.parentContainer = await super.render(containerId);
     return this.container;
   }
   
-  /**
-   * Handle content height changes
-   * @param {number} height - New content height
-   */
-  handleContentHeightChanged(height) {
-    if (this.modeImplementation) {
-      this.modeImplementation.handleContentHeightChanged(height);
+  updateContentHeight( height,  wrapper ){
+    height = super.updateContentHeight(height,wrapper);
+    if (this.modeImplementation && this.modeImplementation.updateContentHeight) {
+      this.modeImplementation.updateContentHeight( height, wrapper );
     }
+    return height;
   }
-
+  handleContentHeightChanged(data, senderId) {
+    this.updateContentHeight(data.height, data.wrapper);
+  }
   handleProjectRan(data, senderId) {
     this.update(data);
   }
@@ -140,7 +138,7 @@ class OutputSideWindow extends SideWindow {
    * @param {Object} data - The data to update with
    */
   update(data) {
-    if (this.modeImplementation) {
+    if (this.modeImplementation && this.modeImplementation.update) {
       this.modeImplementation.update(data);
     }
   }
@@ -175,7 +173,7 @@ class OutputSideWindow extends SideWindow {
     const baseInfo = await super.getLayoutInfo();
     
     // Add mode-specific layout information if available
-    if (this.modeImplementation) {
+    if (this.modeImplementation && this.modeImplementation.getLayoutInfo) {
       const modeInfo = await this.modeImplementation.getLayoutInfo();
       return {
         ...baseInfo,

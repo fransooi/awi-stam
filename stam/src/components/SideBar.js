@@ -115,21 +115,16 @@ class SideBar extends BaseComponent {
         } else {
             windowWrapper.style.height = `${window.height}px`;
             windowWrapper.style.minHeight = `${window.headerHeight}px`;
-        windowWrapper.style.flex = '1 1 auto';
+            windowWrapper.style.flex = '1 1 auto';
         }
         
       // Register the window element for lookup
       this.windowRegistry.set(windowWrapper.querySelector('.side-window'), window);
         
-      // No resize separators needed - using window controls for resizing
-          
       // Add the window wrapper to the container
-            this.windowsContainer.appendChild(windowWrapper);
+      this.windowsContainer.appendChild(windowWrapper);
       window.parentContainer=windowWrapper;
     });
-          
-    // No resize handles needed - using window controls for resizing
-    
     // Patch the SideWindow.getWindowObjectFromElement method to use our registry
     this.patchSideWindowGetWindowObjectMethod();
 

@@ -586,6 +586,7 @@ class SideWindow extends BaseComponent {
       // Close the enlarged dialog
       this.closeEnlargedDialog();
     }
+    this.updateContentHeight();
   }
 
   /**
@@ -624,8 +625,8 @@ class SideWindow extends BaseComponent {
     dialogHeader.appendChild(closeButton);
     
     // Create the dialog content
-    const dialogContent = document.createElement('div');
-    dialogContent.className = 'side-window-enlarged-content';
+    this.dialogContent = document.createElement('div');
+    this.dialogContent.className = 'side-window-enlarged-content';
     
     // Store references to the original content and its parent
     this.originalContentParent = this.content.parentNode;
@@ -641,17 +642,19 @@ class SideWindow extends BaseComponent {
     this.originalContentParent.replaceChild(this.contentPlaceholder, this.content);
     
     // Add the original content to the dialog
-    dialogContent.appendChild(this.content);
+    this.dialogContent.appendChild(this.content);
     
     // Add header and content to the dialog container
     dialogContainer.appendChild(dialogHeader);
-    dialogContainer.appendChild(dialogContent);
+    dialogContainer.appendChild(this.dialogContent);
     
     // Add the dialog container to the overlay
     this.enlargedDialog.appendChild(dialogContainer);
     
     // Add the overlay to the document body
     document.body.appendChild(this.enlargedDialog);
+    if (this.enlargedDialogContentHeight)
+      this.dialogContent.style.height = this.enlargedDialogContentHeight + 'px';
     
     // Update the enlarge button
     const enlargeButton = this.container.querySelector('.side-window-enlarge');
@@ -673,6 +676,8 @@ class SideWindow extends BaseComponent {
     }
     
     // Remove the dialog from the DOM
+    if (!this.enlargedDialogContentHeight)
+      this.enlargedDialogContentHeight = this.dialogContent.offsetHeight;
     this.enlargedDialog.remove();
     this.enlargedDialog = null;
     
@@ -685,6 +690,46 @@ class SideWindow extends BaseComponent {
     
     // Update content height to match container size
     this.updateContentHeight();
+  }
+  
+  /**
+   * Update the content area height to match the available space
+   */
+  updateContentHeight() {
+    if (!this.enlargedDialog){
+      if (!this.container || !this.content || !this.header || this.minimized) return;
+    
+      // Calculate available height (container height minus header height)
+      const containerHeight = this.container.offsetHeight;
+      const headerHeight = this.header.offsetHeight;
+      
+      // Account for borders and padding
+      const computedStyle = window.getComputedStyle(this.content);
+      let verticalPadding = parseFloat(computedStyle.paddingTop) + parseFloat(computedStyle.paddingBottom);
+      let verticalBorders = parseFloat(computedStyle.borderTopWidth) + parseFloat(computedStyle.borderBottomWidth);
+      if (isNaN(verticalPadding)) verticalPadding = 0;
+      if (isNaN(verticalBorders)) verticalBorders = 0;
+      
+      // Add a small buffer (2px) to ensure no scrollbar appears
+      const buffer = 2;
+      
+      // Calculate the final available height
+      // We use a 12px bottom margin to account for the resize separator that's added by SideBar
+      const bottomMargin = 12;
+      const availableHeight = containerHeight - headerHeight - verticalPadding - verticalBorders - buffer - bottomMargin;
+      
+      // Set content height
+      if (availableHeight > 0) {
+        this.content.style.height = `${availableHeight}px`;
+      }
+      return availableHeight;
+    }
+    else
+    {
+      if (this.enlargedDialogContentHeight)
+        this.content.style.height = this.enlargedDialogContentHeight + 'px';
+      return this.dialogContent.offsetHeight;
+    }
   }
   
   /**
@@ -714,19 +759,21 @@ class SideWindow extends BaseComponent {
    * Set the height of the window
    * @param {number} height - New height in pixels
    */
-  setHeight(height) {
+  setHeight(height, wrapper) {
     if (!this.container) return;
     
     this.height = height;
     
     // Update the wrapper's height
-    const wrapper = this.container.closest('.side-window-wrapper');
-    if (wrapper && !this.minimized) {
-      this.originalHeight = height;
-      wrapper.style.height = `${height}px`;
-      
-      // Update content height to match new container size
-      this.updateContentHeight();
+    if (!this.enlargedDialog){
+      const wrapper = this.container.closest('.side-window-wrapper');
+      if (wrapper && !this.minimized) {
+        this.originalHeight = height;
+        wrapper.style.height = `${height}px`;
+        
+        // Update content height to match new container size
+        this.updateContentHeight(height,wrapper);
+      }
     }
   }
   
@@ -771,37 +818,6 @@ class SideWindow extends BaseComponent {
     this.setHeight(height);
   }
   
-  /**
-   * Update the content area height to match the available space
-   */
-  updateContentHeight() {
-    if (!this.container || !this.content || !this.header || this.minimized) return;
-    
-    // Calculate available height (container height minus header height)
-    const containerHeight = this.container.offsetHeight;
-    const headerHeight = this.header.offsetHeight;
-    
-    // Account for borders and padding
-    const computedStyle = window.getComputedStyle(this.content);
-    const verticalPadding = parseFloat(computedStyle.paddingTop) + parseFloat(computedStyle.paddingBottom);
-    const verticalBorders = parseFloat(computedStyle.borderTopWidth) + parseFloat(computedStyle.borderBottomWidth);
-    
-    // Add a small buffer (2px) to ensure no scrollbar appears
-    const buffer = 2;
-    
-    // Calculate the final available height
-    // We use a 12px bottom margin to account for the resize separator that's added by SideBar
-    const bottomMargin = 12;
-    const availableHeight = containerHeight - headerHeight - verticalPadding - verticalBorders - buffer - bottomMargin;
-    
-    // Set content height
-    if (availableHeight > 0) {
-      this.content.style.height = `${availableHeight}px`;
-      
-      // Send a message about the content height change
-      //this.sendMessage(MESSAGES.CONTENT_HEIGHT_CHANGED, { height: availableHeight });
-    }
-  }
   
   /**
    * Get the SideWindow object associated with a DOM element
