@@ -27,13 +27,16 @@ class OutputSideWindow extends SideWindow {
     
     // Current mode and mode-specific implementation
     this.modeImplementations = {};
+    this.project = null;
     
     // Cache for mode implementations to maintain references
     this.modeImplementationsCache = {};   
     this.messageMap[MESSAGES.CONTENT_HEIGHT_CHANGED] = this.handleContentHeightChanged; 
     this.messageMap[MESSAGES.MODE_CHANGE] = this.handleModeChange;
-    this.messageMap[PROJECTMESSAGES.PROJECT_RAN] = this.handleProjectRan;
-    this.messageMap[PROJECTMESSAGES.PROJECT_DEBUGGED] = this.handleProjectDebugged;
+    this.messageMap[PROJECTMESSAGES.PROJECT_CLOSED] = this.handleProjectClosed;
+    this.messageMap[PROJECTMESSAGES.PROJECT_LOADED] = this.handleProjectLoaded;
+    this.messageMap[PROJECTMESSAGES.PROJECT_RUNNED] = this.handleProjectRunned;
+    this.messageMap[PROJECTMESSAGES.PROJECT_STOPPED] = this.handleProjectStopped;
   }
   
   /**
@@ -119,6 +122,13 @@ class OutputSideWindow extends SideWindow {
     return this.container;
   }
   
+  async closeEnlargedDialog() {
+    if (this.running){
+      await this.sendRequestTo('class:ProjectManager', PROJECTMESSAGES.STOP_PROJECT, {});  
+      return;
+    }
+    super.closeEnlargedDialog();
+  }  
   updateContentHeight( height,  wrapper ){
     height = super.updateContentHeight(height,wrapper);
     if (this.modeImplementation && this.modeImplementation.updateContentHeight) {
@@ -129,17 +139,39 @@ class OutputSideWindow extends SideWindow {
   handleContentHeightChanged(data, senderId) {
     this.updateContentHeight(data.height, data.wrapper);
   }
-  handleProjectRan(data, senderId) {
-    this.update(data);
+  handleProjectLoaded(data, senderId) {    
+    this.project = data;
+    this.running = false;
+    this.justLoaded = this.project.runOptions[ this.project.runMode ].autoRun;
+    this.update();
+  }
+  handleProjectClosed(data, senderId) {    
+    this.project = null;
+    this.justLoaded = false;
+    this.running = false;
+    this.update();
+  }
+  handleProjectRunned(data, senderId) {    
+    if (!this.justLoaded && this.project.runOptions[ this.project.runMode ].runEnlarged && !this.enlargedDialog)
+      this.createEnlargedDialog();
+    this.justLoaded = false;
+    this.running = true;
+    this.update();
+  }
+  handleProjectStopped(data, senderId) {    
+    this.project.runOptions[ this.project.runMode ].runEnlarged = ( this.enlargedDialog != null );
+    this.running = false;
+    if (this.enlargedDialog)
+      this.closeEnlargedDialog();
+    this.update();
   }
   
   /**
    * Update the output window with new data
-   * @param {Object} data - The data to update with
    */
-  update(data) {
+  update() {
     if (this.modeImplementation && this.modeImplementation.update) {
-      this.modeImplementation.update(data);
+      this.modeImplementation.update();
     }
   }
 

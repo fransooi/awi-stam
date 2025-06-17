@@ -288,21 +288,30 @@ class SideWindow extends BaseComponent {
     enlargeButton.className = 'side-window-enlarge';
     enlargeButton.innerHTML = '⤢';
     enlargeButton.title = 'Enlarge';
-    enlargeButton.addEventListener('click', () => this.toggleEnlarge());
+    enlargeButton.addEventListener('click', (event) => {
+      event.stopPropagation();
+      this.toggleEnlarge();
+    });
     
     // Create toggle button
     const toggleButton = document.createElement('button');
     toggleButton.className = 'side-window-toggle';
     toggleButton.innerHTML = this.minimized ? '▼' : '▲';
     toggleButton.title = this.minimized ? 'Maximize' : 'Minimize';
-    toggleButton.addEventListener('click', () => this.toggle());
+    toggleButton.addEventListener('click', (event) => {
+      event.stopPropagation();
+      this.toggle();
+    });
     
     // Create close button
     const closeButton = document.createElement('button');
     closeButton.className = 'side-window-close';
     closeButton.innerHTML = '×';
     closeButton.title = 'Close';
-    closeButton.addEventListener('click', () => this.close());
+    closeButton.addEventListener('click', (event) => {
+      event.stopPropagation();
+      this.close();
+    });
     
     // Add buttons to the buttons container
     this.buttons.appendChild(enlargeButton);
@@ -592,7 +601,7 @@ class SideWindow extends BaseComponent {
   /**
    * Create the enlarged dialog
    */
-  createEnlargedDialog() {
+  async createEnlargedDialog() {
     //var theme = this.root.preferences.getCurrentTheme();
 
     // Create the dialog overlay
@@ -618,7 +627,7 @@ class SideWindow extends BaseComponent {
     closeButton.className = 'side-window-enlarged-close';
     closeButton.innerHTML = '×';
     closeButton.title = 'Close';
-    closeButton.addEventListener('click', () => this.toggleEnlarge());
+    closeButton.addEventListener('click', () => this.closeEnlargedDialog());
     
     // Add title and close button to header
     dialogHeader.appendChild(dialogTitle);
@@ -662,12 +671,13 @@ class SideWindow extends BaseComponent {
       enlargeButton.innerHTML = '⤓';
       enlargeButton.title = this.root.messages.getMessage('stam:restore');
     }
+    this.updateContentHeight();
   }
 
   /**
    * Close the enlarged dialog
    */
-  closeEnlargedDialog() {
+  async closeEnlargedDialog() {
     if (!this.enlargedDialog) return;
     
     // Replace the placeholder with the original content

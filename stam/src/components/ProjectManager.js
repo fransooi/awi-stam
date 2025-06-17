@@ -339,7 +339,7 @@ class ProjectManager extends BaseComponent {
               run: {},
             };
             this.project.runOptions = {
-              run: { autoRun: true },
+              run: { autoRun: true, runEnlarged: false },
             };
             this.project.debugOptions = {
               run: {},
@@ -682,7 +682,7 @@ class ProjectManager extends BaseComponent {
       return false;
     }
     this.project.running = true;
-    this.broadcast(PROJECTMESSAGES.PROJECT_RUNNED, answer);
+    await this.broadcast(PROJECTMESSAGES.PROJECT_RUNNED, answer);
     return true;
   }
   async handleStopProject(data, senderId) {
@@ -692,7 +692,7 @@ class ProjectManager extends BaseComponent {
     if (this.project.running)
     {
       this.project.running = false;
-      this.broadcast(PROJECTMESSAGES.PROJECT_STOPPED, {});
+      await this.broadcast(PROJECTMESSAGES.PROJECT_STOPPED, {});
       return true;
     }
     return false;
@@ -733,7 +733,7 @@ class ProjectManager extends BaseComponent {
       this.root.alert.showError(answer.error);
       return false;
     }
-    this.broadcast(PROJECTMESSAGES.PROJECT_DEBUGGED, answer);
+    await this.broadcast(PROJECTMESSAGES.PROJECT_DEBUGGED, answer);
     return true;
   }
   async handleTestProject(data, senderId) {
@@ -757,7 +757,7 @@ class ProjectManager extends BaseComponent {
       this.root.alert.showError(answer.error);
       return false;
     }
-    this.broadcast(PROJECTMESSAGES.PROJECT_TESTED, answer);
+    await this.broadcast(PROJECTMESSAGES.PROJECT_TESTED, answer);
     return true;
   }
   async handleCompileProject(data, senderId) {
@@ -781,7 +781,7 @@ class ProjectManager extends BaseComponent {
       this.root.alert.showError(answer.error);
       return false;
     }
-    this.broadcast(PROJECTMESSAGES.PROJECT_COMPILED, answer);
+    await this.broadcast(PROJECTMESSAGES.PROJECT_COMPILED, answer);
     return true;
   }
   async getLayoutInfo() {

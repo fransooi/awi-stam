@@ -18,12 +18,16 @@
 */
 import BaseComponent, { MESSAGES } from '../../utils/BaseComponent.js';
 import { MENUCOMMANDS } from '../MenuBar.js';
+import { PROJECTMESSAGES } from '../ProjectManager.js';
 
 export default class BaseIcons extends BaseComponent {
   constructor(componentName,parentId,containerId = null) {
     super(componentName, parentId, containerId);
     this.buttons = [];
     this.currentMode = this.root.currentMode;
+    this.messageMap[MENUCOMMANDS.UPDATE_MENU_ITEMS] = this.handleUpdateMenuItems;
+    this.messageMap[PROJECTMESSAGES.PROJECT_RUNNED] = this.handleProjectRunned;
+    this.messageMap[PROJECTMESSAGES.PROJECT_STOPPED] = this.handleProjectStopped;
   }
 
   async init(options) {
@@ -82,15 +86,17 @@ export default class BaseIcons extends BaseComponent {
     button.className = `${this.currentMode}-button ${this.currentMode}-button-${newClassName}`;
     button.title = this.root.messages.getMessage(text);
     button.dataset.action=action;
+    button.dataset.key = newClassName;
     let icon = button.querySelector(`.${this.currentMode}-icon`);
     if (icon)
       icon.className = `fas ${iconClass} ${this.currentMode}-icon`;
   }
-  addButton(text, action,className, iconClass) {
+  addButton(text, action, className, iconClass) {
     const button = document.createElement('button');
     button.className = `${this.currentMode}-button ${this.currentMode}-button-${className}`;
     button.title = this.root.messages.getMessage(text); 
-    button.action=action;
+    button.dataset.action = action;
+    button.dataset.key = className;
 
     // Create icon element with black border effect
     const icon = document.createElement('i');
@@ -98,11 +104,10 @@ export default class BaseIcons extends BaseComponent {
     icon.style.fontSize = '24px'; // Double size icons
     button.appendChild(icon);
 
-    // Store action inelement datazone
-    button.dataset.action = action;
-
     // No text span anymore, just the icon    
-    button.addEventListener('click', () => this.handleButtonClick(button.dataset.action));
+    button.addEventListener('click', () => {
+      this.broadcast(button.dataset.action, { key: button.dataset.key });
+    });
     this.layoutContainer.appendChild(button);
     this.buttons.push(button);
   }
@@ -143,6 +148,10 @@ export default class BaseIcons extends BaseComponent {
         height: 45px;
         flex-shrink: 0;
         box-sizing: border-box;
+      }
+      .${this.currentMode}-button:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
       }
       .${this.currentMode}-button:hover {
         background-color: var(--icon-button-background-hover);
@@ -224,10 +233,24 @@ export default class BaseIcons extends BaseComponent {
     styles.forEach(style => style.remove());
   }
   
-  handleButtonClick(action) {
-    this.sendMessageToRoot(MESSAGES.ICON_ACTION, {
-      action: action
-    });    
+  findButton(key) {
+    return this.buttons.find(button => button.dataset.key == key);
+  }
+  handleUpdateMenuItems(data, sender) {
+    let { socketInfo, projectInfo, classroomInfo, editorInfo } = data;
+
+    this.findButton('new').disabled = !projectInfo.projectLoaded;
+    this.findButton('open').disabled = !projectInfo.projectLoaded;
+    this.findButton('save').disabled = editorInfo.activeTabIndex < 0;
+    var stopButton = this.findButton('stop');
+    if (stopButton)
+      stopButton.disabled = !projectInfo.projectLoaded;
+    var runButton = this.findButton('run')
+    if (runButton)
+      runButton.disabled = !projectInfo.projectLoaded;
+    this.findButton('debug').disabled = true;
+    this.findButton('share').disabled = !projectInfo.projectLoaded;
+    this.findButton('help').disabled = !projectInfo.projectLoaded;
   }
   
   /**
