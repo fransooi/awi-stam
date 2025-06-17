@@ -16,58 +16,76 @@
 *
 * @short AMOS 1.3 Icon Bar component - Inspired by the original AMOS 1.3 from 1988 for Amiga
 */
-import BaseComponent from '../../../utils/BaseComponent.js'
+import BaseIcons from '../../sidewindows/BaseIcons.js';
 
-class AMOS13Icons extends BaseComponent{
+export const AMOS1_3COMMANDS = {
+  F1: 'AMOS1_3_F1',
+  F2: 'AMOS1_3_F2',
+  F3: 'AMOS1_3_F3',
+  F4: 'AMOS1_3_F4',
+  F5: 'AMOS1_3_F5',
+  F6: 'AMOS1_3_F6',
+  F7: 'AMOS1_3_F7',
+  F8: 'AMOS1_3_F8',
+  F9: 'AMOS1_3_F9',
+  F10: 'AMOS1_3_F10',
+  F11: 'AMOS1_3_F11',
+  F12: 'AMOS1_3_F12',
+  F13: 'AMOS1_3_F13',
+  F14: 'AMOS1_3_F14',
+  F15: 'AMOS1_3_F15',
+  F16: 'AMOS1_3_F16',
+  F17: 'AMOS1_3_F17',
+  F18: 'AMOS1_3_F18',
+  F19: 'AMOS1_3_F19',
+};
+
+class AMOS13Icons extends BaseIcons{
   constructor(parentId,containerId) {
     super('AMOS13Icons', parentId, containerId);
     this.shiftPressed = false;
     
     // Define function keys for normal state (F1-F10)
     this.functionKeysRow1 = [
-      { key: 'F1', action: 'Help' },
-      { key: 'F2', action: 'Direct' },
-      { key: 'F3', action: 'Run' },
-      { key: 'F4', action: 'Step' },
-      { key: 'F5', action: 'Edit' }
+      { key: 'F1', action: AMOS1_3COMMANDS.F1, text: 'Help' },
+      { key: 'F2', action: AMOS1_3COMMANDS.F2, text: 'Direct' },
+      { key: 'F3', action: AMOS1_3COMMANDS.F3, text: 'Run' },
+      { key: 'F4', action: AMOS1_3COMMANDS.F4, text: 'Step' },
+      { key: 'F5', action: AMOS1_3COMMANDS.F5, text: 'Edit' }
     ];
     
     this.functionKeysRow2 = [
-      { key: 'F6', action: 'Proc' },
-      { key: 'F7', action: 'Files' },
-      { key: 'F8', action: 'Menu' },
-      { key: 'F9', action: 'Set' },
-      { key: 'F10', action: 'Exit' }
+      { key: 'F6', action: AMOS1_3COMMANDS.F6, text: 'Proc' },
+      { key: 'F7', action: AMOS1_3COMMANDS.F7, text: 'Files' },
+      { key: 'F8', action: AMOS1_3COMMANDS.F8, text: 'Menu' },
+      { key: 'F9', action: AMOS1_3COMMANDS.F9, text: 'Set' },
+      { key: 'F10', action: AMOS1_3COMMANDS.F10, text: 'Exit' }
     ];
     
     // Define function keys for shift state (F10-F19)
     this.shiftFunctionKeysRow1 = [
-      { key: 'F10', action: 'Key 10' },
-      { key: 'F11', action: 'Key 11' },
-      { key: 'F12', action: 'Key 12' },
-      { key: 'F13', action: 'Key 13' },
-      { key: 'F14', action: 'Key 14' }
+      { key: 'F10', action: AMOS1_3COMMANDS.F11, text: 'Key 10' },
+      { key: 'F11', action: AMOS1_3COMMANDS.F12, text: 'Key 11' },
+      { key: 'F12', action: AMOS1_3COMMANDS.F13, text: 'Key 12' },
+      { key: 'F13', action: AMOS1_3COMMANDS.F14, text: 'Key 13' },
+      { key: 'F14', action: AMOS1_3COMMANDS.F15, text: 'Key 14' }
     ];
     
     this.shiftFunctionKeysRow2 = [
-      { key: 'F15', action: 'Key 15' },
-      { key: 'F16', action: 'Key 16' },
-      { key: 'F17', action: 'Key 17' },
-      { key: 'F18', action: 'Key 18' },
-      { key: 'F19', action: 'Key 19' }
+      { key: 'F15', action: AMOS1_3COMMANDS.F16, text: 'Key 15' },
+      { key: 'F16', action: AMOS1_3COMMANDS.F17, text: 'Key 16' },
+      { key: 'F17', action: AMOS1_3COMMANDS.F18, text: 'Key 17' },
+      { key: 'F18', action: AMOS1_3COMMANDS.F19, text: 'Key 18' },
+      { key: 'F19', action: AMOS1_3COMMANDS.F20, text: 'Key 19' }
     ];
     
   }
   
   async init(options) {
-    if (await super.init(options))
-      return;
-    // Add event listeners for shift key
     document.addEventListener('keydown', this.handleKeyDown.bind(this));
     document.addEventListener('keyup', this.handleKeyUp.bind(this));
   }
   async destroy() {
-    super.destroy();
     if(this.amosIconBar)
     {
       document.removeEventListener('keydown', this.handleKeyDown.bind(this));
@@ -75,13 +93,16 @@ class AMOS13Icons extends BaseComponent{
       this.parentContainer.removeChild(this.amosIconBar);
       this.amosIconBar=null;
       this.removeStyles();
+      this.buttons = [];
     }
   }
   async render(containerId) {
-    this.parentContainer=await super.render(containerId);
+    this.parentContainer=await super.render(containerId, false);
     this.parentContainer.innerHTML = '';
     this.layoutContainer=this.parentContainer;
     this.addStyles();
+    this.buttons = [];
+    this.parentContainer.style.backgroundColor = 'var(--container-background)';
 
     // Create main container for AMOS icon bar
     this.amosIconBar = document.createElement('div');
@@ -120,12 +141,12 @@ class AMOS13Icons extends BaseComponent{
     
     // Add function keys for first row
     keysRow1.forEach(keyInfo => {
-      this.addFunctionKey(keyInfo.key, keyInfo.action, functionKeysRow1);
+      this.addFunctionKey(keyInfo.key, keyInfo.action, keyInfo.text, functionKeysRow1);
     });
     
     // Add function keys for second row
     keysRow2.forEach(keyInfo => {
-      this.addFunctionKey(keyInfo.key, keyInfo.action, functionKeysRow2);
+      this.addFunctionKey(keyInfo.key, keyInfo.action, keyInfo.text, functionKeysRow2);
     });
     
     // Add rows to function keys container
@@ -292,64 +313,54 @@ class AMOS13Icons extends BaseComponent{
   handleKeyDown(event) {
     if (event.key === 'Shift' && !this.shiftPressed) {
       this.shiftPressed = true;
-      this.updateFunctionKeys();
+      this.render();
     }
   }
   
   handleKeyUp(event) {
     if (event.key === 'Shift' && this.shiftPressed) {
       this.shiftPressed = false;
-      this.updateFunctionKeys();
+      this.render();
     }
   }
   
-  updateFunctionKeys() {
-    const functionKeysRows = document.querySelectorAll('.amos-function-keys-row');
-    if (functionKeysRows.length !== 2) return;
-    
-    const row1 = functionKeysRows[0];
-    const row2 = functionKeysRows[1];
-    
-    // Clear existing keys
-    row1.innerHTML = '';
-    row2.innerHTML = '';
-    
-    // Add the appropriate keys based on shift state
-    const keysRow1 = this.shiftPressed ? this.shiftFunctionKeysRow1 : this.functionKeysRow1;
-    const keysRow2 = this.shiftPressed ? this.shiftFunctionKeysRow2 : this.functionKeysRow2;
-    
-    keysRow1.forEach(keyInfo => {
-      this.addFunctionKey(keyInfo.key, keyInfo.action, row1);
-    });
-    
-    keysRow2.forEach(keyInfo => {
-      this.addFunctionKey(keyInfo.key, keyInfo.action, row2);
-    });
+  replaceFunctionKey(oldKey, newKey, action, text ) {
+    const button = document.querySelector(`.amos-function-key[data-key="${oldKey}"]`);
+    if (button) {
+      button.dataset.key = newKey;
+      button.dataset.action = action;
+      button.dataset.text = text;
+      const buttonText = button.querySelector('.amos-key-text');
+      buttonText.textContent = `${newKey}:${text}`;
+    }
   }
-
-  
-  addFunctionKey(key, action, parent) {
+  addFunctionKey(key, action, text, parent) {
     const button = document.createElement('button');
     button.className = 'amos-function-key';
     button.dataset.key = key;
     button.dataset.action = action;
+    button.dataset.text = text;
     
     // Create key+action text
     const buttonText = document.createElement('span');
     buttonText.className = 'amos-key-text';
-    buttonText.textContent = `${key}:${action}`;
+    buttonText.textContent = `${key}:${text}`;
     button.appendChild(buttonText);
     
     // Add click event
-    button.addEventListener('click', () => this.handleFunctionKeyClick(key, action));
+    button.addEventListener('click', () => {
+      this.broadcast(button.dataset.action, { fromIcon: true, key: button.dataset.key, text: button.dataset.text });
+    });
     
     parent.appendChild(button);
+    this.buttons.push(button);
   }
-  
-  handleFunctionKeyClick(key, action) {
-    console.log(`AMOS Function Key clicked: ${key} - ${action}`);
+  handleProjectRunned(data, sender) {
+    this.replaceFunctionKey('F3', 'F3', AMOS1_3COMMANDS.STOP_PROJECT, 'Stop');
   }
-  
+  handleProjectStopped(data, sender) {
+    this.replaceFunctionKey('F3', 'F3', AMOS1_3COMMANDS.RUN_PROJECT, 'Run');
+  }  
 }
 
 export default AMOS13Icons;

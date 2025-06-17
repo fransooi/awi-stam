@@ -16,9 +16,9 @@
 *
 * @short AMOS Pro Icon Bar component
 */
-import BaseComponent from '../../../utils/BaseComponent.js';
+import BaseIcons from '../../sidewindows/BaseIcons.js';
 
-class AMOSProIcons extends BaseComponent {
+class AMOSProIcons extends BaseIcons {
   constructor(parentId,containerId) {
     super('AMOSProIcons', parentId, containerId);
     this.buttonStates = {}; // Track button states (up/down)
@@ -56,15 +56,12 @@ class AMOSProIcons extends BaseComponent {
   }
   
   async init(options) {
-    if (await super.init(options))
-      return;
     // Create a ResizeObserver to monitor container size changes
     this.resizeObserver = new ResizeObserver(entries => {
       this.handleResize();
     });
   }
   async destroy() {
-    await super.destroy();
     if(this.resizeObserver)
     {
       this.resizeObserver.unobserve(this.parentContainer);
@@ -79,10 +76,12 @@ class AMOSProIcons extends BaseComponent {
   }
 
   async render(containerId) {
-    this.parentContainer=await super.render(containerId);
+    this.parentContainer=await super.render(containerId, false);
     this.parentContainer.innerHTML = '';
     this.layoutContainer=this.parentContainer;
     this.addStyles();
+    this.buttons=[];
+    this.parentContainer.style.backgroundColor = 'var(--container-background)';
 
     // Create the main icon bar container
     this.iconBar = document.createElement('div');
@@ -311,8 +310,17 @@ class AMOSProIcons extends BaseComponent {
     rows[1].style.justifyContent = 'flex-start';
   }
 
-  handleFunctionKeyClick(key, action) {
-    console.log(`AMOS Function Key clicked: ${key} - ${action}`);
+  handleFunctionKeyClick(button, key) {
+    switch(key)
+    {
+      case '1-3':
+        if (button.dataset.running === 'true') {
+          this.broadcast(PROJECTMESSAGES.STOP_PROJECT, { fromIcon: true, key: key, text: 'Stop' });
+        } else {
+          this.broadcast(PROJECTMESSAGES.RUN_PROJECT, { fromIcon: true, key: key, text: 'Run' });
+        }
+        break;
+    }
   }
   
   addButton(x, y, container) {
@@ -364,6 +372,25 @@ class AMOSProIcons extends BaseComponent {
     
     // Add to container
     container.appendChild(button);
+    this.buttons.push(button);
+  }
+  handleProjectRunned() {
+    this.buttons.forEach(button => {
+      if (button.dataset.id === 'button-1-3') {
+        button.src = `/amosPro/button-1-3-down.png`;
+        button.dataset.running = 'true';
+        this.buttonStates['button-1-3'] = 'down';
+      }
+    });
+  }
+  handleProjectStopped() {
+    this.buttons.forEach(button => {
+      if (button.dataset.id === 'button-1-3') {
+        button.src = `/amosPro/button-1-3-up.png`;
+        button.dataset.running = 'false';
+        this.buttonStates['button-1-3'] = 'up';
+      }
+    });
   }
 }
 

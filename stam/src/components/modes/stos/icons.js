@@ -1,7 +1,29 @@
 // STOS Basic Icon Bar component - Inspired by the original STOS Basic from 1987
-import BaseComponent from '../../../utils/BaseComponent.js';
+import BaseIcons from '../../sidewindows/BaseIcons.js';
 
-class STOSIcons extends BaseComponent{
+export const STOSCOMMANDS = {
+  F1: 'STOS_F1',
+  F2: 'STOS_F2',
+  F3: 'STOS_F3',
+  F4: 'STOS_F4',
+  F5: 'STOS_F5',
+  F6: 'STOS_F6',
+  F7: 'STOS_F7',
+  F8: 'STOS_F8',
+  F9: 'STOS_F9',
+  F10: 'STOS_F10',
+  F11: 'STOS_F11',
+  F12: 'STOS_F12',
+  F13: 'STOS_F13',
+  F14: 'STOS_F14',
+  F15: 'STOS_F15',
+  F16: 'STOS_F16',
+  F17: 'STOS_F17',
+  F18: 'STOS_F18',
+  F19: 'STOS_F19',
+};
+
+class STOSIcons extends BaseIcons{
   constructor(parentId,containerId) {
     super('STOSIcons', parentId, containerId);
     this.shiftPressed = false;
@@ -9,39 +31,36 @@ class STOSIcons extends BaseComponent{
     // Define function keys for both states
     this.functionKeys = {
       normal: [
-        { key: 'F1', action: 'Last Key' },
-        { key: 'F2', action: 'List' },
-        { key: 'F3', action: 'Listbank' },
-        { key: 'F4', action: 'Load' },
-        { key: 'F5', action: 'Save' },
-        { key: 'F6', action: 'Run' },
-        { key: 'F7', action: 'Dir' },
-        { key: 'F8', action: 'Dir$=Dir$+"\\\"' },
-        { key: 'F9', action: 'Previous' },
-        { key: 'F10', action: 'Help' }
+        { key: 'F1', action: STOSCOMMANDS.F1, text: 'Last Key' },
+        { key: 'F2', action: STOSCOMMANDS.F2, text: 'List' },
+        { key: 'F3', action: STOSCOMMANDS.F3, text: 'Listbank' },
+        { key: 'F4', action: STOSCOMMANDS.F4, text: 'Load' },
+        { key: 'F5', action: STOSCOMMANDS.F5, text: 'Save' },
+        { key: 'F6', action: STOSCOMMANDS.F6, text: 'Run' },
+        { key: 'F7', action: STOSCOMMANDS.F7, text: 'Dir' },
+        { key: 'F8', action: STOSCOMMANDS.F8, text: 'Dir$=Dir$+"\\\"' },
+        { key: 'F9', action: STOSCOMMANDS.F9, text: 'Previous' },
+        { key: 'F10', action: STOSCOMMANDS.F10, text: 'Help' }
       ],
       shift: [
-        { key: 'F10', action: 'Off' },
-        { key: 'F11', action: 'Full' },
-        { key: 'F12', action: 'Multi2' },
-        { key: 'F13', action: 'Multi3' },
-        { key: 'F14', action: 'Multi4' },
-        { key: 'F15', action: 'Mode 0' },
-        { key: 'F16', action: 'Mode 1' },
-        { key: 'F17', action: 'Default' },
-        { key: 'F18', action: 'Env' },
-        { key: 'F19', action: 'Key List' }
+        { key: 'F10', action: STOSCOMMANDS.F11, text: 'Off' },
+        { key: 'F11', action: STOSCOMMANDS.F12, text: 'Full' },
+        { key: 'F12', action: STOSCOMMANDS.F13, text: 'Multi2' },
+        { key: 'F13', action: STOSCOMMANDS.F14, text: 'Multi3' },
+        { key: 'F14', action: STOSCOMMANDS.F15, text: 'Multi4' },
+        { key: 'F15', action: STOSCOMMANDS.F16, text: 'Mode 0' },
+        { key: 'F16', action: STOSCOMMANDS.F17, text: 'Mode 1' },
+        { key: 'F17', action: STOSCOMMANDS.F18, text: 'Default' },
+        { key: 'F18', action: STOSCOMMANDS.F19, text: 'Env' },
+        { key: 'F19', action: STOSCOMMANDS.F20, text: 'Key List' }
       ]
     };    
   }
   async init(options) {
-    if (await super.init(options))
-      return;
     document.addEventListener('keydown', this.handleKeyDown.bind(this));
     document.addEventListener('keyup', this.handleKeyUp.bind(this));
   }
   async destroy() {
-    super.destroy();
     if(this.stosIconsContainer)
     {
       document.removeEventListener('keydown', this.handleKeyDown.bind(this));
@@ -49,13 +68,17 @@ class STOSIcons extends BaseComponent{
       this.parentContainer.removeChild(this.stosIconsContainer);
       this.stosIconsContainer=null;
       this.removeStyles();
+      this.parentContainer.style.backgroundColor = 'var(--container-background)';
+      this.buttons = [];
     }
   }
   async render(containerId) {
-    this.parentContainer=await super.render(containerId);
+    this.parentContainer=await super.render(containerId, false);
     this.parentContainer.innerHTML = '';
     this.layoutContainer=this.parentContainer;
     this.addStyles();
+    this.buttons = [];
+    this.parentContainer.style.backgroundColor = 'var(--container-background)';
 
     // Create main container for STOS function keys
     this.stosIconsContainer = document.createElement('div');
@@ -74,12 +97,12 @@ class STOSIcons extends BaseComponent{
     
     // Add first row (first 5 keys)
     for (let i = 0; i < 5; i++) {
-      this.addFunctionKey(currentKeys[i].key, currentKeys[i].action, firstRow);
+      this.addFunctionKey(currentKeys[i].key, currentKeys[i].action, currentKeys[i].text, firstRow);
     }
     
     // Add second row (next 5 keys)
     for (let i = 5; i < 10; i++) {
-      this.addFunctionKey(currentKeys[i].key, currentKeys[i].action, secondRow);
+      this.addFunctionKey(currentKeys[i].key, currentKeys[i].action, currentKeys[i].text, secondRow);
     }
     
     // Add rows to container
@@ -223,26 +246,48 @@ addStyles() {
     }
   }
 
-  addFunctionKey(key, action, parent) {
+  replaceFunctionKey(oldKey, newKey, action, text){
+    let button = this.buttons.find(button => button.dataset.key === oldKey);
+    if (!button)
+      return;
+    button.dataset.key = newKey;
+    button.dataset.action = action;
+    button.dataset.text = text;
+    let textContent = button.querySelector('.stos-key-text');
+    if (textContent)
+      textContent.textContent = `${text}`;
+  }
+
+  addFunctionKey(key, action, text, parent) {
     const button = document.createElement('button');
     button.className = 'stos-function-key';
-    button.dataset.key = key;
+    if ( text.indexOf('stam:') == 0)
+      text = this.root.messages.getMessage(text);
+    button.dataset.text = text;
     button.dataset.action = action;
+    button.dataset.key = key;
     
     // Create a single text element with the format "Fxx: action"
     const textContent = document.createElement('span');
     textContent.className = 'stos-key-text';
-    textContent.textContent = `${key}: ${action}`;
+    textContent.textContent = `${text}`;
     button.appendChild(textContent);
     
-    // Add click event
-    button.addEventListener('click', () => this.handleFunctionKeyClick(key, action));    
+    // Add click event    
+    button.addEventListener('click', () => {
+      this.broadcast( button.dataset.action, { text: button.dataset.text , key: button.dataset.key, fromIcon: true } );
+    });
     parent.appendChild(button);
+    this.buttons.push(button);
   }
   
-  handleFunctionKeyClick(key, action) {
-    console.log(`STOS Function Key clicked: ${key} - ${action}`);
+  handleProjectRunned(data, sender) {
+    this.replaceFunctionKey('F6', 'F6', MENUCOMMANDS.STOP_PROJECT, 'Stop');
   }
+  handleProjectStopped(data, sender) {
+    this.replaceFunctionKey('F6', 'F6', MENUCOMMANDS.RUN_PROJECT, 'Run');
+  }  
+
 }
 
 export default STOSIcons;

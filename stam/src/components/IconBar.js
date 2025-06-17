@@ -134,17 +134,7 @@ class IconBar extends BaseComponent {
     const layoutInfo = await super.getLayoutInfo();
     
     // Add IconBar-specific information
-    layoutInfo.currentMode = this.currentMode;
-    
-    // We don't need to save height as it's defined by the mode-specific IconBars
-    
-    // Add mode-specific icon information if available
-    if (this.modeSpecificIcons && typeof this.modeSpecificIcons.getIconInfo === 'function') {
-      layoutInfo.icons = this.modeSpecificIcons.getIconInfo();
-    } else {
-      // If no getIconInfo method is available, just store the mode
-      layoutInfo.icons = { mode: this.currentMode };
-    }
+    layoutInfo.currentMode = this.currentMode;    
     
     return layoutInfo;
   }
