@@ -338,3 +338,12 @@ stam:project-downloading                  Downloading project...
 stam:project-not-opened                   Project not opened
 stam:new-file-title                       New File
 stam:file-modified-message                The file ${name} has been modified, do you want to save the changes?
+stam:connecting-to-server                 Connecting to Awi server...
+stam:identification                       Identification
+stam:connected                            Connected
+stam:creating-awi-account                 Creating AWI account
+stam:failed-to-create-awi-account         Failed to create AWI account
+stam:awi-account-created                  AWI account created
+stam:logging-in-awi                       Logging in AWI
+stam:awi-logged-in                        Logged in AWI
+stam:failed-to-login-awi                  Failed to login AWI

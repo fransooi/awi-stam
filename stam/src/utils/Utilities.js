@@ -506,4 +506,5 @@ export default class Utilities {
       throw error;
     }
   }
+
 }

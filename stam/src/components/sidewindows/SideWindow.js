@@ -593,7 +593,7 @@ class SideWindow extends BaseComponent {
       this.createEnlargedDialog();
     } else {
       // Close the enlarged dialog
-      this.closeEnlargedDialog();
+      this.closeEnlargedDialog(true);
     }
     this.updateContentHeight();
   }
@@ -621,16 +621,30 @@ class SideWindow extends BaseComponent {
     const dialogTitle = document.createElement('div');
     dialogTitle.className = 'side-window-enlarged-title';
     dialogTitle.textContent = this.title;
+
+    // Create the minimize button with fa- icon...
+    const minimizeButton = document.createElement('button');
+    minimizeButton.className = 'side-window-enlarged-minimize';
+    minimizeButton.innerHTML = '<i class="fa fa-minus"></i>';
+    minimizeButton.title = 'Minimize';
+    minimizeButton.addEventListener('click', (event) => {
+      event.stopPropagation();
+      this.closeEnlargedDialog(true);
+    });
     
     // Create the close button
     const closeButton = document.createElement('button');
     closeButton.className = 'side-window-enlarged-close';
     closeButton.innerHTML = '×';
     closeButton.title = 'Close';
-    closeButton.addEventListener('click', () => this.closeEnlargedDialog());
+    closeButton.addEventListener('click', (event) => {
+      event.stopPropagation();
+      this.closeEnlargedDialog();
+    });
     
     // Add title and close button to header
     dialogHeader.appendChild(dialogTitle);
+    dialogHeader.appendChild(minimizeButton);
     dialogHeader.appendChild(closeButton);
     
     // Create the dialog content

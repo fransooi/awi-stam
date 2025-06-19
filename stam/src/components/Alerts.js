@@ -468,159 +468,238 @@ class Alerts extends BaseComponent {
   /**
    * Show a downloading alert non blocking
    * @param {string} message - The message to display
-   * @param {object} options - The options for the alert
-   * @param {object} options.progressbar - The progressbar options
-   * @param {number} options.progressbar.value - The current value of the progressbar
-   * @param {number} options.progressbar.max - The maximum value of the progressbar
-   * @param {string} options.progressbar.style - The style of the progressbar, 'circle' (rotating circle) or 'bar' (progress bar)
-   * @param {function} options.progressbar.customFunc - The custom function to draw the progressbar
+   * @param {object} [options={}] - The options for the alert
+   * @param {string} [options.type='circle'] - The type of the alert, 'icon', 'progress', or 'circle'
+   * @param {string} [options.icons=[''] - Array of icon url or data
+   * @param {number} [options.value=0] - The current value of the progressbar
+   * @param {number} [options.max=100] - The maximum value of the progressbar
+   * @param {number} [options.timeout=0] - Timeout in ms before closing (0 = no timeout)
+   * @param {boolean} [options.animated=false] - Whether to animate the progressbar automatically
+   * @returns {{update: function, close: function}} Object with update and close methods
    */
-  async showDownloading(message, options = {}) {
+  async showAnimatedAlert(message, options = {}) {
     // Close any existing download alert first
-    await this.hideDownloading();
+    if (this._currentAnimatedAlert)
+      return await this.updateAnimatedAlert(message, options);
     
-    const theme = this.root.preferences.getCurrentTheme();
-    const progressbarOptions = options.progressbar || {};
-    const progressStyle = progressbarOptions.style || 'circle';
-    const maxValue = progressbarOptions.max || 100;
-    const currentValue = progressbarOptions.value || 0;
-    if (message.startsWith('stam:'))
+    // Resolve message if it's a translation key
+    if (message.startsWith('stam:')) {
       message = this.root.messages.getMessage(message);
-    
+    }
+
+    const theme = this.root.preferences.getCurrentTheme();
+    const {
+      type = 'progressCircle',
+      icons = [],
+      images = [],
+      value = 10,
+      max = 100,
+      timeout = 1000 * 1000,
+      loop = 0,
+      animationName = null,
+      stepName = null,
+    } = options;
+
     // Create dialog container
     const dialog = document.createElement('div');
     dialog.className = 'alert-dialog downloading-alert';
-    dialog.style.position = 'fixed';
-    dialog.style.top = '50%';
-    dialog.style.left = '50%';
-    dialog.style.transform = 'translate(-50%, -50%)';
-    dialog.style.backgroundColor = theme['dialog-background'];
-    dialog.style.border = `1px solid ${theme['dialog-border']}`;
-    dialog.style.borderRadius = '8px';
-    dialog.style.padding = '20px';
-    dialog.style.zIndex = '10000';
-    dialog.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-    dialog.style.minWidth = '250px';
-    dialog.style.textAlign = 'center';
-    
+    dialog.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: ${theme['dialog-background']};
+      border: 1px solid ${theme['dialog-border']};
+      border-radius: 8px;
+      padding: 20px;
+      z-index: 10000;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      min-width: 250px;
+      text-align: center;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    `;
+
     // Add message
     const messageEl = document.createElement('div');
     messageEl.textContent = message;
-    messageEl.style.marginBottom = '15px';
-    messageEl.style.color = theme['text-primary'];
+    messageEl.style.cssText = `
+      margin-bottom: 15px;
+      color: ${theme['text-primary']};
+      font-size: 14px;
+      line-height: 1.4;
+    `;
     dialog.appendChild(messageEl);
-    
-    // Add progress container
+
+    // Create progress container
     const progressContainer = document.createElement('div');
-    progressContainer.style.position = 'relative';
-    progressContainer.style.width = '100%';
-    
-    if (progressStyle === 'circle') {
-      // Circular progress indicator
-      const size = 50;
-      const strokeWidth = 4;
-      const radius = (size - strokeWidth) / 2;
-      const circumference = radius * 2 * Math.PI;
-      
-      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svg.setAttribute('width', size);
-      svg.setAttribute('height', size);
-      svg.style.display = 'block';
-      svg.style.margin = '0 auto';
-      
-      const circleBg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      circleBg.setAttribute('cx', size / 2);
-      circleBg.setAttribute('cy', size / 2);
-      circleBg.setAttribute('r', radius);
-      circleBg.setAttribute('fill', 'none');
-      circleBg.setAttribute('stroke', theme['progress-background'] || '#e0e0e0');
-      circleBg.setAttribute('stroke-width', strokeWidth);
-      
-      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      circle.setAttribute('cx', size / 2);
-      circle.setAttribute('cy', size / 2);
-      circle.setAttribute('r', radius);
-      circle.setAttribute('fill', 'none');
-      circle.setAttribute('stroke', theme['accent-color'] || '#0078d4');
-      circle.setAttribute('stroke-width', strokeWidth);
-      circle.setAttribute('stroke-linecap', 'round');
-      circle.setAttribute('stroke-dasharray', circumference);
-      circle.setAttribute('stroke-dashoffset', circumference - (currentValue / maxValue) * circumference);
-      circle.style.transform = 'rotate(-90deg)';
-      circle.style.transformOrigin = '50% 50%';
-      circle.style.transition = 'stroke-dashoffset 0.3s ease';
-      
-      svg.appendChild(circleBg);
-      svg.appendChild(circle);
-      progressContainer.appendChild(svg);
-      
-      // Store references for updates
-      this._progressCircle = circle;
-      this._progressCircumference = circumference;
-    } else {
-      // Horizontal progress bar
-      const progressBar = document.createElement('div');
-      progressBar.style.height = '4px';
-      progressBar.style.backgroundColor = theme['progress-background'] || '#e0e0e0';
-      progressBar.style.borderRadius = '2px';
-      progressBar.style.overflow = 'hidden';
-      progressBar.style.width = '100%';
-      
-      const progressFill = document.createElement('div');
-      progressFill.style.height = '100%';
-      progressFill.style.width = `${(currentValue / maxValue) * 100}%`;
-      progressFill.style.backgroundColor = theme['accent-color'] || '#0078d4';
-      progressFill.style.transition = 'width 0.3s ease';
-      progressFill.style.borderRadius = '2px';
-      
-      progressBar.appendChild(progressFill);
-      progressContainer.appendChild(progressBar);
-      
-      // Store references for updates
-      this._progressFill = progressFill;
-      this._progressMax = maxValue;
+    progressContainer.style.cssText = `
+      position: relative;
+      width: 100%;
+      margin: 10px 0;
+    `;
+
+    // Drawing element
+    var width, height;
+    if (animationName && this.root.resourceManager.animations[animationName])
+    {
+      width = this.root.resourceManager.animations[animationName].width;
+      height = this.root.resourceManager.animations[animationName].height;
     }
+    if (typeof width == 'undefined')
+      width = options.width || 128;
+    if (typeof height == 'undefined')
+      height = options.height || 64;
     
-    dialog.appendChild(progressContainer);
-    
-    // Add to document
-    document.body.appendChild(dialog);
-    this._currentDownloadAlert = dialog;
-    
-    // Return update and close functions
-    return {
-      update: (newOptions) => {
-        if (newOptions.progressbar) {
-          const { value, max } = newOptions.progressbar;
-          if (progressStyle === 'circle' && this._progressCircle) {
-            const offset = this._progressCircumference - (value / (max || this._progressMax || 100)) * this._progressCircumference;
-            this._progressCircle.setAttribute('stroke-dashoffset', offset);
-          } else if (this._progressFill) {
-            this._progressFill.style.width = `${(value / (max || this._progressMax || 100)) * 100}%`;
+    var canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    var ctx = canvas.getContext('2d');
+    var self = this;
+    function redrawGraphic( type, value, max ) {      
+      ctx.clearRect(0, 0, canvas.width, canvas.height);        
+      switch (type) {
+        case 'progressBar':
+          ctx.beginPath();
+          ctx.strokeStyle = theme.colors['text-primary'] || '#e0e0e0';
+          ctx.lineWidth = options.strokeWidth;
+          ctx.rect(0, 0, canvas.width, canvas.height);
+          ctx.stroke();
+          break;
+        case 'animation':
+          var image = self.root.resourceManager.getAnimationImage(animationName);
+          ctx.drawImage(image.data, 0, 0, canvas.width, canvas.height);
+          break;
+        case 'images':
+          var image = Math.floor(value / max * images.length);
+          if ( !images[image] )
+            image = 0;
+          ctx.drawImage(images[image].data, 0, 0, canvas.width, canvas.height);
+          break;
+        case 'icon':
+          var image = Math.floor(value / max * icons.length);
+          if ( !icons[image] )
+            image = 0;
+          // If icon is fa- icon
+          if (icons[image].startsWith('fa-')) {
+            ctx.font = '24px FontAwesome';
+            ctx.fillStyle = theme.colors['text-primary'] || '#e0e0e0';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(icons[image], canvas.width / 2, canvas.height / 2);
           }
-        }
-      },
-      close: () => this.hideDownloadingAlert()
-    };
-  }
-  
-  async hideDownloading() {
-    if (this._currentDownloadAlert) {
-      this._currentDownloadAlert.style.opacity = '0';
-      this._currentDownloadAlert.style.transition = 'opacity 0.3s ease';
-      
-      // Wait for the fade-out animation to complete before removing
-      await new Promise(resolve => {
-        this._currentDownloadAlert.addEventListener('transitionend', function handler() {
-          this.removeEventListener('transitionend', handler);
-          resolve();
-        });
+          // Load the icon if it an url
+          else if (icons[image].startsWith('http')) {
+            const img = new Image();
+            img.src = icons[image];
+            img.onload = () => {
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            };
+          }
+          // Else if it is a string with png/jpg data
+          else if (icons[image].startsWith('data:image/png;base64') || icons[image].startsWith('data:image/jpeg;base64')) {
+            const img = new Image();
+            img.src = icons[image];
+            img.onload = () => {
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            };
+          }
+          break;
+      }
+    }     
+    var self = this;
+    let timeoutId = null;
+    let hasClosed = false;
+    function close() {
+      if (timeoutId) clearTimeout(timeoutId);
+      dialog.style.opacity = '0';
+      dialog.style.transition = 'opacity 0.6s ease';
+      dialog.addEventListener('transitionend', function handler() {
+        this.removeEventListener('transitionend', handler);
+        dialog.remove();
+        self._currentAnimatedAlert = null;
+        hasClosed = true;
       });
-      
-      this._currentDownloadAlert.remove();
-      this._currentDownloadAlert = null;
-      this._progressCircle = null;
-      this._progressFill = null;
+    }
+    async function waitForClosing() {
+      while (!hasClosed) 
+        await self.root.utilities.sleep(1);
+    }
+    async function closeAndWait() {
+      close();
+      await waitForClosing();
+    }    
+    function setMessage(message) {
+      if (message.startsWith('stam:'))
+        message = self.root.messages.getMessage(message);
+      messageEl.textContent = message;
+    }
+    function setTimer(timeout) {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        close();
+      }, timeout);
+    }
+    async function setAnimation(animationName, stepName) {
+      await self.root.resourceManager.stopAnimation(animationName);
+      self.root.resourceManager.initAnimation(animationName, stepName, function( position, image ) {
+        redrawGraphic(type, value, max);
+      });
+    }
+    progressContainer.appendChild(canvas);
+    dialog.appendChild(progressContainer);
+    this._currentAnimatedAlert = dialog;
+
+    if (animationName)
+      setAnimation(animationName, stepName, timeout);
+    else
+      redrawGraphic(type, value, max);
+    document.body.appendChild(dialog);  
+
+    // Set up timeout if specified
+    if (timeout > 0) {
+      setTimer(timeout);
+    }
+
+    // Return API for updating and closing
+    this._currentAnimatedAlert =  {
+      close: close,
+      closeAndWait: closeAndWait,
+      waitForClosing: waitForClosing,
+      setTimeout: setTimer,
+      setMessage: setMessage,
+      setAnimation: setAnimation,
+    };
+    return this._currentAnimatedAlert;
+  }
+  async updateAnimatedAlert(message, options) {
+    if (this._currentAnimatedAlert) {
+      if (typeof options.timeout != 'undefined')
+        this._currentAnimatedAlert.setTimeout(options.timeout);
+      if (message)
+        this._currentAnimatedAlert.setMessage(message); 
+      if (options.animationName)
+        this._currentAnimatedAlert.setAnimation(options.animationName, options.stepName);
+    }
+    return true;
+  }
+    
+  async closeAnimatedAlert() {
+    if (this._currentAnimatedAlert) {
+      await this._currentAnimatedAlert.closeAndWait();
+    }
+  }
+  async closeAnimatedAlertError(message, options) {
+    if (this._currentAnimatedAlert) {
+      await this._currentAnimatedAlert.closeAndWait();
+      options = options || {type: 'animation', animationName: 'connection', stepName: 'error', timeout: 2500};
+      this.showAnimatedAlert(message, options);
+    }
+  }
+  async closeAnimatedAlertSuccess(message, options) {
+    if (this._currentAnimatedAlert) {
+      await this._currentAnimatedAlert.closeAndWait();
+      options = options || {type: 'animation', animationName: 'connection', stepName: 'success', timeout: 2500 };
+      this.showAnimatedAlert(message, options);
     }
   }
 

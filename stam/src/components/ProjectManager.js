@@ -454,7 +454,7 @@ class ProjectManager extends BaseComponent {
     var answer = await this.root.server.downloadProject({ mode: this.root.currentMode, handle: this.project.handle });
     if (answer.error)
     {
-      await this.root.alert.hideDownloading();
+      await this.root.alert.closeAnimatedAlert();
       this.root.alert.showError(answer.error);
       return false;
     }    
@@ -472,7 +472,7 @@ class ProjectManager extends BaseComponent {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    await this.root.alert.hideDownloading();
+    await this.root.alert.closeAnimatedAlert();
     return true;
   }
   async handleCloseProject(data, senderId) {

@@ -238,19 +238,18 @@ export default class BaseIcons extends BaseComponent {
   }
   handleUpdateMenuItems(data, sender) {
     let { socketInfo, projectInfo, classroomInfo, editorInfo } = data;
-
+    projectInfo = projectInfo || { projectLoaded: false };
     this.findButton('new').disabled = !projectInfo.projectLoaded;
     this.findButton('open').disabled = !projectInfo.projectLoaded;
-    this.findButton('save').disabled = editorInfo.activeTabIndex < 0;
     var stopButton = this.findButton('stop');
     if (stopButton)
       stopButton.disabled = !projectInfo.projectLoaded;
     var runButton = this.findButton('run')
     if (runButton)
       runButton.disabled = !projectInfo.projectLoaded;
-    this.findButton('debug').disabled = true;
     this.findButton('share').disabled = !projectInfo.projectLoaded;
     this.findButton('help').disabled = !projectInfo.projectLoaded;
+    this.findButton('debug').disabled = true;
   }
   
   /**

@@ -822,7 +822,7 @@ class SocketSideWindow extends SideWindow {
   /**
    * Connect to the WebSocket server
    */
-  connect(accountInfo) {
+  async connect(accountInfo) {
     if (!accountInfo.url || !accountInfo.userName || !accountInfo.password)
     {
       this.addMessage('sent', 'Missing required connection information');
@@ -842,17 +842,31 @@ class SocketSideWindow extends SideWindow {
     this.addMessage('sent', 'Connecting to server...');
     this.updateStatusDisplay();
     this.updateConnectionIndicator();
+    this.root.alert.showAnimatedAlert('stam:connecting-to-server', { type: 'animation', animationName: 'connection', stepName: 'loop1'});
+    await this.root.utilities.sleep(1000);
     var password = accountInfo.password;
     delete accountInfo.password;
-    this.client.connect(accountInfo.url).then(() => {
-      this.isConnected = true;
+    this.client.connect(accountInfo.url).then((answer) => {
+      if (!answer.error)
+      {
+        this.addMessage('sent', 'Connected!');
+        this.isConnected = true;
+        this.isConnecting = false;
+        this.handleConnectionOpen(accountInfo, password);
+        return;
+      }
+      this.connected = false;
       this.isConnecting = false;
-      this.handleConnectionOpen(accountInfo, password);
+      this.addMessage('sent', 'Connection failed' + 'reason: ' + answer.error);
+      this.updateStatusDisplay();
+      this.updateConnectionIndicator();
+      this.root.alert.showError('stam:connection-error');
     }).catch(error => {
+      this.root.alert.closeAnimatedAlert();
       this.handleConnectionError(error);
     });
   }
-  
+
   /**
    * Disconnect from the WebSocket server
    */
@@ -881,34 +895,48 @@ class SocketSideWindow extends SideWindow {
     this.addMessage('received', 'Connected to server');
     
     var answer = await this.handleRequestResponse({command:SERVERCOMMANDS.CONNECT, parameters: { accountInfo: accountInfo, password: password, debug: this.root.debug }});
-    if (!answer.error) {
+    if (!answer.error) 
+    {
       this.isLoggedIn = true;
       this.addMessage('received', 'Connected to server');
       this.broadcast(SOCKETMESSAGES.CONNECTED, { userName: answer.userName });
       if (answer.connectToAwi)
       {
         var response;
-        if (accountInfo.createAccount){
+        if (accountInfo.createAccount)
+        {
+          this.root.alert.showAnimatedAlert('stam:creating-awi-account', {type: 'animation', animationName: 'connection', stepName: 'loop2' });    
+          await this.root.utilities.sleep(2000);
           if (accountInfo.firstName)
-          response = await this.handleRequestResponse({command:SERVERCOMMANDS.CREATE_AWI_ACCOUNT, parameters: { userName: answer.userName, accountInfo: accountInfo }});
+            response = await this.handleRequestResponse({command:SERVERCOMMANDS.CREATE_AWI_ACCOUNT, parameters: { userName: answer.userName, accountInfo: accountInfo }});
           if (response.error){
-            this.disconnect();
+            this.root.alert.showError('stam:failed-to-create-awi-account');
             this.addMessage('sent', 'Failed to create AWI account');
-            return;
+            this.disconnect();
+            return; 
           }
         }
+        this.root.alert.showAnimatedAlert('stam:logging-in-awi', {type: 'animation', animationName: 'connection', stepName: 'loop2' });
         response = await this.handleRequestResponse({command:SERVERCOMMANDS.LOGINAWI, parameters: { userName: answer.userName, key: answer.key }});
+        await this.root.utilities.sleep(1000);
         if (!response.error) 
         {
           this.isLoggedInAwi = true;
           this.addMessage('received', 'Logged in AWI');
+          this.root.alert.showAnimatedAlert('stam:awi-logged-in', { type: 'animation', animationName: 'connection', stepName: 'successAwi', timeout: 1000 } );          
           this.broadcast(SOCKETMESSAGES.CONNECTEDAWI, { userName: answer.userName });
         }
         else
         {
-          this.disconnect();
           this.addMessage('sent', 'Failed to login AWI');
+          this.disconnect();          
+          await this.root.alert.closeAnimatedAlert();
+          await this.root.alert.showError('stam:failed-to-login-awi');          
         }
+      }
+      else
+      {
+        this.root.alert.showAnimatedAlert('stam:connection-success', { type: 'animation', animationName: 'connection', stepName: 'successServer', timeout: 1000 } );
       }
     }
     else
@@ -1149,6 +1177,7 @@ class SocketSideWindow extends SideWindow {
    * @returns {Promise<Object>} - Resolves to the account information
    */
   showCreateAccountDialog(accountInfo = {}, back = false) {
+    accountInfo.connectToAwi = true;
     var theme = this.root.preferences.getCurrentTheme();    
     return new Promise((resolve) => {
 
@@ -1176,9 +1205,9 @@ class SocketSideWindow extends SideWindow {
           input.value = value;
           input.placeholder = placeholder;
           input.style.padding = '8px';
-          input.style.backgroundColor = '#3d3d3d';
-          input.style.color = '#e0e0e0';
-          input.style.border = '1px solid #555';
+          input.style.backgroundColor = `var(--background-color)`;
+          input.style.color = `var(--text-primary)`;
+          input.style.border = '1px solid var(--borders)';
           input.style.borderRadius = '3px';
           input.style.fontSize = '14px';
           input.required = required;
@@ -1192,9 +1221,9 @@ class SocketSideWindow extends SideWindow {
           input.value = value;
           input.placeholder = placeholder;
           input.style.padding = '8px';
-          input.style.backgroundColor = '#3d3d3d';
-          input.style.color = '#e0e0e0';
-          input.style.border = '1px solid #555';
+          input.style.backgroundColor = `var(--background-color)`;
+          input.style.color = `var(--text-primary)`;
+          input.style.border = '1px solid var(--borders)';
           input.style.borderRadius = '3px';
           input.style.fontSize = '14px';
           input.required = required;
@@ -1248,9 +1277,9 @@ class SocketSideWindow extends SideWindow {
       languageGroup.appendChild(languageLabel);      
       const languageSelect = document.createElement('select');
       languageSelect.style.padding = '8px';
-      languageSelect.style.backgroundColor = '#3d3d3d';
-      languageSelect.style.color = '#e0e0e0';
-      languageSelect.style.border = '1px solid #555';
+      languageSelect.style.backgroundColor = `var(--background-color)`;
+      languageSelect.style.color = `var(--text-primary)`;
+      languageSelect.style.border = '1px solid var(--borders)';
       languageSelect.style.borderRadius = '3px';
       languageSelect.style.fontSize = '14px';
       languageSelect.value = accountInfo.language;      
@@ -1273,7 +1302,7 @@ class SocketSideWindow extends SideWindow {
       const connectToAwiCheckbox = document.createElement('input');
       connectToAwiCheckbox.type = 'checkbox';
       connectToAwiCheckbox.id = 'connect-to-awi-checkbox';
-      connectToAwiCheckbox.checked = accountInfo.connectToAWI;
+      connectToAwiCheckbox.checked = accountInfo.connectToAwi;
       connectToAwiCheckbox.style.margin = '0';
       connectToAwiCheckbox.style.cursor = 'pointer';      
       const connectToAwiLabel = document.createElement('label');
@@ -1288,7 +1317,7 @@ class SocketSideWindow extends SideWindow {
       
       // Create a container for the name fields to be displayed side by side
       const nameFieldsContainer = document.createElement('div');
-      nameFieldsContainer.style.display = accountInfo.connectToAWI ? 'flex' : 'none';
+      nameFieldsContainer.style.display = accountInfo.connectToAwi ? 'flex' : 'none';
       nameFieldsContainer.style.gap = '10px';
       nameFieldsContainer.style.width = '100%';
       nameFieldsContainer.style.marginBottom = '0px';
@@ -1307,7 +1336,7 @@ class SocketSideWindow extends SideWindow {
       form.appendChild(nameFieldsContainer);
 
       const { group: keyGroup, input: keyInput } = createFormGroup('Key', 'text', true, accountInfo.key);
-      keyGroup.style.display = accountInfo.connectToAWI ? 'flex' : 'none';
+      keyGroup.style.display = accountInfo.connectToAwi ? 'flex' : 'none';
       form.appendChild(keyGroup);
 
       // Create a combo box with all countries filled with this.countryList and set the default to the current country
@@ -1316,7 +1345,7 @@ class SocketSideWindow extends SideWindow {
       countryGroup.style.minWidth = '0';
       countryGroup.style.marginBottom = '0';
       countryInput.style.width = '100%';
-      countryGroup.style.display = accountInfo.connectToAWI ? 'flex' : 'none';
+      countryGroup.style.display = accountInfo.connectToAwi ? 'flex' : 'none';
       for (var cc in this.countryList)
       {
         const option = document.createElement('option');

@@ -40,6 +40,10 @@ async function startAwi( prompt, config )
 
 function getArguments()
 {
+    var templatesPath = '/home/francois/Awi-Data/public/templates';
+	var httpRootDirectory = '/home/francois/Awi-Data/public';
+    var configurationPath = '/home/francois/Awi-Data/configs';
+	var dataPath = '/home/francois/Awi-Data/data';
 	var answer =
 	{
 		prompt: 'fran',
@@ -49,16 +53,16 @@ function getArguments()
             { name: 'connectors/system/files', config: { priority: 100 }, options: {} },
             { name: 'connectors/awi/messages', config: { priority: 99 }, options: {} },
             { name: 'connectors/awi/utilities', config: { priority: 99 }, options: {} },
-            { name: 'connectors/awi/configuration', config: { priority: 99 }, options: {} },
+            { name: 'connectors/awi/configuration', config: { priority: 99, configurationPath: configurationPath, dataPath: dataPath }, options: { } },
             { name: 'connectors/awi/time', config: { priority: 99  }, options: {} },
             { name: 'connectors/editor/editor', config: { priority: 99 }, options: { default: 'commandline', config: {} } },
             { name: 'connectors/network/websocketserver', config: { priority: 99 }, options: { 
-				templatesPath: '/home/francois/Awi-Data/public/templates',
+				templatesPath: templatesPath,
 				port: 1033
 			} },
 			{ name: 'connectors/network/httpserver', config: { priority: 98 }, options: {  
 				port: 3333,
-				rootDirectory: '/home/francois/Awi-Data/public',
+				rootDirectory: httpRootDirectory,
 				enableHttps: false,
 			} },
 			{ name: 'connectors/network/classroomserver', config: { priority: 98 }, options: { iceServers: [

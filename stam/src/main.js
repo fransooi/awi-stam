@@ -18,7 +18,6 @@
 *
 */
 import './style.css'
-import './components/sidewindows/sidewindows.css'
 
 // Import components
 import { MESSAGES } from './utils/BaseComponent.js';
@@ -26,6 +25,7 @@ import { SOCKETMESSAGES } from './components/sidewindows/SocketSideWindow.js';
 import { MENUCOMMANDS } from './components/MenuBar.js';
 import messageBus from './utils/MessageBus.mjs';
 import Utilities from './utils/Utilities.js';
+import ResourceManager from './components/ResourceManager.js';
 import PreferenceManager from './components/PreferenceManager.js';
 import ServerManager from './components/ServerManager.js';
 import ProjectManager from './components/ProjectManager.js';
@@ -62,17 +62,30 @@ class StamApp extends BaseComponent {
       { value: 'c64', text: 'Commodore 64' }
     ];
     this.currentMode = 'phaser'; 
-    this.webSocketUrl = 'ws://192.168.1.66:1033';   //'ws://localhost:1033'; 
-    this.httpUrl = 'http://192.168.1.66/stam';      //'http://localhost:1033'; 
+    
+    // Initialize utilities
+    this.utilities = new Utilities();
+    this.debug = false;
+    this.URLParameters = this.utilities.getURLParameters();     
+    if (this.URLParameters.debug)
+      this.debug = true;
+    if ( this.debug ){
+      this.webSocketUrl = 'ws://192.168.1.66:1033'; 
+      this.httpUrl = 'http://192.168.1.66/stam';    
+    }
+    else {
+      this.webSocketUrl = 'ws://francoislio.net:1033'; 
+      this.httpUrl = '/stam'; 
+    }
 
     // Initialize managers
-    this.utilities = new Utilities();
     this.alert = new Alerts(this.componentId);
     this.messages = new MessageManager(this.componentId);
     this.server = new ServerManager(this.componentId);
     this.project = new ProjectManager(this.componentId);
     this.classroom = new ClassroomManager(this.componentId);
-    this.preferences = new PreferenceManager(this.componentId);
+    this.preferences = new PreferenceManager(this.componentId);    
+    this.resourceManager = new ResourceManager(this.componentId);    
     
     // Initialize all components with the correct mode from the start
     this.sideBar = new SideBar(this.componentId,'info-area');
@@ -81,14 +94,6 @@ class StamApp extends BaseComponent {
     this.statusBar = new StatusBar(this.componentId,'status-line');
     this.iconBar = new IconBar(this.componentId,'icon-area');
     this.editor = new Editor(this.componentId,'editor-area');
-
-    // Get extra parameters of the URL
-    this.debug = false;
-    this.URLParameters = this.utilities.getURLParameters();     
-    if (this.URLParameters.debug)
-      this.debug = true;
-    if (this.URLParameters.url)
-      this.webSocketUrl = this.URLParameters.url;
     
     this.messageMap[MESSAGES.LAYOUT_INFO] = this.handleLayoutInfo;
     this.messageMap[MESSAGES.MODE_CHANGED] = this.handleModeChanged;    
@@ -105,8 +110,9 @@ class StamApp extends BaseComponent {
 
     // Initialize managers first
     await this.preferences.init({});
-    await this.alert.init({});
+    await this.resourceManager.init({});
     await this.messages.init({});
+    await this.alert.init({});
     await this.server.init({});
     await this.project.init({});
     await this.classroom.init({});

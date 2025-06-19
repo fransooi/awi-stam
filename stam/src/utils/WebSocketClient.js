@@ -89,7 +89,7 @@ class WebSocketClient {
         this.socket.addEventListener('open', (event) => {
           clearTimeout(connectionTimeout);
           this.onOpen(event);
-          resolve();
+          resolve({error: null});
         });
         
         // Listen for messages

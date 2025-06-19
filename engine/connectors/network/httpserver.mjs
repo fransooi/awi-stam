@@ -139,24 +139,33 @@ class ConnectorHttpServer extends ConnectorBase
             const rootDir = path.resolve(this.serverConfig.rootDirectory);
             this.app.use(express.static(rootDir, {
                 setHeaders: (res, path) => {
-                    // Handle Vite asset files with proper MIME types
-                    if (path.endsWith('.css')) {
-                        res.setHeader('Content-Type', 'text/css');
-                    } else if (path.endsWith('.js')) {
-                        res.setHeader('Content-Type', 'application/javascript');
-                    } else if (path.match(/\.(jpe?g|png|gif|svg|webp)$/i)) {
                         const ext = path.split('.').pop().toLowerCase();
                         const mimeTypes = {
+                        'html': 'text/html',
+                        'css': 'text/css',
+                        'js': 'application/javascript',
                             'jpg': 'image/jpeg',
                             'jpeg': 'image/jpeg',
                             'png': 'image/png',
                             'gif': 'image/gif',
                             'svg': 'image/svg+xml',
-                            'webp': 'image/webp'
+                        'webp': 'image/webp',
+                        'mp4': 'video/mp4',
+                        'mp3': 'audio/mpeg',
+                        'wav': 'audio/wav',
+                        'ogg': 'audio/ogg',
+                        'json': 'application/json',
+                        'hjson': 'application/hjson',
+                        'csv': 'text/csv',
+                        'txt': 'text/plain',
                         };
                         if (mimeTypes[ext]) {
                             res.setHeader('Content-Type', mimeTypes[ext]);
                         }
+                    else
+                    {
+                        res.setHeader('Content-Type', 'application/octet-stream')
+                        debugger;
                     }
                 }
             }));

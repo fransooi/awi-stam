@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  //'base': 'http://localhost:3333/stam',
   'base': '',
   server: {
     // Configure CORS for the development server
@@ -39,5 +38,35 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/awi-classrooms/, '')
       }
     }
+  },
+
+  /*
+  'base': 'http://francoislio.net:3333/stam',
+  server: {
+    // Configure CORS for the development server
+    cors: {
+      // Allow all origins
+      origin: '*',
+      // Or specify allowed origins
+      // origin: [''],
+      
+      // Allow credentials (cookies, authorization headers)
+      credentials: true,
+      
+      // Configure which headers can be used
+      allowedHeaders: ['Content-Type', 'Authorization'],
+      
+      // Configure which HTTP methods are allowed
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+    },
+    
+    // Optional: Set up a proxy for specific paths
+    proxy: {
+    '/stam': {
+      target: './', // Replace with your AWI server URL
+      changeOrigin: true,
+      rewrite: (path) => path.replace(/^\/stam/, '')
+    }
   }
+  */
 });

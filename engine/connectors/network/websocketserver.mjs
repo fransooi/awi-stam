@@ -122,9 +122,9 @@ class ConnectorWebSocketServer extends ConnectorBase
 		}
 		else
 		{
-			this.templatesUrl = 'http://217.154.15.90:3333/templates';
-			this.projectsUrl = 'http://217.154.15.90:3333/projects';
-			this.runUrl = 'http://217.154.15.90:3333/projects';
+			this.templatesUrl = 'http://francoislio.net:3333/templates';
+			this.projectsUrl = 'http://francoislio.net:3333/projects';
+			this.runUrl = 'http://francoislio.net:3333/projects';
 		}
 		
         // Create new session of AWI

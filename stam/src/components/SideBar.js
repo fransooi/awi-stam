@@ -80,14 +80,16 @@ class SideBar extends BaseComponent {
     this.windowRegistry.clear();
 
     // Insert sidebar CSS
+    /*
     if (!document.getElementById('sidebar-css')) {
       const link = document.createElement('link');
       link.id = 'sidebar-css';
       link.rel = 'stylesheet';
       link.type = 'text/css';
-      link.href = '/css/sidebar.css';
+      link.href = '/stam/css/sidebar.css';
       document.head.appendChild(link);
       }
+    */
     
     // Create a wrapper for all windows
     this.windowsContainer = document.createElement('div');
