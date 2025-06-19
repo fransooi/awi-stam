@@ -62,6 +62,10 @@ class StamApp extends BaseComponent {
       { value: 'c64', text: 'Commodore 64' }
     ];
     this.currentMode = 'phaser'; 
+    this.debugOptions = [
+      { command: MENUCOMMANDS.DEBUG1, name: 'Clean message list', disabled: false },
+      { command: MENUCOMMANDS.DEBUG2, name: 'Debug 2', disabled: false }
+    ];
     
     // Initialize utilities
     this.utilities = new Utilities();
@@ -221,7 +225,11 @@ class StamApp extends BaseComponent {
   }
   
   async debug1(data, sender) {
-    this.alert.showSuccess('stam:preferences-saved');
+    var answer = await this.messages.handleCleanMessageList( { type: 'stam', srcPath: 'w:/development/awi/stam/src', language: 'en', save: true } );
+    if ( answer.error )
+      this.alert.showError(answer.error);
+    else
+      this.handleRefreshDisplay( { refreshType: 'all', message: 'Message list cleaned!' } );
     return true;
   }
   
@@ -337,7 +345,8 @@ class StamApp extends BaseComponent {
         return false;
     }  
     await this.utilities.sleep(1000);
-    this.alert.showSuccess('stam:preferences-saved');
+    var message = data.message || 'stam:preferences-saved';
+    this.alert.showSuccess(message);
     return true;
   }
 

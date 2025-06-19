@@ -28,7 +28,8 @@ export const MESSAGESCOMMANDS = {
   SET_LANGUAGE: 'SET_LANGUAGE',
   GET_AVAILABLE_LANGUAGES: 'GET_AVAILABLE_LANGUAGES',
   GET_TIMEZONE_INFORMATION: 'GET_TIMEZONE_INFORMATION',
-  GET_COUNTRY_LIST: 'GET_COUNTRY_LIST'
+  GET_COUNTRY_LIST: 'GET_COUNTRY_LIST',
+  CLEAN_MESSAGE_LIST: 'CLEAN_MESSAGE_LIST'
 };
 
 class MessageManager extends BaseComponent {
@@ -51,6 +52,7 @@ class MessageManager extends BaseComponent {
     this.messageMap[MESSAGESCOMMANDS.GET_AVAILABLE_LANGUAGES] = this.handleGetAvailableLanguages;
     this.messageMap[MESSAGESCOMMANDS.GET_TIMEZONE_INFORMATION] = this.handleTimezoneInformation;
     this.messageMap[MESSAGESCOMMANDS.GET_COUNTRY_LIST] = this.handleGetCountryList;
+    this.messageMap[MESSAGESCOMMANDS.CLEAN_MESSAGE_LIST] = this.handleCleanMessageList;
   }
 
   async init(options = {}) {
@@ -154,6 +156,20 @@ class MessageManager extends BaseComponent {
     return this.getMessage(data.key, data.variables);
   }
 
+  async handleCleanMessageList(data, senderId) {    
+    if (!this.messages)
+      return this.root.showError( 'No message list to clean' );
+    var language = data.language || this.root.preferences.currentPrefs.language;
+    var saved = await this.root.server.cleanMessageList({ type: 'stam', srcPath: data.srcPath, language: language, messages: this.messages, text: this.currentText, save: false });
+    if (!saved)
+      return this.root.showError( 'Failed to clean message list' );
+    if (saved.error)
+      return this.root.showError( saved.error );
+    this.messages = saved.cleanedMessages;
+    this.currentText = saved.cleanedText;
+    return true;
+  }
+
   async handleChooseLanguage(currentPrefs = {}) {
     var previousLanguage = this.root.preferences.currentPrefs.language;
     var newLanguage = previousLanguage;
@@ -188,33 +204,45 @@ class MessageManager extends BaseComponent {
   async handleSetLanguage(data, senderId) {
     if (data.language==this.currentLanguage)
       return true;
-
-    // Load texts
-    var path = this.messagesPath + '/' + data.language + '.txt';
-    var answer = await this.root.utilities.readFile( path, 'text' );
-    if ( !answer.error )
+    var newMessages = await this.handleLoadLanguage(data, senderId);
+    if (newMessages)
     {
-      answer = answer.replace(/\r\n/g, '\n');
-      answer = answer.replace(/\n\n/g, '\n');
-      var lines = answer.split( '\n' );
-      this.messages = {};
-      for ( var l = 0; l < lines.length; l++ )
-      {
-        lines[l] = lines[l].trim();
-        if ( lines[l] != '' && lines[l].substring(0, 2)!= '//' ){
-          var endId = 0;
-          while ( lines[l].charCodeAt(endId) > 32 )
-            endId++;
-          var startText = endId;
-          while ( lines[l].charCodeAt(startText) <= 32 )
-            startText++;
-          this.messages[ lines[l].substring(0,endId) ] = lines[l].substring(startText);
-        }
-      }
+      this.messages = newMessages.messages;
+      this.currentText = newMessages.text;
       this.currentLanguage = data.language;
       return true;
     }
     return false;
+  }
+  async handleLoadLanguage(data, senderId) {
+    var path = this.messagesPath + '/' + data.language + '.txt';
+    var answer = await this.root.utilities.readFile( path );
+    if ( !answer.error )
+    {
+      var messages = this.convertLanguageFile( answer + '\n' );
+      return { messages: messages, text: answer };
+    }
+    return null;
+  }
+  convertLanguageFile(text) {
+    text = text.replace(/\r\n/g, '\n');
+    text = text.replace(/\n\n/g, '\n');
+    var lines = text.split( '\n' );
+    var messages = {};
+    for ( var l = 0; l < lines.length; l++ )
+    {
+      lines[l] = lines[l].trim();
+      if ( lines[l] != '' && lines[l].substring(0, 2)!= '//' ){
+        var endId = 0;
+        while ( lines[l].charCodeAt(endId) > 32 )
+          endId++;
+        var startText = endId;
+        while ( lines[l].charCodeAt(startText) <= 32 )
+          startText++;
+        messages[ lines[l].substring(0,endId) ] = lines[l].substring(startText);
+      }
+    }
+    return messages;
   }
 
   // Get server languages
@@ -260,32 +288,6 @@ class MessageManager extends BaseComponent {
     }
     this.root.alert.showError(fromLanguageText.error);
     return null;
-  }
-
-  async saveLocalLanguage(countryCode, languageText)
-  {
-    var path = this.messagesPath + '/' + countryCode + '.txt';
-    var answer = await this.root.files.saveText(path, languageText);
-    if ( !answer.error )
-    {
-      // Replace with find and remove
-      for ( var l = 0; l < this.localLanguages.length; l++ )
-        if (this.localLanguages[l]==countryCode)
-        {
-          found = true;
-          break;
-        }
-      if (!found)
-      {
-        this.localLanguages.push(countryCode);
-        var path = this.messagesPath + '/languages.json';
-        answer = await this.root.files.saveText(path, JSON.stringify(this.localLanguages));
-      }
-      if ( !answer.error )
-        return true;
-    }
-    this.root.alert.showError(answer.error);
-    return false;
   }
 
   // Check if a language is available
@@ -526,4 +528,3 @@ class MessageManager extends BaseComponent {
 }
 
 export default MessageManager;
- 

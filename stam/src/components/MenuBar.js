@@ -197,11 +197,14 @@ class MenuBar extends BaseComponent {
     ];
     // Add debug menu if in debug mode
     if (this.root.debug != 0)
-      menu.push(
-        { name: this.root.messages.getMessage('stam:menu-help-debug'), items: [
-          { name: this.root.messages.getMessage('stam:menu-help-debug-debug1'), command: MENUCOMMANDS.DEBUG1, disabled: false },
-          { name: this.root.messages.getMessage('stam:menu-help-debug-debug2'), command: MENUCOMMANDS.DEBUG2, disabled: false }
-        ] } );
+    {
+      var debugMenu = { name: this.root.messages.getMessage('stam:menu-help-debug'), items: [] };
+      var options = this.root.debugOptions; 
+      for ( var o = 0; o < options.length; o++ )
+        debugMenu.items.push(        
+          { name: options[ o ].name, command: options[ o ].command, disabled: options[ o ] } );
+      menu.push(debugMenu);
+    }
     return menu;
   }
 
@@ -241,6 +244,11 @@ class MenuBar extends BaseComponent {
     this.menuMap[CLASSROOMCOMMANDS.JOIN_CLASSROOM].disabled = !socketInfo.loggedIn;
     this.menuMap[CLASSROOMCOMMANDS.LEAVE_CLASSROOM].disabled = !socketInfo.loggedIn;
     this.updateButtonDisable(this.classroomButton, !socketInfo.loggedIn);
+    if (this.root.debug != 0)
+    {
+      this.menuMap[MENUCOMMANDS.DEBUG1].disabled = !socketInfo.loggedIn;
+      this.menuMap[MENUCOMMANDS.DEBUG2].disabled = !socketInfo.loggedIn;
+    }
 
     var projectInfo, classroomInfo, editorInfo;
     if (socketInfo.loggedIn)

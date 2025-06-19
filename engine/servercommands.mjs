@@ -53,4 +53,5 @@ export const SERVERCOMMANDS = {
     HELP_PROJECT: 'project:helpProject',
     TEST_CODE: 'project:testCode',
     FORMAT_CODE: 'project:formatCode',
+    CLEAN_MESSAGE_LIST: 'languages:cleanMessageList',
 };

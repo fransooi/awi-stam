@@ -36,6 +36,7 @@ class ConnectorLanguages extends ConnectorBase
                 saveLanguage: this.command_saveLanguage.bind(this),
                 loadLanguage: this.command_loadLanguage.bind(this),
                 deleteLanguage: this.command_deleteLanguage.bind(this),
+                cleanMessageList: this.command_cleanMessageList.bind(this),
             }
         }
         return this.newAnswer( data );
@@ -61,6 +62,81 @@ class ConnectorLanguages extends ConnectorBase
 
     // PROJECTS COMMANDS
     ////////////////////////////////////////////////////////////////////////////////////
+    async command_cleanMessageList( parameters, message, editor )
+    {
+        var allFiles =[];
+        var self = this;
+        async function loadAllFiles( srcPath )
+        {                        
+            if ( self.awi.system.exists( srcPath ).isError() )
+                return;
+            var files = await self.awi.files.getDirectory( srcPath, { recursive: true, listFiles: true, listDirectories: false, filters: [ '*.js', '*.mjs' ], noStats: true } );
+            if ( files.isError() )
+                return;
+            allFiles = files.data;
+            for ( var f = 0; f < allFiles.length; f++ )
+            {
+                var file = allFiles[ f ];
+                var answer = await self.awi.files.loadText( file.path );
+                if ( answer.isError() )
+                    continue;
+                file.content = answer.data;
+            }
+            return allFiles;
+        }
+        function isKeyUsedInContent( content, key )
+        {
+            if ( !content || !key )
+                return false;
+            var startId = content.indexOf(key);
+            while ( startId >= 0 && startId < content.length )
+            {
+              var c = content.charAt(startId + key.length);
+              if ( c != '-' )
+                return true;
+              startId = content.indexOf(key, startId + key.length);
+            }
+            return false;
+        }
+
+        // Load all project files
+        var allFiles = await loadAllFiles(parameters.srcPath);
+        if ( !allFiles )
+            return this.replyError('awi:dev-project-not-found', message, editor);
+
+        // Clean messages
+        var cleanedMessagesTemp = {};
+        for (var m in parameters.messages)
+        {
+            for ( var f = 0; f < allFiles.length; f++ )
+            {
+                var file = allFiles[ f ];
+                if (isKeyUsedInContent(file.content, m))
+                {
+                    cleanedMessagesTemp[m] = parameters.messages[m];
+                    break;
+                }
+            }
+        }
+        var cleanedMessagesSort = [];
+        for (var m in cleanedMessagesTemp)
+            cleanedMessagesSort.push({ key: m, value: cleanedMessagesTemp[m] });
+        cleanedMessagesSort.sort(function(a, b) { return a.key.localeCompare(b.key); });
+
+        // Convert back to text
+        var cleanedText = '';
+        var cleanedMessages = {};
+        for (var i = 0; i < cleanedMessagesSort.length; i++)
+        {
+            var line = cleanedMessagesSort[i].key + ':';
+            while( line.length < 60 )
+                line += ' ';
+            line += cleanedMessagesSort[i].value + '\n';
+            cleanedText += line;
+            cleanedMessages[cleanedMessagesSort[i].key] = cleanedMessagesSort[i].value;
+        }
+        return this.replySuccess( this.newAnswer( { cleanedMessages, cleanedText } ), message, editor );
+    }
     async command_getLanguageList( parameters, message, editor )
     {
         var filter = '*.txt';

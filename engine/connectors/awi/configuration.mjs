@@ -454,6 +454,7 @@ class ConnectorConfiguration extends ConnectorBase
 				paths.win32.source = [];
 				paths.win32.application = [ 'C:/Program Files', 'C:/Program Files (x86)' ];
 				paths.win32.accessory = [ 'C:/AOZ_Studio/AOZ_Studio/aoz/app/aozacc' ];
+				paths.win32.dev = [ 'd:/development/awi' ];
 				paths.win32.file = drives;
 				break;
 			case 'darwin':
