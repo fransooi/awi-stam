@@ -28,6 +28,7 @@ import { CLASSROOMCOMMANDS } from './ClassroomManager.js';
 import { MESSAGESCOMMANDS } from './MessageManager.js';
 import { SIDEBARCOMMANDS } from './SideBar.js';
 import { RIGHTBARCOMMANDS } from './RightBar.js';
+import { STATUSBARCOMMANDS } from './StatusBar.js';
 
 // Define message types for preference handling
 export const MENUCOMMANDS = {
@@ -71,7 +72,8 @@ export const MENUCOMMANDS = {
   ABOUT_AWI_SERVER: 'MENU_ABOUT_AWI_SERVER',
   VIEW_MENUBAR: 'MENU_VIEW_MENUBAR',
   VIEW_STATUSBAR: 'MENU_VIEW_STATUSBAR',
-  UPDATE_MENU_ITEMS: 'MENU_UPDATE_MENU_ITEMS'
+  UPDATE_MENU_ITEMS: 'MENU_UPDATE_MENU_ITEMS',
+  TOGGLE_VISIBLE: 'MENUBAR_TOGGLE_VISIBLE'
 };
 
 
@@ -86,6 +88,12 @@ class MenuBar extends BaseComponent {
     this.menuItems = {}; 
     this.activePopupMenu = null; 
     this.handleInterval = null;
+    this.visible = true;
+    this.isAltShowing = false; // Tracks if menu is temporarily shown by ALT key
+    
+    // Bind event handlers to maintain 'this' context
+    this.handleKeyDown = this.handleKeyDown.bind(this);
+    this.handleKeyUp = this.handleKeyUp.bind(this);
     this.messageMap[MESSAGES.MODE_CHANGE] = this.handleModeChange;
     this.messageMap[MESSAGES.LAYOUT_READY] = this.handleLayoutReady;
     this.messageMap[SOCKETMESSAGES.CONNECTED] = this.handleConnected;
@@ -93,6 +101,7 @@ class MenuBar extends BaseComponent {
     this.messageMap[SOCKETMESSAGES.DISCONNECTED] = this.handleDisconnected;
     this.messageMap[CLASSROOMCOMMANDS.CLASSROOM_JOINED] = this.handleClassroomJoined;
     this.messageMap[CLASSROOMCOMMANDS.CLASSROOM_LEFT] = this.handleClassroomLeft;
+    this.messageMap[MENUCOMMANDS.TOGGLE_VISIBLE] = this.handleToggleVisible;
   }
 
   async init(options={}) {
@@ -104,6 +113,10 @@ class MenuBar extends BaseComponent {
       this.setMode(options.mode);
     }
     document.addEventListener('click', this.handleDocumentClick.bind(this));
+    
+    // Add keyboard event listeners for ALT key handling
+    document.addEventListener('keydown', this.handleKeyDown);
+    document.addEventListener('keyup', this.handleKeyUp);
   }
 
   async handleLayoutReady() {
@@ -112,6 +125,51 @@ class MenuBar extends BaseComponent {
     }, 250);
   }
 
+  async getInformation() {
+    return {
+      visible: this.visible
+    };
+  }
+  
+  async handleToggleVisible(data, sender) {
+    // Toggle the main visibility flag
+    this.visible = !this.visible;
+    
+    // Reset ALT key state when toggling visibility manually
+    if (this.visible) {
+      this.isAltShowing = false;
+    }
+    
+    this.updateVisibility();
+    return this.visible;
+  }
+  
+  // Handle keydown events for ALT key
+  handleKeyDown(event) {
+    if (event.key === 'Alt' && !this.visible && !this.isAltShowing) {
+      this.isAltShowing = true;
+      this.updateVisibility();
+      event.preventDefault();
+    }
+  }
+  
+  // Handle keyup events for ALT key
+  handleKeyUp(event) {
+    if (event.key === 'Alt' && this.isAltShowing) {
+      this.isAltShowing = false;
+      this.updateVisibility();
+      event.preventDefault();
+    }
+  }
+  
+  // Update the menu bar visibility based on current state
+  updateVisibility() {
+    if (this.visible || this.isAltShowing) {
+      this.parentContainer.style.display = 'flex';
+    } else {
+      this.parentContainer.style.display = 'none';
+    }
+  }
   getDefaultMenuStructure() {
     var menu = [
       { name: this.root.messages.getMessage('stam:menu-awi'), items: [
@@ -172,8 +230,8 @@ class MenuBar extends BaseComponent {
           '-',
           { name: this.root.messages.getMessage('stam:menu-view-rightbar'), command: SIDEBARCOMMANDS.SETVISIBLE, disabled: false, data: { visible: true } },
         ] },
-        { name: this.root.messages.getMessage('stam:menu-menubar'), command: MENUCOMMANDS.VIEW_MENUBAR, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-statusbar'), command: MENUCOMMANDS.VIEW_STATUSBAR, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-menubar'), command: MENUCOMMANDS.TOGGLE_VISIBLE, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-statusbar'), command: STATUSBARCOMMANDS.TOGGLE_VISIBLE, disabled: false, data: { visible: true } },
         '-',
         { name: this.root.messages.getMessage('stam:menu-save-layout'), command: MENUCOMMANDS.SAVE_LAYOUT, disabled: false },
         { name: this.root.messages.getMessage('stam:menu-load-layout'), command: MENUCOMMANDS.LOAD_LAYOUT, disabled: false },
@@ -260,6 +318,12 @@ class MenuBar extends BaseComponent {
     this.setItemProperty( SIDEBARCOMMANDS.TOGGLE_SIDEWINDOW, 'teacher', 'checked', rightBarInfo['teacher'].visible );
     this.setItemProperty( SIDEBARCOMMANDS.TOGGLE_SIDEWINDOW, 'teacherView', 'checked', rightBarInfo['teacherView'].visible );
 
+    var statusBarInfo = await this.root.statusBar.getInformation();
+    this.setItemProperty( STATUSBARCOMMANDS.TOGGLE_VISIBLE, '', 'checked', statusBarInfo.visible );
+
+    var menubarInfo = await this.root.menuBar.getInformation();
+    this.setItemProperty( MENUCOMMANDS.TOGGLE_VISIBLE, '', 'checked', menubarInfo.visible );
+
     var projectInfo, classroomInfo, editorInfo;
     if (socketInfo.loggedIn)
     {
@@ -297,6 +361,8 @@ class MenuBar extends BaseComponent {
     this.root.projectInfo = projectInfo;
     this.root.classroomInfo = classroomInfo;
     this.root.editorInfo = editorInfo;
+    this.root.statusBarInfo = statusBarInfo;
+    this.root.menubarInfo = menubarInfo;
   }
   
   async destroy() {

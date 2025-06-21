@@ -22,13 +22,19 @@
 */
 import BaseComponent, { MESSAGES } from '../utils/BaseComponent.js';
 
+export const STATUSBARCOMMANDS = {
+  TOGGLE_VISIBLE: 'STATUSBAR_TOGGLE_VISIBLE',
+};
+
 class StatusBar extends BaseComponent {
   constructor(parentId, containerId) {
     // Initialize the base component with component name
     super('StatusBar', parentId, containerId);    
     this.status = 'Ready';
+    this.visible = true;
     this.messageMap[MESSAGES.UPDATE_STATUS] = this.handleUpdateStatus;
     this.messageMap[MESSAGES.SHOW_TEMPORARY_STATUS] = this.handleShowTemporaryStatus; 
+    this.messageMap[STATUSBARCOMMANDS.TOGGLE_VISIBLE] = this.handleToggleVisible; 
   }
 
   async init() {
@@ -78,6 +84,23 @@ class StatusBar extends BaseComponent {
     setTimeout(() => {
       this.setStatus(previousStatus);
     }, duration);
+  }
+
+  getInformation() {
+    return {
+      visible: this.visible,
+      status: this.status
+    };
+  }
+  
+  handleToggleVisible(data, sender) {
+    this.visible = !this.visible;
+    if (this.visible) {
+      this.parentContainer.style.display = 'block';
+      return true;
+    }
+    this.parentContainer.style.display = 'none';
+    return false;
   }
   
   /**
