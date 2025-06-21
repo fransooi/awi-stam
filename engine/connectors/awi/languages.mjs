@@ -104,37 +104,67 @@ class ConnectorLanguages extends ConnectorBase
         if ( !allFiles )
             return this.replyError('awi:dev-project-not-found', message, editor);
 
-        // Clean messages
-        var cleanedMessagesTemp = {};
-        for (var m in parameters.messages)
+        // Check all file
+        var cleanedMessages = {};
+        for ( var key in parameters.messages )
         {
-            for ( var f = 0; f < allFiles.length; f++ )
+            for (var f = 0; f < allFiles.length; f++)
             {
                 var file = allFiles[ f ];
-                if (isKeyUsedInContent(file.content, m))
-                {
-                    cleanedMessagesTemp[m] = parameters.messages[m];
+                if ( isKeyUsedInContent( file.content, key ) ) {
+                    cleanedMessages[ key ] = parameters.messages[ key ];
                     break;
                 }
             }
         }
+
+        // Sort
         var cleanedMessagesSort = [];
-        for (var m in cleanedMessagesTemp)
-            cleanedMessagesSort.push({ key: m, value: cleanedMessagesTemp[m] });
+        for (var m in cleanedMessages)
+            cleanedMessagesSort.push({ key: m, value: cleanedMessages[m] });
         cleanedMessagesSort.sort(function(a, b) { return a.key.localeCompare(b.key); });
 
-        // Convert back to text
-        var cleanedText = '';
+        // Convert back to messages
         var cleanedMessages = {};
         for (var i = 0; i < cleanedMessagesSort.length; i++)
-        {
-            var line = cleanedMessagesSort[i].key + ':';
-            while( line.length < 60 )
-                line += ' ';
-            line += cleanedMessagesSort[i].value + '\n';
-            cleanedText += line;
             cleanedMessages[cleanedMessagesSort[i].key] = cleanedMessagesSort[i].value;
+
+        // Set system messages
+        var version = cleanedMessages['stam:aaa-c-language-version'] || '1.0.0';
+        var versionNumber = version.split('.');
+        versionNumber = versionNumber.map(function (v) { return parseInt(v); });
+        versionNumber[2]++;
+        cleanedMessages[ 'stam:aaa-c-language-version' ] = versionNumber.join('.');
+        cleanedMessages[ 'stam:aaa-d-language-date' ] = new Date().toISOString();
+        
+        // Convert back to text
+        var cleanedText = '';
+        for (var key in cleanedMessages) {
+            var text = key;
+            while (text.length < 59)
+                text += ' ';
+            text += ' ' + cleanedMessages[key];
+            cleanedText += text + '\n';
         }
+
+        // If save flag-> save on server
+        if ( parameters.save )
+        {
+            var languagePath = this.languagesPath + '/' + parameters.type + '/' + parameters.language + '.txt';
+            var answer = await this.awi.files.saveText( languagePath, cleanedText );
+            if ( answer.isError() )
+                return this.replyError(answer, message, editor);
+
+            // Also save in project
+            if (parameters.languageFilesPath)
+            {
+                var languageFilePath = parameters.languageFilesPath + '/' + parameters.language + '.txt' ;
+                var answer = await this.awi.files.saveText( languageFilePath, cleanedText );
+                if ( answer.isError() )
+                    return this.replyError(answer, message, editor);
+            }
+        }
+
         return this.replySuccess( this.newAnswer( { cleanedMessages, cleanedText } ), message, editor );
     }
     async command_getLanguageList( parameters, message, editor )

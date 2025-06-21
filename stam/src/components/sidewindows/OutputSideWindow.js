@@ -21,6 +21,13 @@ import BaseOutput from './BaseOutput.js';
 import { MESSAGES } from '../../utils/BaseComponent.js';
 import { PROJECTMESSAGES } from '../ProjectManager.js';
 
+
+// Define message types for preference handling
+export const OUTPUTCOMMANDS = {
+  GET_INFORMATION_FOR_RESTORE: 'GET_INFORMATION_FOR_RESTORE',
+  RESTORE_FROM_INFORMATION: 'RESTORE_FROM_INFORMATION',
+};
+
 class OutputSideWindow extends SideWindow {
   constructor(parentId, containerId, initialHeight = 200) {
     super('Output', 'Application', parentId, containerId, initialHeight);
@@ -28,6 +35,9 @@ class OutputSideWindow extends SideWindow {
     // Current mode and mode-specific implementation
     this.modeImplementations = {};
     this.project = null;
+    this.token = 'output';
+    this.isUnique = true;
+    this.currentMode = '';
     
     // Cache for mode implementations to maintain references
     this.modeImplementationsCache = {};   
@@ -37,6 +47,8 @@ class OutputSideWindow extends SideWindow {
     this.messageMap[PROJECTMESSAGES.PROJECT_LOADED] = this.handleProjectLoaded;
     this.messageMap[PROJECTMESSAGES.PROJECT_RUNNED] = this.handleProjectRunned;
     this.messageMap[PROJECTMESSAGES.PROJECT_STOPPED] = this.handleProjectStopped;
+    this.messageMap[OUTPUTCOMMANDS.GET_INFORMATION_FOR_RESTORE] = this.handleGetInformationForRestore;
+    this.messageMap[OUTPUTCOMMANDS.RESTORE_FROM_INFORMATION] = this.handleRestoreFromInformation;
   }
   
   /**
@@ -100,6 +112,7 @@ class OutputSideWindow extends SideWindow {
       // Cache the instance and assign
       this.modeImplementationsCache[mode] = modeImplementation;
       this.modeImplementation = modeImplementation;
+      this.currentMode = mode;
       return modeImplementation;
     } catch (error) {
       console.error(`Error loading output implementation for mode ${mode}:`, error);
@@ -117,8 +130,9 @@ class OutputSideWindow extends SideWindow {
    * @returns {HTMLElement} - The rendered window element
    */
   async render(containerId) {
-    // First, let the parent class handle the basic window rendering
-    this.parentContainer = await super.render(containerId);
+    await super.render(containerId);
+    if (this.modeImplementation && this.modeImplementation.render)
+      await this.modeImplementation.render();
     return this.container;
   }
   
@@ -140,7 +154,10 @@ class OutputSideWindow extends SideWindow {
     this.updateContentHeight(data.height, data.wrapper);
   }
   handleProjectLoaded(data, senderId) {    
-    this.project = data;
+    if (data.project)
+      this.project = data.project;
+    else
+      this.project = this.root.project.project;
     this.running = false;
     this.justLoaded = this.project.runOptions[ this.project.runMode ].autoRun;
     this.update();
@@ -164,6 +181,37 @@ class OutputSideWindow extends SideWindow {
     if (this.enlargedDialog)
       this.closeEnlargedDialog();
     this.update();
+  }
+  async handleGetInformationForRestore(data, senderId) {    
+    var info = await super.handleGetInformationForRestore(data, senderId);
+    if (this.running)
+      await this.sendMessageTo('class:ProjectManager', PROJECTMESSAGES.STOP_PROJECT, {})
+    info.loaded = this.project != null;
+    info.mode = this.currentMode;
+    info.project = this.project;
+    if (this.modeImplementation && this.modeImplementation.getInformation) {
+      info.modeSpecific = await this.modeImplementation.getInformation();
+    }
+    return info;
+  }
+  async handleRestoreFromInformation(data, senderId) {    
+    if ( !await super.handleRestoreFromInformation(data, senderId) )
+      return false;
+    if (data.loaded) 
+    {
+      if (!this.modeImplementation)
+        await this.loadModeSpecificImplementation(data.mode);
+      this.modeImplementation.render();
+      await this.handleProjectLoaded(data.project, senderId);
+      this.modeImplementation.handleProjectLoaded(data.project, senderId);
+      if (!data.justLoaded)
+        this.justLoaded = false;
+    }
+    if (this.modeImplementation && this.modeImplementation.getRestoreFromInformation) {
+      await this.modeImplementation.getRestoreFromInformation(data, senderId);
+    }
+    this.update();
+    return true;
   }
   
   /**
@@ -189,7 +237,7 @@ class OutputSideWindow extends SideWindow {
     }
     
     // Update the current mode
-    this.currentMode = mode;
+    
     
     // Load the new mode implementation
     await this.loadModeSpecificImplementation(mode);    

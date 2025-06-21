@@ -125,13 +125,24 @@ class PhaserOutput extends BaseOutput {
     }
   }
 
+  update()
+  {
+    if (this.root.project.project != this.project)
+    {
+      this.project = this.root.project.project;
+      if (this.project)
+      {
+        this.displayProjectUrl(this.project.runUrl); 
+      }
+    }
+  }
   /**
    * Handle the PROJECT_LOADED message from ProjectManager
    * @param {Object} project - The project object containing URL and other properties
    */
-  handleProjectLoaded(project) {
-    if (project) {
-      this.project = project;
+  handleProjectLoaded(data) {
+    if (data.project) {
+      this.project = data.project;
     }
   }
   

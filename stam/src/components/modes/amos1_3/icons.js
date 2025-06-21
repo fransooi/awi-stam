@@ -16,7 +16,7 @@
 *
 * @short AMOS 1.3 Icon Bar component - Inspired by the original AMOS 1.3 from 1988 for Amiga
 */
-import BaseIcons from '../../sidewindows/BaseIcons.js';
+import BaseIcons from '../../BaseIcons.js';
 
 export const AMOS1_3COMMANDS = {
   F1: 'AMOS1_3_F1',

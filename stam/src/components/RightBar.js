@@ -21,7 +21,17 @@
 * for handling status updates and temporary status messages.
 */
 import SideBar from './SideBar.js';
+import { SIDEBARCOMMANDS } from './SideBar.js';
 
+// Define message types for preference handling
+export const RIGHTBARCOMMANDS = {
+    ADD_SIDEWINDOW: 'ADD_RIGHT_SIDEWINDOW',
+    REMOVE_SIDEWINDOW: 'REMOVE_RIGHT_SIDEWINDOW',
+    TOGGLE_SIDEWINDOW: 'TOGGLE_RIGHT_SIDEWINDOW',
+    IS_SIDEWINDOW_OPEN: 'IS_RIGHT_SIDEWINDOW_OPEN',
+    SETVISIBLE: 'SETVISIBLE',
+  };
+  
 class RightBar extends SideBar {
     constructor(parentId,containerId) {
         super(parentId,containerId,'RightBar');
@@ -30,6 +40,20 @@ class RightBar extends SideBar {
         if (this.parentContainer) {
             this.parentContainer.classList.add('right-bar');
         }
+        this.messageMap[SIDEBARCOMMANDS.ADD_SIDEWINDOW] = null;
+        this.messageMap[SIDEBARCOMMANDS.REMOVE_SIDEWINDOW] = null;
+        this.messageMap[SIDEBARCOMMANDS.TOGGLE_SIDEWINDOW] = null;
+        this.messageMap[SIDEBARCOMMANDS.IS_SIDEWINDOW_OPEN] = null;
+        this.messageMap[RIGHTBARCOMMANDS.ADD_SIDEWINDOW] = this.handleAddSideWindow.bind(this);
+        this.messageMap[RIGHTBARCOMMANDS.REMOVE_SIDEWINDOW] = this.handleRemoveSideWindow.bind(this);
+        this.messageMap[RIGHTBARCOMMANDS.TOGGLE_SIDEWINDOW] = this.handleToggleSideWindow.bind(this);
+        this.messageMap[RIGHTBARCOMMANDS.IS_SIDEWINDOW_OPEN] = this.handleIsSideWindowOpen.bind(this);
+    }
+    async init(options)
+    {
+        var result = await super.init(options);
+        this.otherSide = this.root.sideBar;
+        return result;
     }
 }
 export default RightBar;

@@ -27,7 +27,8 @@ import { MESSAGES } from '../../utils/BaseComponent.js';
 class TVSideWindow extends SideWindow {
   constructor(parentId, containerId, initialHeight = 300, initialUrl = '') {
     super('TV', 'TV', parentId, containerId, initialHeight);
-    
+    this.token = 'tv';
+
     // Available clip types
     this.clipTypes = [
       { id: 'youtube', name: 'YouTube', class: YoutubeClipWindow },

@@ -1,7 +1,7 @@
 :root {
   /* Default theme colors */
   --background: #1e1e1e;
-  --dialog-background: #2d2d2d;
+  --dialog-background: #ffff00;
   --container-background: #252526;
   --borders: #444;
   --list-background: #3a3a3a;
@@ -194,17 +194,34 @@ input, button, textarea, select {
 .popup-menu-item {
   color: var(--menu-text, #e0e0e0);
   cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 12px;
+  padding: 6px 12px; /* Reset padding to original */
   transition: background-color 0.2s;
   user-select: none;
   font-family: var(--font-menu, Arial, sans-serif);
   font-size: 13px;
+  position: relative; /* For positioning the checkmark */
+  white-space: nowrap; /* Prevent text wrapping */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .popup-menu-item:hover {
   background-color: var(--menu-background-hover, #3a3a3a);
+}
+
+/* Checked menu item with checkmark */
+.popup-menu-item.checked {
+  padding-right: 32px; /* Add space for the checkmark */
+}
+
+.popup-menu-item.checked::after {
+  content: '✓';
+  position: absolute;
+  right: 12px;
+  color: var(--menu-text-hover, #ffffff);
+  font-size: 14px;
+  line-height: 1;
 }
 
 .popup-menu-item.disabled {
@@ -1704,6 +1721,39 @@ form {
   touch-action: none; /* Prevent touch events from interfering with dragging */
   flex-shrink: 0; /* Prevent the header from shrinking */
   width: 100%; /* Ensure full width */
+  gap: 4px; /* Add some space between title and controls */
+}
+
+/* Title container that holds the move-up button and title */
+.side-window-title-container {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0; /* Allow the container to shrink below its content's minimum width */
+  overflow: hidden; /* Ensure content doesn't overflow */
+}
+
+/* Move up button specific styles */
+.side-window-move-up {
+  margin-right: 4px;
+  flex-shrink: 0;
+  opacity: 0.7;
+  transition: opacity 0.15s ease;
+}
+
+.side-window-move-up:hover {
+  opacity: 1;
+  background-color: var(--side-title-button-hover, #ffff00);
+  color: var(--side-title-text, #ffffff);
+}
+
+/* Ensure the title can be truncated with ellipsis */
+.side-window-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0; /* Allow the title to shrink below its content's minimum width */
 }
 
 /* Prevent text selection during drag */
@@ -1740,6 +1790,9 @@ form {
   color: var(--side-title-text, #ffffff);
   line-height: 1.2; /* Tighter line height */
   margin: 0; /* Remove any default margins */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .side-window-controls {

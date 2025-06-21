@@ -16,9 +16,9 @@
 *
 * @short Root class for mode-dependante icons
 */
-import BaseComponent, { MESSAGES } from '../../utils/BaseComponent.js';
-import { MENUCOMMANDS } from '../MenuBar.js';
-import { PROJECTMESSAGES } from '../ProjectManager.js';
+import BaseComponent from '../utils/BaseComponent.js';
+import { MENUCOMMANDS } from './MenuBar.js';
+import { PROJECTMESSAGES } from './ProjectManager.js';
 
 export default class BaseIcons extends BaseComponent {
   constructor(componentName,parentId,containerId = null) {

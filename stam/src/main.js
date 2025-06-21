@@ -23,6 +23,8 @@ import './style.css'
 import { MESSAGES } from './utils/BaseComponent.js';
 import { SOCKETMESSAGES } from './components/sidewindows/SocketSideWindow.js';
 import { MENUCOMMANDS } from './components/MenuBar.js';
+import { SIDEBARCOMMANDS } from './components/SideBar.js';
+import { RIGHTBARCOMMANDS } from './components/RightBar.js';
 import messageBus from './utils/MessageBus.mjs';
 import Utilities from './utils/Utilities.js';
 import ResourceManager from './components/ResourceManager.js';
@@ -51,7 +53,8 @@ class StamApp extends BaseComponent {
     
     // Storage for layout information from components
     this.layoutInfo = {};
-
+    this.sideBarRestoreInfo = {};
+    
     // Initialize mode
     this.possibleModes = [
       { value: 'javascript', text: 'Javascript' },
@@ -84,8 +87,8 @@ class StamApp extends BaseComponent {
 
     // Initialize managers
     this.alert = new Alerts(this.componentId);
-    this.messages = new MessageManager(this.componentId);
     this.server = new ServerManager(this.componentId);
+    this.messages = new MessageManager(this.componentId);
     this.project = new ProjectManager(this.componentId);
     this.classroom = new ClassroomManager(this.componentId);
     this.preferences = new PreferenceManager(this.componentId);    
@@ -147,10 +150,10 @@ class StamApp extends BaseComponent {
 
     // If no layout, create default side windows
     if (!layout){
-      await this.sendMessageTo(this.sideBar.componentId,MESSAGES.ADD_SIDE_WINDOW, { type: 'ProjectSideWindow' });
-      await this.sendMessageTo(this.sideBar.componentId,MESSAGES.ADD_SIDE_WINDOW, { type: 'OutputSideWindow', height: 200 });
+      await this.sendMessageTo('class:SideBar',SIDEBARCOMMANDS.ADD_SIDEWINDOW, { type: 'ProjectSideWindow' } );
+      await this.sendMessageTo('class:SideBar',SIDEBARCOMMANDS.ADD_SIDEWINDOW, { type: 'OutputSideWindow', height: 200 } );
 //      await this.sendMessageTo(this.sideBar.componentId,MESSAGES.ADD_SIDE_WINDOW, { type: 'TVSideWindow', height: 200 });
-      await this.sendMessageTo(this.sideBar.componentId,MESSAGES.ADD_SIDE_WINDOW, { type: 'SocketSideWindow', height: 200, minimized: true });
+      await this.sendMessageTo('class:SideBar',SIDEBARCOMMANDS.ADD_SIDEWINDOW, { type: 'SocketSideWindow', height: 200, minimized: true } );
     }
 
     // Send RENDER messages to components-> they display themselves
@@ -225,7 +228,13 @@ class StamApp extends BaseComponent {
   }
   
   async debug1(data, sender) {
-    var answer = await this.messages.handleCleanMessageList( { type: 'stam', srcPath: 'w:/development/awi/stam/src', language: 'en', save: true } );
+    var answer = await this.messages.handleCleanMessageList( { 
+      type: 'stam', 
+      srcPath: 'w:/development/awi/stam/src', 
+      language: 'en', 
+      save: true,
+      languageFilesPath: 'w:/development/awi/stam/public/messages',
+    } );
     if ( answer.error )
       this.alert.showError(answer.error);
     else

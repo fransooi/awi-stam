@@ -32,6 +32,17 @@ export const MESSAGESCOMMANDS = {
   CLEAN_MESSAGE_LIST: 'CLEAN_MESSAGE_LIST'
 };
 
+// Reference the language informations keys so that they are 
+// not removed by the cleanMessageList process
+// 'stam:aaa-a-title'
+// 'stam:aaa-b-language'
+// 'stam:aaa-c-language-version'
+// 'stam:aaa-d-language-date' 
+// 'stam:aaa-e-translated-by' 
+// 'stam:aaa-f-translated-from'
+// 'stam:aaa-g-translated-version'
+// 'stam:aaa-h-translated-date'
+
 class MessageManager extends BaseComponent {
   /**
    * Constructor
@@ -144,7 +155,7 @@ class MessageManager extends BaseComponent {
       this.localLanguages = answer;
     }
     await this.handleSetLanguage({ language: this.root.preferences.currentPrefs.language }, null);
-    this.english = this.messages;
+    return this.message;
   }
   
   async destroy() {
@@ -160,7 +171,14 @@ class MessageManager extends BaseComponent {
     if (!this.messages)
       return this.root.showError( 'No message list to clean' );
     var language = data.language || this.root.preferences.currentPrefs.language;
-    var saved = await this.root.server.cleanMessageList({ type: 'stam', srcPath: data.srcPath, language: language, messages: this.messages, text: this.currentText, save: false });
+    var saved = await this.root.server.cleanMessageList({ 
+      type: 'stam', 
+      srcPath: data.srcPath, 
+      language: language, 
+      messages: this.messages, 
+      text: this.currentText, 
+      save: data.save, 
+      languageFilesPath: data.languageFilesPath });
     if (!saved)
       return this.root.showError( 'Failed to clean message list' );
     if (saved.error)
@@ -224,6 +242,17 @@ class MessageManager extends BaseComponent {
     }
     return null;
   }
+
+  async handleSaveLanguage(data, senderId) {
+    var path = this.messagesPath + '/' + data.language + '.txt';
+    var answer = await this.root.utilities.writeFile( path, data.text );
+    if ( answer.error ) {
+      this.root.alert.showError(answer.error);
+      return false;
+    }
+    return true;
+  }
+
   convertLanguageFile(text) {
     text = text.replace(/\r\n/g, '\n');
     text = text.replace(/\n\n/g, '\n');
@@ -366,6 +395,8 @@ class MessageManager extends BaseComponent {
 	}
 	format( prompt, variables={})
 	{
+    if (!prompt)
+        return ('ERROR! empty string...');
     if ( !variables )
         return prompt;
 

@@ -121,6 +121,9 @@ export default class PopupMenu extends BaseComponent {
     if (item.disabled) {
       menuItem.classList.add('disabled');
     }
+    if (item.checked){
+      menuItem.classList.add('checked');
+    }
     
     // Add click handler
     menuItem.addEventListener('click', (e) => {

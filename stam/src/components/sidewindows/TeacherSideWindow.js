@@ -35,6 +35,7 @@ class TeacherSideWindow extends SideWindow {
       volume: 1.0 // 0.0 - 1.0
     };
     this._videoResizeObserver = null;
+    this.token = 'teacher';
   }
 
   async init(options) {

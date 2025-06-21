@@ -26,6 +26,8 @@ import { EDITORMESSAGES } from './Editor.js';
 import { SOCKETMESSAGES } from './sidewindows/SocketSideWindow.js';
 import { CLASSROOMCOMMANDS } from './ClassroomManager.js';
 import { MESSAGESCOMMANDS } from './MessageManager.js';
+import { SIDEBARCOMMANDS } from './SideBar.js';
+import { RIGHTBARCOMMANDS } from './RightBar.js';
 
 // Define message types for preference handling
 export const MENUCOMMANDS = {
@@ -67,16 +69,6 @@ export const MENUCOMMANDS = {
   DISPLAY_AWI_DEVICES: 'MENU_DISPLAY_AWI_DEVICES',
   REMOVE_AWI_DEVICE: 'MENU_REMOVE_AWI_DEVICE',
   ABOUT_AWI_SERVER: 'MENU_ABOUT_AWI_SERVER',
-  VIEW_LEFT_PROJECT_WINDOW: 'MENU_VIEW_LEFT_PROJECT_WINDOW',
-  VIEW_LEFT_OUTPUT_WINDOW: 'MENU_VIEW_LEFT_OUTPUT_WINDOW',
-  VIEW_LEFT_SERVER_WINDOW: 'MENU_VIEW_LEFT_SERVER_WINDOW',
-  VIEW_LEFT_AWI_WINDOW: 'MENU_VIEW_LEFT_AWI_WINDOW',
-  VIEW_LEFT_TV_WINDOW: 'MENU_VIEW_LEFT_TV_WINDOW',
-  VIEW_RIGHT_PROJECT_WINDOW: 'MENU_VIEW_RIGHT_PROJECT_WINDOW',
-  VIEW_RIGHT_OUTPUT_WINDOW: 'MENU_VIEW_RIGHT_OUTPUT_WINDOW',
-  VIEW_RIGHT_SERVER_WINDOW: 'MENU_VIEW_RIGHT_SERVER_WINDOW',
-  VIEW_RIGHT_AWI_WINDOW: 'MENU_VIEW_RIGHT_AWI_WINDOW',
-  VIEW_RIGHT_TV_WINDOW: 'MENU_VIEW_RIGHT_TV_WINDOW',
   VIEW_MENUBAR: 'MENU_VIEW_MENUBAR',
   VIEW_STATUSBAR: 'MENU_VIEW_STATUSBAR',
   UPDATE_MENU_ITEMS: 'MENU_UPDATE_MENU_ITEMS'
@@ -165,25 +157,27 @@ class MenuBar extends BaseComponent {
       ] },
       { name: this.root.messages.getMessage('stam:menu-view'), items: [
         { name: this.root.messages.getMessage('stam:menuleft-sidebar'), items: [
-          { name: this.root.messages.getMessage('stam:menu-view-project-window'), command: MENUCOMMANDS.VIEW_LEFT_PROJECT_WINDOW, disabled: false },
-          { name: this.root.messages.getMessage('stam:menu-view-output-window'), command: MENUCOMMANDS.VIEW_LEFT_OUTPUT_WINDOW, disabled: false },
-          { name: this.root.messages.getMessage('stam:menu-view-server-window'), command: MENUCOMMANDS.VIEW_LEFT_SERVER_WINDOW, disabled: false },
-          { name: this.root.messages.getMessage('stam:menu-view-awi-window'), command: MENUCOMMANDS.VIEW_LEFT_AWI_WINDOW, disabled: false },
-          { name: this.root.messages.getMessage('stam:menu-view-tv-window'), command: MENUCOMMANDS.VIEW_LEFT_TV_WINDOW, disabled: false }
+          { name: this.root.messages.getMessage('stam:menu-view-project-window'), command: SIDEBARCOMMANDS.TOGGLE_SIDEWINDOW, disabled: false, data: { token: 'project' } },  
+          { name: this.root.messages.getMessage('stam:menu-view-output-window'), command: SIDEBARCOMMANDS.TOGGLE_SIDEWINDOW, disabled: false, data: { token: 'output' } },
+          { name: this.root.messages.getMessage('stam:menu-view-awi-window'), command: SIDEBARCOMMANDS.TOGGLE_SIDEWINDOW, disabled: false, data: { token: 'awi' } },
+          { name: this.root.messages.getMessage('stam:menu-view-tv-window'), command: SIDEBARCOMMANDS.TOGGLE_SIDEWINDOW, disabled: false, data: { token: 'tv' } },
+          '-',
+          { name: this.root.messages.getMessage('stam:menu-view-sidebar'), command: SIDEBARCOMMANDS.SETVISIBLE, disabled: false, data: { visible: true } },
         ] },
         { name: this.root.messages.getMessage('stam:menuright-sidebar'), items: [
-          { name: this.root.messages.getMessage('stam:menu-view-project-window'), command: MENUCOMMANDS.VIEW_RIGHT_PROJECT_WINDOW, disabled: false },
-          { name: this.root.messages.getMessage('stam:menu-view-output-window'), command: MENUCOMMANDS.VIEW_RIGHT_OUTPUT_WINDOW, disabled: false },
-          { name: this.root.messages.getMessage('stam:menu-view-server-window'), command: MENUCOMMANDS.VIEW_RIGHT_SERVER_WINDOW, disabled: false },
-          { name: this.root.messages.getMessage('stam:menu-view-awi-window'), command: MENUCOMMANDS.VIEW_RIGHT_AWI_WINDOW, disabled: false },
-          { name: this.root.messages.getMessage('stam:menu-view-tv-window'), command: MENUCOMMANDS.VIEW_RIGHT_TV_WINDOW, disabled: false },
+          { name: this.root.messages.getMessage('stam:menu-view-project-window'), command: RIGHTBARCOMMANDS.TOGGLE_SIDEWINDOW, disabled: false, data: { token: 'project' } },
+          { name: this.root.messages.getMessage('stam:menu-view-output-window'), command: RIGHTBARCOMMANDS.TOGGLE_SIDEWINDOW, disabled: false, data: { token: 'output' } },
+          { name: this.root.messages.getMessage('stam:menu-view-awi-window'), command: RIGHTBARCOMMANDS.TOGGLE_SIDEWINDOW, disabled: false, data: { token: 'awi' } },
+          { name: this.root.messages.getMessage('stam:menu-view-tv-window'), command: RIGHTBARCOMMANDS.TOGGLE_SIDEWINDOW, disabled: false, data: { token: 'tv' } },
+          '-',
+          { name: this.root.messages.getMessage('stam:menu-view-rightbar'), command: SIDEBARCOMMANDS.SETVISIBLE, disabled: false, data: { visible: true } },
         ] },
         { name: this.root.messages.getMessage('stam:menu-menubar'), command: MENUCOMMANDS.VIEW_MENUBAR, disabled: false },
         { name: this.root.messages.getMessage('stam:menu-statusbar'), command: MENUCOMMANDS.VIEW_STATUSBAR, disabled: false },
         '-',
-        { name: this.root.messages.getMessage('stam:menu-savelayout'), command: MENUCOMMANDS.SAVE_LAYOUT, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-loadlayout'), command: MENUCOMMANDS.LOAD_LAYOUT, disabled: false },
-        { name: this.root.messages.getMessage('stam:menu-resetlayout'), command: MENUCOMMANDS.RESET_LAYOUT, disabled: false }
+        { name: this.root.messages.getMessage('stam:menu-save-layout'), command: MENUCOMMANDS.SAVE_LAYOUT, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-load-layout'), command: MENUCOMMANDS.LOAD_LAYOUT, disabled: false },
+        { name: this.root.messages.getMessage('stam:menu-reset-layout'), command: MENUCOMMANDS.RESET_LAYOUT, disabled: false }
       ] }, 
       { name: this.root.messages.getMessage('stam:menu-classroom'), items: [
         { name: this.root.messages.getMessage('stam:menu-create-classroom'), command: CLASSROOMCOMMANDS.CREATE_CLASSROOM, disabled: false },
@@ -250,6 +244,22 @@ class MenuBar extends BaseComponent {
       this.menuMap[MENUCOMMANDS.DEBUG2].disabled = !socketInfo.loggedIn;
     }
 
+    var sideBarInfo = await this.root.sideBar.getInformation();
+    this.setItemProperty( SIDEBARCOMMANDS.TOGGLE_SIDEWINDOW, 'project', 'checked', sideBarInfo['project'].visible );
+    this.setItemProperty( SIDEBARCOMMANDS.TOGGLE_SIDEWINDOW, 'output', 'checked', sideBarInfo['output'].visible );
+    this.setItemProperty( SIDEBARCOMMANDS.TOGGLE_SIDEWINDOW, 'awi', 'checked', sideBarInfo['awi'].visible );
+    this.setItemProperty( SIDEBARCOMMANDS.TOGGLE_SIDEWINDOW, 'tv', 'checked', sideBarInfo['tv'].visible );
+    this.setItemProperty( SIDEBARCOMMANDS.TOGGLE_SIDEWINDOW, 'teacher', 'checked', sideBarInfo['teacher'].visible );
+    this.setItemProperty( SIDEBARCOMMANDS.TOGGLE_SIDEWINDOW, 'teacherView', 'checked', sideBarInfo['teacherView'].visible );
+
+    var rightBarInfo = await this.root.rightBar.getInformation();
+    this.setItemProperty( SIDEBARCOMMANDS.TOGGLE_SIDEWINDOW, 'socket', 'checked', rightBarInfo['socket'].visible );
+    this.setItemProperty( SIDEBARCOMMANDS.TOGGLE_SIDEWINDOW, 'output', 'checked', sideBarInfo['output'].visible );
+    this.setItemProperty( SIDEBARCOMMANDS.TOGGLE_SIDEWINDOW, 'awi', 'checked', rightBarInfo['awi'].visible );
+    this.setItemProperty( SIDEBARCOMMANDS.TOGGLE_SIDEWINDOW, 'tv', 'checked', rightBarInfo['tv'].visible );
+    this.setItemProperty( SIDEBARCOMMANDS.TOGGLE_SIDEWINDOW, 'teacher', 'checked', rightBarInfo['teacher'].visible );
+    this.setItemProperty( SIDEBARCOMMANDS.TOGGLE_SIDEWINDOW, 'teacherView', 'checked', rightBarInfo['teacherView'].visible );
+
     var projectInfo, classroomInfo, editorInfo;
     if (socketInfo.loggedIn)
     {
@@ -283,6 +293,10 @@ class MenuBar extends BaseComponent {
     }    
     this.sendMessageTo('class:Editor', MENUCOMMANDS.UPDATE_MENU_ITEMS, { socketInfo, projectInfo, classroomInfo, editorInfo })
     this.sendMessageTo('class:IconBar', MENUCOMMANDS.UPDATE_MENU_ITEMS, { socketInfo, projectInfo, classroomInfo, editorInfo })
+    this.root.socketInfo = socketInfo;
+    this.root.projectInfo = projectInfo;
+    this.root.classroomInfo = classroomInfo;
+    this.root.editorInfo = editorInfo;
   }
   
   async destroy() {
@@ -392,6 +406,27 @@ class MenuBar extends BaseComponent {
     return this.parentContainer;
   }
   
+
+  setItemProperty(command, token, property, value, tree) {
+    if (!tree)
+      tree = this.menuStructure;
+    for (var m = 0; m < tree.length; m++) {
+      var item = tree[m];
+      if (item.items) {
+        if (this.setItemProperty(command, token, property, value, item.items))
+          return true;
+      }
+      if (item.command == command) 
+      {
+        if (token && item.data.token != token)
+          continue;
+        item[property] = value;
+        return true;
+      }
+    }
+    return false;
+  }
+    
   createModeSelector(container) {
     const modeSelector = document.createElement('select');
     modeSelector.id = 'mode-selector';

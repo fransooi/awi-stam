@@ -508,8 +508,8 @@ class Alerts extends BaseComponent {
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      background-color: ${theme['dialog-background']};
-      border: 1px solid ${theme['dialog-border']};
+      background-color: ${theme.colors['dialog-background']};
+      border: 1px solid ${theme.colors['borders']};
       border-radius: 8px;
       padding: 20px;
       z-index: 10000;
@@ -524,7 +524,7 @@ class Alerts extends BaseComponent {
     messageEl.textContent = message;
     messageEl.style.cssText = `
       margin-bottom: 15px;
-      color: ${theme['text-primary']};
+      color: ${theme.colors['text-primary']};
       font-size: 14px;
       line-height: 1.4;
     `;

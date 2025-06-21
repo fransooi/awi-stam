@@ -58,22 +58,13 @@ class BaseOutput extends BaseComponent {
     // Clear existing content if content exists
     if (this.container) {
       this.container.innerHTML = '';
-    } else {
-      console.error('Content element not found');
-    }
-    
-    // Set the content to fill available space without scrollbars
-    if (this.container) {
       this.container.style.overflow = 'hidden';
       this.container.style.boxSizing = 'border-box';
       this.container.style.height = '100%';
       this.container.style.display = 'flex';
       this.container.style.flexDirection = 'column';
-      
-      // Add bottom padding to prevent content from being cut off by resize handle
       this.container.style.paddingBottom = '32px';
     }
-    
     return this.container;
   }
   

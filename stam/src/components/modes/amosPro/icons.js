@@ -16,7 +16,7 @@
 *
 * @short AMOS Pro Icon Bar component
 */
-import BaseIcons from '../../sidewindows/BaseIcons.js';
+import BaseIcons from '../../BaseIcons.js';
 
 class AMOSProIcons extends BaseIcons {
   constructor(parentId,containerId) {

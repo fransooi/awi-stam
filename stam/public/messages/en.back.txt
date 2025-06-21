@@ -1,0 +1,364 @@
+stam:aaa-a-title                          Stam language file
+stam:aaa-b-language                       English
+stam:aaa-c-language-version               1.0.0
+stam:aaa-d-language-date                  2025-06-20
+stam:aaa-e-translated-by                  Original
+stam:aaa-f-translated-from                ..
+stam:aaa-g-translated-version             ..
+stam:aaa-h-translated-date                ..
+stam:message-not-found                    Message not found (${id})
+stam:delete-classroom                     Delete a Classroom
+stam:untitled-classroom                   Untitled classroom
+stam:classroom-description                Description
+stam:join-as-teacher                      Join as Teacher
+stam:join-as-student                      Join as Student
+stam:ok                                   OK
+stam:cancel                               Cancel
+stam:close                                Close
+stam:delete                               Delete
+stam:yes                                  Yes
+stam:no                                   No
+stam:abort                                Abort
+stam:alert                                Alert
+stam:information                          Information
+stam:warning                              Warning
+stam:question                             Question
+stam:error                                Error
+stam:confirm                              Please confirm...
+stam:success                              Success
+stam:new                                  New
+stam:new-text                             New File
+stam:save                                 Save
+stam:save-text                            Save File
+stam:open                                 Open
+stam:open-text                            Open File
+stam:run                                  Run
+stam:run-text                             Run Application
+stam:debug                                Debug
+stam:debug-text                           Debug Application
+stam:stop                                 Stop
+stam:stop-text                            Stop Application
+stam:share                                Share
+stam:share-text                           Share Application
+stam:help                                 Help
+stam:help-text                            Documentation
+stam:back                                 Back
+stam:password                             Password
+stam:password-required                     Password is required
+stam:passwords-do-not-match                Passwords do not match
+stam:first-name-required                   First name is required
+stam:last-name-required                    Last name is required
+stam:email-required                        Email is required
+stam:email-invalid                        Please enter a valid email address
+stam:preferences-saved                    Preferences saved...
+stam:alert_message                        Message
+stam:create-classroom                     Create Classroom
+stam:classroom-mode                       Mode
+stam:classroom-icon                       Icon
+stam:classroom-take-control               Take control of student editors
+stam:classroom-project-global             Project global to all students
+stam:classroom-project-name               Project name
+stam:classroom-radio-load                 Load
+stam:classroom-radio-new                  New
+stam:classroom-title-placeholder          New classroom  
+stam:classroom-description-placeholder    Enter a description for the classroom
+stam:classroom-icon-placeholder           Choose an icon for the classroom
+stam:classroom-url                        Classroom URL
+stam:classroom-copy-url                   Copy
+stam:classroom-copied                     Copied!
+stam:classroom-camera                     Camera
+stam:classroom-microphone                 Microphone
+stam:classroom-audio-output               Audio Output
+stam:new-project                          New Project
+stam:project-name                         Project name
+stam:project-required                     Please choose or create a project associated with this classroom
+stam:overwrite-existing-project           Overwrite existing project
+stam:select-template-for-new-project      Select a template for your new project
+stam:no-templates-available               No templates available
+stam:template                             Template
+stam:create                               Create
+stam:please-select-a-template             Please select a template
+stam:open-project                         Open Project
+stam:select-project-to-open               Select a project to open
+stam:no-projects-available                No projects available
+stam:open                                 Open
+stam:please-select-a-project              Please select a project
+stam:select-file-to-open                  Select a file to open
+stam:open-file                            Open File
+stam:filter                               Filter
+stam:filter-files-placeholder             Enter file filter
+stam:filter-all-files                     All files: *.*
+stam:filter-javascript                    JavaScript: *.js,*.mjs,*.ts,*.tsx,*.json,*.html,*.css,*.md,*.txt
+stam:filter-phaser                        Phaser: *.js,*.mjs,*.ts,*.tsx,*.json,*.html,*.css,*.md,*.txt
+stam:filter-stos                          STOS: *.bas,*.pic,*.abk,*.bin
+stam:filter-amos1_3                       AMOS: *.bas,*.iff,*.wav,*.bin
+stam:filter-amosPro                       AMOS Pro: *.bas,*.iff,*.wav,*.bin
+stam:filter-c64                           C64: *.bas,*.prg,*.bin
+stam:filter-images                        Images: *.png,*.jpg,*.jpeg,*.gif,*.bmp,*.webp,*.svg
+stam:filter-audio                         Audio: *.mp3,*.wav,*.ogg,*.m4a,*.aac,*.flac,*.webm
+stam:filter-video                         Video: *.mp4,*.webm,*.ogv,*.mov,*.avi,*.mkv,*.wmv
+stam:filter-text                          Text: *.txt,*.md,*.json,*.csv,*.tsv,*.xml,*.yaml,*.yml
+stam:filter-three                         Three.js: *.js,*.mjs,*.ts,*.tsx,*.json,*.html,*.css,*.md,*.txt
+stam:filter-assembly                      Assembly: *.asm,*.inc,*.bin
+stam:default-filename-phaser              untitled.js
+stam:default-filename-javascript          untitled.js
+stam:default-filename-stos                untitled.bas
+stam:default-filename-amos1_3             untitled.amos
+stam:default-filename-amosPro             untitled.amos
+stam:default-filename-c64                 untitled.bas
+stam:no-files-available                   No files available
+stam:file-exists-overwrite                File already exists, overwrite?
+stam:filename                             Filename
+stam:path-label                           Path: 
+stam:save-changes                         Save changes?
+stam:file-modified                        File ${name} has been modified, do you want to save the changes?
+stam:location                             Location
+stam:no-directories-available             No directories available
+stam:selected                             Selected
+stam:project                              Project
+stam:project-dialog-box                   Project dialog box
+stam:menu-file                            File
+stam:menu-new-project                     New Project
+stam:menu-open-project                    Open Project
+stam:menu-rename-project                  Rename Project
+stam:menu-delete-project                  Delete Project
+stam:menu-download-project                Download Project
+stam:menu-close-project                   Close Project
+stam:menu-new-file                        New File
+stam:menu-open-file                       Open File
+stam:menu-save-file                       Save File
+stam:menu-save-file-as                    Save File As
+stam:menu-close-file                      Close File
+stam:menu-save-all-files                  Save All Files
+stam:menu-edit                            Edit
+stam:menu-undo                            Undo
+stam:menu-redo                            Redo
+stam:menu-cut                             Cut
+stam:menu-copy                            Copy
+stam:menu-paste                           Paste
+stam:menu-find                            Find
+stam:menu-replace                         Replace
+stam:menu-preferences                     Preferences
+stam:menu-language                        Language
+stam:menu-theme                           Theme
+stam:menu-run                             Run
+stam:menu-run-run                         Run
+stam:menu-run-debug                       Debug
+stam:menu-run-stop                        Stop
+stam:menu-run-build                       Build
+stam:menu-classroom                       Classroom
+stam:menu-create-classroom                Create Classroom
+stam:menu-join-classroom                  Join Classroom
+stam:menu-leave-classroom                 Leave Classroom
+stam:menu-help                            Help
+stam:menu-help-documentation              Documentation
+stam:menu-help-about                      About
+stam:menu-help-debug                      Debug
+stam:menu-help-debug-debug1               Debug1
+stam:menu-help-debug-debug2               Debug2
+stam:menu-log-out                         Log Out
+stam:menu-log-in                          Log In
+stam:menu-awi                             Awi
+stam:menu-login                           Login
+stam:menu-logout                          Logout
+stam:menu-create-account                  Create Account
+stam:menu-edit-account                    Edit Account
+stam:menu-connect-awi-device              Connect Awi Device
+stam:menu-display-awi-devices             Display Awi Devices
+stam:menu-remove-awi-device               Remove Awi Device
+stam:menu-about-awi-server                About Awi Server
+stam:menu-view                            View
+stam:menuleft-sidebar                     Left Sidebar
+stam:menu-view-project-window             Project Window
+stam:menu-view-output-window              Output Window
+stam:menu-view-server-window              Server Window
+stam:menu-view-awi-window                 Awi Window
+stam:menu-view-tv-window                  TV Window
+stam:menuright-sidebar                    Right Sidebar
+stam:menu-menubar                         Menu Bar
+stam:menu-statusbar                       Status Bar
+
+stam:classroom-icon                       Icon
+stam:classroom-choose                    Choose
+stam:preferences                          Preferences
+stam:preferences-dialog-box               Preferences dialog box
+stam:resize-width                        Resize width
+stam:amos-1.3-ready                       AMOS 1.3 - Ready
+stam:minimize                             Minimize
+stam:restore                              Restore
+stam:enlarge                              Enlarge
+stam:connection-status-disconnected       Connection Status: Disconnected (Click to Connect)
+stam:connection-status-connected          Connection Status: Connected
+stam:connection-status-connecting         Connection Status: Connecting
+stam:send-indicator                        Send Indicator
+stam:receive-indicator                     Receive Indicator
+stam:error                                 Error
+stam:create-account-dialog-title          Create New STAM Account
+stam:country-placeholder                   Enter your country (optional)
+stam:preferred-language                   Preferred Language
+stam:create-account                       Create Account and Connect
+stam:connection-dialog                    Connect to the STAM server
+stam:username                             Username
+stam:server-url                           Server URL
+stam:login-awi-account                     Login STAM account
+stam:create-awi-account                    Create STAM account
+stam:connect                               Connect
+stam:connect-to-awi-server                 Connect to AWI Artificial Intelligence server
+stam:change-clip-type-or-select-playlist   Change clip type or select playlist
+stam:edit-playlists                        Edit Playlists
+stam:edit-url                               Edit URL
+stam:previous-clip                          Previous clip
+stam:next-clip                              Next clip
+stam:pause-playlist                         Pause playlist
+stam:playlist-not-found                     Playlist not found
+stam:playlist-name-placeholder              Playlist name
+stam:playlist-name-label                    Playlist name
+stam:clips-label                             Clips:
+stam:add-clip-button                        Add Clip
+stam:edit-playlist                          Edit Playlist
+stam:create-new-playlist                     Create New Playlist
+stam:no-clips-in-this-playlist               No clips in this playlist. Click "Add Clip" to add one.
+stam:youtube                                YouTube
+stam:spotify                                Spotify
+stam:browser                                Browser
+stam:enter-url                              Enter URL
+stam:move-up                                Move Up
+stam:move-down                              Move Down
+stam:remove-clip                            Remove Clip
+stam:playlist-name-required                 Please enter a playlist name
+stam:playlist-must-contain-at-least-one-clip Please add at least one clip with a valid URL to the playlist.
+stam:delete-playlist                        Delete Playlist
+stam:no-playlists-available                  No playlists available. Click the + button to create one.
+stam:confirm-delete-playlist                 Are you sure you want to delete "${name}"?
+stam:classroom-deleted-successfully         Classroom deleted successfully
+stam:preferences-title                      Preferences
+stam:preferences-language                   Language
+stam:preferences-save                       Save
+stam:preferences-cancel                     Cancel
+stam:theme-copy-of                          Copy of
+stam:theme-name-exists                     A theme with this name already exists
+stam:choose-template                       Choose a Template
+stam:choose                                Choose
+stam:classroom-project-new                 Create a new project
+stam:classroom-project-existing            Use an existing project
+stam:classroom-name                        Classroom name
+stam:join-classroom                        Join Classroom
+stam:leave-classroom                       Leave Classroom
+stam:display-name                          Display Name
+stam:theme-current                         Current Theme
+stam:theme-choose                         Choose Theme
+stam:theme-create                         Create Theme
+stam:theme-edit                           Edit Theme
+stam:theme-name                           Theme Name
+stam:theme-colors                         Colors
+stam:theme-fonts                          Fonts
+stam:theme-preview                        Preview
+stam:theme-preview-text                   The quick brown fox jumps over the lazy dog
+stam:theme-preview-title                  Theme Preview
+stam:theme-preview-description            This is a preview of how your theme will look. Changes are applied in real-time.
+stam:theme-preview-button                 Primary Action
+stam:theme-preview-cancel                 Secondary Action
+stam:theme-preview-list                   Sample List
+stam:theme-preview-item1                  First list item
+stam:theme-preview-item2                  Second list item
+stam:theme-preview-item3                  Third list item
+stam:theme-save                           Save Theme
+stam:theme-cancel                         Cancel
+stam:theme-use                            Use
+stam:theme-close                          Close
+stam:theme-choose-font                   Choose Font
+stam:font-picker-title                   Choose a Font
+stam:font-picker-search-placeholder       Search fonts...
+stam:font-picker-categories               Categories
+stam:font-picker-category-all             All Fonts
+stam:font-picker-category-sans            Sans Serif
+stam:font-picker-category-serif           Serif
+stam:font-picker-category-display         Display
+stam:font-picker-category-handwriting     Handwriting
+stam:font-picker-category-monospace       Monospace
+stam:font-picker-preview-text             The quick brown fox jumps over the lazy dog
+stam:font-picker-preview-size             Size
+stam:font-picker-cancel                   Cancel
+stam:font-picker-use                      Use
+stam:font-picker-recent                   Recently Used
+stam:font-picker-loading                  Loading fonts...
+stam:theme-background                     Background
+stam:theme-dialog-background              Dialog Background
+stam:theme-container-background           Container Background
+stam:theme-borders                        Borders
+stam:theme-list-background                List Background
+stam:theme-list-item-background           List Item Background
+stam:theme-list-item-background-hover     List Item Background Hover
+stam:theme-menu-background                Menu Background
+stam:theme-menu-background-hover          Menu Background Hover
+stam:theme-menu-text                      Menu Text
+stam:theme-menu-text-hover                Menu Text Hover
+stam:theme-popup-border                   Popup Border
+stam:theme-button-positive                Button Positive
+stam:theme-button-negative                Button Negative
+stam:theme-button-neutral                 Button Neutral
+stam:theme-text-primary                   Text Primary
+stam:theme-text-secondary                 Text Secondary
+stam:theme-text-positive                  Text Positive
+stam:theme-text-negative                  Text Negative
+stam:theme-text-neutral                   Text Neutral
+stam:theme-side-title-background          Side Title Background
+stam:theme-side-title-background-hover    Side Title Background Hover
+stam:theme-side-title-text                Side Title Text
+stam:theme-side-title-button-hover        Side Title Button Hover
+stam:theme-side-border                    Side Border
+stam:theme-side-resize                    Side Resize
+stam:theme-slider-background              Slider Background
+stam:theme-slider-track                   Slider Track
+stam:theme-slider-thumb                   Slider Thumb
+stam:theme-font-menu                      Menu Font
+stam:theme-font-side-window               Side Window Font
+stam:theme-font-status-bar                Status Bar Font
+stam:theme-font-editor                    Editor Font
+stam:theme-dialog-title                   Choose theme
+stam:language-dialog-title                Choose language
+stam:available-languages                  Available languages
+stam:translatable-languages               Translate to a new language with AWI
+
+stam:mail-sent                            A mail have been send to ${value} with instructions to reset your password.
+stam:account-not-found                    User not found: ${value}
+stam:wrong-password                       Wrong password
+stam:password-not-found                   The password you have provided is not correct.
+stam:retry                                Retry
+stam:forgot-password                      Change Password
+stam:user-name-required                   User name is required
+stam:user-name-illegal-chars              User name can only contain letters, numbers, and underscores.
+stam:first-name-required                  First name is required
+stam:key-required                         Key is required
+stam:email-required                       Email is required
+stam:email-invalid                        Email is invalid
+stam:password-invalid                     Password is invalid, 8 characters minimum...
+stam:passwords-do-not-match               Passwords do not match
+stam:create-account-dialog                Create STAM Account
+stam:update-awi-account                   Update AWI Account
+stam:rename-project-title                 Rename Project
+stam:new-name                             New name
+stam:delete-project-title                 Delete Project
+stam:delete-project-message               Are you sure you want to delete the ${name} project?
+stam:download-and-delete                  Download and delete
+stam:delete                               Delete
+stam:project-downloading                  Downloading project...
+stam:project-not-opened                   Project not opened
+stam:new-file-title                       New File
+stam:file-modified-message                The file ${name} has been modified, do you want to save the changes?
+stam:connecting-to-server                 Connecting to Awi server...
+stam:identification                       Identification
+stam:connected                            Connected
+stam:creating-awi-account                 Creating AWI account
+stam:failed-to-create-awi-account         Failed to create AWI account
+stam:awi-account-created                  AWI account created
+stam:logging-in-awi                       Logging in AWI
+stam:awi-logged-in                        Logged in AWI
+stam:failed-to-login-awi                  Failed to login AWI
+stam:font-picker-size                     Font height
+stam:theme-font-dialog                    Dialog boxes font
+stam:theme-icon-button-background         Button background
+stam:theme-icon-button-background-hover   Button hover background
+stam:theme-button-positive-hover          Button positive hover
+stam:theme-button-negative-hover          Button negative hover
+stam:theme-button-neutral-hover           Button neutral hover

@@ -21,6 +21,7 @@ import { CLASSROOMCOMMANDS } from '../ClassroomManager.js';
 class TeacherViewSideWindow extends SideWindow {
   constructor(parentId, containerId, initialHeight = 200) {
     super('TeacherView', 'TeacherView', parentId, containerId, initialHeight);
+    this.token = 'teacherView';
     this.connected = false;
     this.classroomId = '';
     this.classroomName = '';

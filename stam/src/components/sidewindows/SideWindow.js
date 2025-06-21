@@ -256,6 +256,9 @@ class SideWindow extends BaseComponent {
   }
 
   async render() {
+    if (this.layoutContainer)
+      return;
+
     // Create the container element
     this.container = document.createElement('div');
     this.container.id = `side-window-${this.id}`;
@@ -341,7 +344,7 @@ class SideWindow extends BaseComponent {
     } else {
       this.updateContentHeight();
     }
-      this.parentContainer.appendChild(this.container);
+    this.parentContainer.appendChild(this.container);
     this.layoutContainer = this.container;
 
     // Prevent default context menu on the entire side window
@@ -353,8 +356,7 @@ class SideWindow extends BaseComponent {
     });
     
     // Setup drag handling after all elements are created
-    this.setupDragHandling();
-    
+    this.setupDragHandling();    
     return this.container;
   }
 
@@ -487,7 +489,19 @@ class SideWindow extends BaseComponent {
     return true;
   }
   
-
+  async handleGetInformationForRestore(messageData, sender) {
+    return {
+      id: this.id,
+      title: this.title,
+      height: this.height,
+      isVisible: this.isVisible,
+      minimized: this.minimized,
+      enlarged: this.enlarged,
+    };
+  }
+  async handleRestoreFromInformation(messageData, sender) {
+    return true;
+  }
 
   /**
    * Toggle the window between minimized and normal state

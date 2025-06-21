@@ -55,6 +55,7 @@ class SocketSideWindow extends SideWindow {
     this.isLoggedIn = false;
     this.isLoggedInAwi = false;
     this.messages = [];
+    this.token = 'socket';
     this.maxMessages = 50; // Maximum number of messages to display
     this.accountInfo = 
     {

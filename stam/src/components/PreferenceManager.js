@@ -31,47 +31,46 @@ const DEFAULT_THEME = {
   description: 'The default STAM dark theme...',
   id: 'default-dark',
   colors: {
-    'background': '#1e1e1e',                  // UI Background color
-    'dialog-background': '#2d2d2d',           // Dialog Background color
-    'container-background': '#252526',        // Container Background color
-    'borders': '#444444',                     // Border color
-    'list-background': '#3a3a3a',             // List Background color
-    'list-item-background': '#2a2a2a',        // List Item Background color
-    'list-item-background-hover': '#252526',  // List Item Background color
-    'menu-background': '#252526',             // Menu Background color
-    'menu-background-hover': '#353535',       // Menu Hover Background color
-    'menu-text': '#e0e0e0',                   // Menu Text color
-    'menu-text-hover': '#ffffff',             // Menu Hover Text color
-    'popup-border': '#444444',                // Popup Border color
-    'button-positive': '#1a73e8',             // Button Positive color
-    'button-negative': '#dc3545',             // Button Negative color
-    'button-neutral': '#6c757d',              // Button Neutral color
-    'button-positive-hover': '#2a83f8',       // Button Positive color hover
-    'button-negative-hover': '#ec4555',       // Button Negative color hover
-    'button-neutral-hover': '#7c858d',        // Button Neutral color hover
-    'text-primary': '#e0e0e0',                // Text Primary color
-    'text-secondary': '#b0b0b0',              // Text Secondary color
-    'text-positive': '#ffffff',               // Text Positive color
-    'text-negative': '#ffffff',               // Text Negative color
-    'text-neutral': '#ffffff',                // Text Neutral color
-    'side-title-background': '#333333',       // Side Title Background color
-    'side-title-background-hover': '#3d3d3d', // Side Title Background Hover color
-    'side-title-text': '#ffffff',             // Side Title Text color
-    'side-title-button-hover': '#ffff00',     // Side Title Button Hover color
-    'side-border': '#444444',                 // Side Border color
-    'side-resize': '#555555',                 // Side Resize color
-    'slider-background': '#444',              // Slider Background color
-    'slider-track': '#666',                   // Slider Track color
-    'slider-thumb': '#888',                   // Slider Thumb color
-    'icon-button-background': '#2d2d2d',        // Icon Button Background color
-    'icon-button-background-hover': '#4d4d4d',  // Icon Button Background Hover color
+    'background': '#1e1e1e',                  // stam:theme-background
+    'container-background': '#252526',        // stam:theme-container-background
+    'dialog-background': '#333333',           // stam:theme-dialog-background
+    'borders': '#555555',                     // stam:theme-borders
+    'list-background': '#3a3a3a',             // stam:theme-list-background
+    'list-item-background': '#2a2a2a',        // stam:theme-list-item-background
+    'list-item-background-hover': '#252526',  // stam:theme-list-item-background-hover
+    'menu-background': '#252526',             // stam:theme-menu-background
+    'menu-background-hover': '#353535',       // stam:theme-menu-background-hover
+    'menu-text': '#e0e0e0',                   // stam:theme-menu-text
+    'menu-text-hover': '#ffffff',             // stam:theme-menu-text-hover
+    'popup-border': '#444444',                // stam:theme-popup-border
+    'button-positive': '#1a73e8',             // stam:theme-button-positive
+    'button-neutral': '#6c757d',              // stam:theme-button-neutral
+    'button-positive-hover': '#2a83f8',       // stam:theme-button-positive-hover
+    'button-negative-hover': '#ec4555',       // stam:theme-button-negative-hover
+    'button-neutral-hover': '#7c858d',        // stam:theme-button-neutral-hover
+    'text-primary': '#e0e0e0',                // stam:theme-text-primary
+    'text-secondary': '#b0b0b0',              // stam:theme-text-secondary
+    'text-positive': '#ffffff',               // stam:theme-text-positive
+    'text-negative': '#ffffff',               // stam:theme-text-negative
+    'text-neutral': '#ffffff',                // stam:theme-text-neutral
+    'side-title-background': '#333333',       // stam:theme-side-title-background
+    'side-title-background-hover': '#3d3d3d', // stam:theme-side-title-background-hover
+    'side-title-text': '#ffffff',             // stam:theme-side-title-text
+    'side-title-button-hover': '#ffff00',     // stam:theme-side-title-button-hover
+    'side-border': '#444444',                 // stam:theme-side-border
+    'side-resize': '#555555',                 // stam:theme-side-resize
+    'slider-background': '#444',              // stam:theme-slider-background
+    'slider-track': '#666',                   // stam:theme-slider-track
+    'slider-thumb': '#888',                   // stam:theme-slider-thumb
+    'icon-button-background': '#2d2d2d',        // stam:theme-icon-button-background
+    'icon-button-background-hover': '#4d4d4d',  // stam:theme-icon-button-background-hover
   },
   fonts: {
-    'menu': 'Inter, system-ui, sans-serif', // Menu Font
-    'dialog': 'Inter, system-ui, sans-serif', // Dialog Font
-    'side-window': 'Inter, system-ui, sans-serif', // Side Window Font
-    'status-bar': 'Consolas, monospace', // Status Bar Font
-    'editor': 'Inter, system-ui, sans-serif', // Editor Font
+    'menu': 'Inter, system-ui, sans-serif',   // stam:theme-font-menu
+    'dialog': 'Inter, system-ui, sans-serif', // stam:theme-font-dialog
+    'side-window': 'Inter, system-ui, sans-serif', // stam:theme-font-side-window
+    'status-bar': 'Consolas, monospace', // stam:theme-font-status-bar
+    'editor': 'Inter, system-ui, sans-serif', // stam:theme-font-editor
   },
   fontSizes: {
     'menu': '12px', // Menu Font Size
@@ -90,47 +89,47 @@ const THEMES = {
     description: 'The default STAM light theme...',
     id: 'default-light',
     colors: {
-      'background': '#ffffff',                  // UI Background color
-      'dialog-background': '#f3f3f3',           // Dialog Background color
-      'container-background': '#e3e3e3',        // Container Background color
-      'borders': '#808080',                        // Border color
-      'list-background': '#e3e3e3',             // List Background color
-      'list-item-background': '#d3d3d3',        // List Item Background color
-      'list-item-background-hover': '#a3a3a3',  // List Item Background color
-      'menu-background': '#f3f3f3',             // Menu Background color
-      'menu-background-hover': '#a3a3a3',       // Menu Hover Background color
-      'menu-text': '#000000',                   // Menu Text color
-      'menu-text-hover': '#000000',             // Menu Hover Text color
-      'popup-border': '#c3c3c3',                // Popup Border color
-      'button-positive': '#05aff2',             // Button Positive color
-      'button-negative': '#d9580d',             // Button Negative color
-      'button-neutral': '#a3a3a3',              // Button Neutral color
-      'button-positive-hover': '#04bfe2',       // Button Positive color hover
-      'button-negative-hover': '#c94800',       // Button Negative color hover
-      'button-neutral-hover': '#939393',        // Button Neutral color hover
-      'text-primary': '#000000',                // Text Primary color
-      'text-secondary': '#202020',              // Text Secondary color
-      'text-positive': '#000000',               // Text Positive color
-      'text-negative': '#000000',               // Text Negative color
-      'text-neutral': '#000000',                // Text Neutral color
-      'side-title-background': '#e4e6f1',       // Side Title Background color
-      'side-title-background-hover': '#d4d6f1', // Side Title Background Hover color
-      'side-title-text': '#000000',             // Side Title Text color
-      'side-title-button-hover': '#f0cc90',     // Side Title Button Hover color
-      'side-border': '#c3c3c3',                 // Side Border color
-      'side-resize': '#b3b3b3',                 // Side Resize color
-      'slider-background': '#c3c3c3',              // Slider Background color
-      'slider-track': '#b3b3b3',                   // Slider Track color
-      'slider-thumb': '#a3a3a3',                   // Slider Thumb color
-      'icon-button-background': '#e3e3e3',        // Icon Button Background color
-      'icon-button-background-hover': '#d3d3d3',  // Icon Button Background Hover color
+      'background': '#ffffff',                  // stam:theme-background
+      'dialog-background': '#f3f3f3',           // stam:theme-dialog-background
+      'container-background': '#e3e3e3',        // stam:theme-container-background
+      'borders': '#808080',                        // stam:theme-borders
+      'list-background': '#e3e3e3',             // stam:theme-list-background
+      'list-item-background': '#d3d3d3',        // stam:theme-list-item-background
+      'list-item-background-hover': '#a3a3a3',  // stam:theme-list-item-background-hover
+      'menu-background': '#f3f3f3',             // stam:theme-menu-background
+      'menu-background-hover': '#a3a3a3',       // stam:theme-menu-background-hover
+      'menu-text': '#000000',                   // stam:theme-menu-text
+      'menu-text-hover': '#000000',             // stam:theme-menu-text-hover
+      'popup-border': '#c3c3c3',                // stam:theme-popup-border
+      'button-positive': '#05aff2',             // stam:theme-button-positive
+      'button-negative': '#d9580d',             // stam:theme-button-negative
+      'button-neutral': '#a3a3a3',              // stam:theme-button-neutral
+      'button-positive-hover': '#04bfe2',       // stam:theme-button-positive-hover
+      'button-negative-hover': '#c94800',       // stam:theme-button-negative-hover
+      'button-neutral-hover': '#939393',        // stam:theme-button-neutral-hover
+      'text-primary': '#000000',                // stam:theme-text-primary
+      'text-secondary': '#202020',              // stam:theme-text-secondary
+      'text-positive': '#000000',               // stam:theme-text-positive
+      'text-negative': '#000000',               // stam:theme-text-negative
+      'text-neutral': '#000000',                // stam:theme-text-neutral
+      'side-title-background': '#e4e6f1',       // stam:theme-side-title-background
+      'side-title-background-hover': '#d4d6f1', // stam:theme-side-title-background-hover
+      'side-title-text': '#000000',             // stam:theme-side-title-text
+      'side-title-button-hover': '#f0cc90',     // stam:theme-side-title-button-hover
+      'side-border': '#c3c3c3',                 // stam:theme-side-border
+      'side-resize': '#b3b3b3',                 // stam:theme-side-resize
+      'slider-background': '#c3c3c3',              // stam:theme-slider-background
+      'slider-track': '#b3b3b3',                   // stam:theme-slider-track
+      'slider-thumb': '#a3a3a3',                   // stam:theme-slider-thumb
+      'icon-button-background': '#e3e3e3',        // stam:theme-icon-button-background
+      'icon-button-background-hover': '#d3d3d3',  // stam:theme-icon-button-background-hover
     },
     fonts: {
-      'menu': 'Inter, system-ui, sans-serif', // Menu Font
-      'dialog': 'Inter, system-ui, sans-serif', // Dialog Font
-      'side-window': 'Inter, system-ui, sans-serif', // Side Window Font
-      'status-bar': 'Consolas, monospace', // Status Bar Font
-      'editor': 'Inter, system-ui, sans-serif', // Editor Font
+      'menu': 'Inter, system-ui, sans-serif', // stam:theme-font-menu
+      'dialog': 'Inter, system-ui, sans-serif', // stam:theme-font-dialog
+      'side-window': 'Inter, system-ui, sans-serif', // stam:theme-font-side-window
+      'status-bar': 'Consolas, monospace', // stam:theme-font-status-bar
+      'editor': 'Inter, system-ui, sans-serif', // stam:theme-font-editor
     },
     fontSizes: {
       'menu': '12px', // Menu Font Size
@@ -972,16 +971,17 @@ class PreferenceManager extends BaseComponent {
     
     // Also update when tab changes
     dialog.dialog.addEventListener('click', (e) => {
+      /*
       if (e.target.classList.contains('tab-button') && e.target.getAttribute('data-tab') === 'preview') {
         // Ensure all selected fonts are loaded before showing preview
         const fontPromises = Object.values(theme.fonts)
           .filter(font => font) // Filter out empty fonts
-          .map(font => loadFont(font).catch(console.error));
-        
+          .map(font => loadFont(font).catch(console.error));        
         Promise.all(fontPromises).then(() => {
           updatePreview();
         });
       }
+      */
     });
     
     // Show first tab by default

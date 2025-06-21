@@ -26,6 +26,8 @@ class ProjectSideWindow extends SideWindow {
   constructor(parentId, containerId, initialHeight = 300) {
     super('Project', 'Project Files', parentId, containerId, initialHeight);
     this.projectTree = [];
+    this.token = 'project';
+
     this.messageMap[MESSAGES.CONTENT_HEIGHT_CHANGED] = this.handleContentHeightChanged;
     this.messageMap[PROJECTMESSAGES.PROJECT_LOADED] = this.handleProjectLoaded;
     this.messageMap[PROJECTMESSAGES.PROJECT_CLOSED] = this.handleProjectClosed;
@@ -48,7 +50,7 @@ class ProjectSideWindow extends SideWindow {
    * Destroy the component
    */
   async destroy() {
-    this.parentContainer.removeChild(this.treeElement);
+    this.content.removeChild(this.treeElement);
     this.treeElement = null;
     super.destroy();
   }
@@ -60,21 +62,23 @@ class ProjectSideWindow extends SideWindow {
   async render(containerId) {
     await super.render(containerId);
     
-    // Override the default black background with the theme's container background
-    this.content.style.backgroundColor = 'var(--container-background, #252526)';
-   
-    // Create project tree container
-    this.treeElement = document.createElement('div');
-    this.treeElement.id = 'project-tree';
-    this.treeElement.className = 'project-tree';  
-    this.content.appendChild(this.treeElement);
-  
-    // Add some basic styling
-    this.addStyles();
+    if (!this.treeElement)
+    {
+      // Override the default black background with the theme's container background
+      this.content.style.backgroundColor = 'var(--container-background, #252526)';
     
+      // Create project tree container
+      this.treeElement = document.createElement('div');
+      this.treeElement.id = 'project-tree';
+      this.treeElement.className = 'project-tree';  
+      this.content.appendChild(this.treeElement);
+    
+      // Add some basic styling
+      this.addStyles();
+    }
+
     // Populate with initial data
-    this.populateProjectTree();
-    
+    this.populateProjectTree();    
     return this.container;
   }
   
@@ -380,10 +384,26 @@ getFilePath(item) {
     this.setTitle(project.name);
   }
 
-  async handleProjectLoaded(project, sender) {
-    this.project = project;
-    this.setTitle(project.name);
-    this.populateProjectTree(project);
+  async handleProjectLoaded(data, sender) {
+    if (data.project)
+      this.project = data.project;
+    else
+      this.project = this.root.project.project;
+    this.setTitle(this.project.name);
+    this.populateProjectTree(this.project);
+  }
+  async handleGetInformationForRestore(data, senderId) {    
+    var info = await super.handleGetInformationForRestore(data, senderId);
+    info.loaded = this.project != null;
+    info.project = this.project;
+    return info;
+  }
+  async handleRestoreFromInformation(data, senderId) {    
+    if (!await super.handleRestoreFromInformation(data, senderId))
+      return false;
+    this.handleProjectLoaded({});
+    this.render();
+    return true;
   }
   
   /**

@@ -289,7 +289,7 @@ class ProjectManager extends BaseComponent {
         self.project = project;
         console.log( 'New project created: ', self.projectName );
         console.log( '                   : ', project.url );
-        self.broadcast(PROJECTMESSAGES.PROJECT_LOADED, project);
+        self.broadcast(PROJECTMESSAGES.PROJECT_LOADED, { project: project });
       })
       .catch((error) => {
         console.error('Error creating new project:', error);
@@ -348,7 +348,7 @@ class ProjectManager extends BaseComponent {
             this.project.debugMode = 'run';
             this.project.runMode = 'run';
           }
-          this.broadcast(PROJECTMESSAGES.PROJECT_LOADED, project);
+          this.broadcast(PROJECTMESSAGES.PROJECT_LOADED, { project: project });
           if ( project.runOptions[ project.runMode ].autoRun)
             this.handleRunProject(project, senderId);
         }
@@ -450,7 +450,7 @@ class ProjectManager extends BaseComponent {
     }
     
     // Download zip from server
-    await this.root.alert.showDownloading('stam:project-downloading');
+    await this.root.alert.showAnimatedAlert('stam:project-downloading');
     var answer = await this.root.server.downloadProject({ mode: this.root.currentMode, handle: this.project.handle });
     if (answer.error)
     {

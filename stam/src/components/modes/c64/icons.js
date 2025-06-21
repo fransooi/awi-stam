@@ -16,7 +16,7 @@
 *
 * @short Commodore 64 Icon Bar component
 */
-import BaseIcons from '../../sidewindows/BaseIcons.js';
+import BaseIcons from '../../BaseIcons.js';
 
 class C64Icons extends BaseIcons  {
   constructor(parentId,containerId) {

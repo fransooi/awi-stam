@@ -21,6 +21,16 @@
 * for handling status updates and temporary status messages.
 */
 import BaseComponent, { MESSAGES } from '../utils/BaseComponent.js';
+import { PROJECTMESSAGES } from './ProjectManager.js';
+
+// Define message types for preference handling
+export const SIDEBARCOMMANDS = {
+  ADD_SIDEWINDOW: 'ADD_SIDEWINDOW',
+  REMOVE_SIDEWINDOW: 'REMOVE_SIDEWINDOW',
+  TOGGLE_SIDEWINDOW: 'TOGGLE_SIDEWINDOW',
+  IS_SIDEWINDOW_OPEN: 'IS_SIDEWINDOW_OPEN',
+  SETVISIBLE: 'SETVISIBLE',
+};
 
 class SideBar extends BaseComponent {
   constructor(parentId,containerId,componentName='SideBar') {
@@ -30,15 +40,31 @@ class SideBar extends BaseComponent {
     this.separators = [];
     this.isDragging = false;
     this.activeSeparatorIndex = -1;
+    this.tokenToClassname = {
+      project: 'ProjectSideWindow',
+      output: 'OutputSideWindow',
+      socket: 'SocketSideWindow',
+      awi: 'AwiSideWindow',
+      tv: 'TvSideWindow',
+      teacher: 'TeacherSideWindow',
+      teacherView: 'TeacherViewSideWindow',
+    };
+    this.visible = true;
+    this.restoreInfo = {};
     this.windowRegistry = new Map(); // Registry to look up window objects by DOM element
-    this.messageMap[MESSAGES.ADD_SIDE_WINDOW] = this.handleAddSideWindow.bind(this);
-    this.messageMap[MESSAGES.REMOVE_SIDE_WINDOW] = this.handleRemoveSideWindow.bind(this);
+    this.messageMap[SIDEBARCOMMANDS.ADD_SIDEWINDOW] = this.handleAddSideWindow.bind(this);
+    this.messageMap[SIDEBARCOMMANDS.REMOVE_SIDEWINDOW] = this.handleRemoveSideWindow.bind(this);
+    this.messageMap[SIDEBARCOMMANDS.TOGGLE_SIDEWINDOW] = this.handleToggleSideWindow.bind(this);
+    this.messageMap[SIDEBARCOMMANDS.IS_SIDEWINDOW_OPEN] = this.handleIsSideWindowOpen.bind(this);
+    //this.messageMap[PROJECTMESSAGES.PROJECT_CLOSED] = this.handleProjectClosed.bind(this);
+    this.messageMap[PROJECTMESSAGES.PROJECT_LOADED] = this.handleProjectLoaded.bind(this);
   }
 
   async init(options) {
     if (await super.init(options))
       return;
-    
+    this.otherSide = this.root.rightBar;
+
     // Add global event listeners for mouse move and mouse up
     document.addEventListener('mousemove', this.handleMouseMove.bind(this));
     document.addEventListener('mouseup', this.handleMouseUp.bind(this));
@@ -295,6 +321,33 @@ class SideBar extends BaseComponent {
     }
   }
 
+  async handleToggleSideWindow(data, sender) {
+    var window = this.getWindow( data );
+    if (!window)
+    {
+      if (await this.otherSide.handleIsSideWindowOpen(data))
+      {
+        var otherWindow = this.otherSide.getWindow( data );
+        if ( otherWindow.isUnique )
+        {
+          var info = await otherWindow.handleGetInformationForRestore(data, sender);
+          this.root.sideBarRestoreInfo[ data.token ] = info;
+          await this.otherSide.handleRemoveSideWindow( data );
+          setTimeout(async () => {
+            var newWindow = await this.handleAddSideWindow( data );
+            await newWindow.handleRestoreFromInformation(info, sender);
+          }, 500);
+          return;
+        }
+      }
+      var window = await this.handleAddSideWindow(data, sender);
+      await window.handleRestoreFromInformation(this.root.sideBarRestoreInfo[ data.token ], sender);
+      return;
+    }
+    this.restoreInfo[ data.token ] = await window.handleGetInformationForRestore(data, sender);
+    await this.handleRemoveSideWindow( data );
+  }
+
   /**
    * Handle add side window message
    * @param {Object} data - Message data
@@ -302,11 +355,15 @@ class SideBar extends BaseComponent {
    * @returns {boolean} - Whether the message was handled
    */
   async handleAddSideWindow(data, sender) {
-    if (data.type) {
+    var type = data.type;
+    if (data.token && this.tokenToClassname[data.token])
+      type = this.tokenToClassname[data.token];
+    if (type) 
+    {
       let window = null;
       try {
         // Dynamically import the SideWindow class based on the type
-        const module = await import(`./sidewindows/${data.type}.js`);
+        const module = await import(`./sidewindows/${type}.js`);
         const SideWindowClass = module.default;
         window = new SideWindowClass(this.componentId, null, data.height);
         await this.sendMessageTo(window.componentId, MESSAGES.INIT, this.options);
@@ -315,16 +372,19 @@ class SideBar extends BaseComponent {
           this.widthToSet=data.width;   
         // If we already had a render, performs a limited render
         if (this.parentContainer)
+        {
           this.addWindowToDisplay(window);
+          await window.render(this.parentContainer);
+        }
         if(typeof data.minimized !== 'undefined')
           await window.setMinimized(data.minimized);
-      return window;
+        return window;
       } catch (err) {
         console.warn(`Could not load SideWindow for type: ${data.type}`, err);
-        return {error:`Could not load SideWindow for type: ${data.type}`};
+        return null;
       }
     }
-    return {error:`No type specified`};
+    return null;
   }
 
   
@@ -372,8 +432,58 @@ class SideBar extends BaseComponent {
       return await this.removeSideWindowFromDisplay(data.id);
     else if (data.name)
       return await this.removeSideWindowFromDisplay(this.getWindowIdFromComponentName(data.name));
+    else if (data.token)
+      return await this.removeSideWindowFromDisplay(this.getWindowIdFromToken(data.token));
+
     return false;
   }
+  
+  getWindow( data ) {
+    var windowId;
+    if (data.id)
+      windowId = data.id;
+    else if (data.name)
+      windowId = this.getWindowIdFromComponentName(data.name);
+    else if (data.token)
+      windowId = this.getWindowIdFromToken(data.token);
+    if ( windowId )
+    {
+      var window = this.windows.find(w => w.componentId == windowId);
+      if (window)
+        return window;
+    }
+    return null;
+  }
+  
+  async getInformation() {
+    var info = {
+      visible: this.visible,
+    };
+    for ( var t in this.tokenToClassname)
+    {
+      var window = this.windows.find(w => w.token == t);
+      if (window)
+        info[t] = { visible: true, minimized: window.minimized }; 
+      else
+        info[t] = { visible: false, minimized: false }; 
+    }
+    return info;
+  }
+  
+  async handleIsSideWindowOpen(data, sender) {
+    if (data.id)
+      return this.windows.find(w => w.componentId == data.id) != null;
+    else if (data.name)
+      return this.getWindowIfFromComponentName(data.name) != null;
+    else if (data.token)
+      return this.getWindowIdFromToken(data.token) != null;
+    return false;
+  }
+
+  async handleProjectLoaded(data, sender) {
+    this.restoreInfo = {};  
+  }
+
   getWindowIdFromComponentName(componentName){
     for(var w=0;w<this.windows.length;w++){
       if (this.windows[w].componentName==componentName)
@@ -381,14 +491,12 @@ class SideBar extends BaseComponent {
     }
     return null;
   }
-  
-  /**
-   * Get a window by its ID
-   * @param {string} windowId - ID of the window to get
-   * @returns {SideWindow|null} - The window object or null if not found
-   */
-  getWindow(componentId) {
-    return this.windows.find(w => w.componentId === componentId) || null;
+  getWindowIdFromToken(token){
+    for(var w=0;w<this.windows.length;w++){
+      if (this.windows[w].token==token)
+        return this.windows[w].componentId;
+    }
+    return null;
   }
   
   /**

@@ -1,5 +1,5 @@
 // STOS Basic Icon Bar component - Inspired by the original STOS Basic from 1987
-import BaseIcons from '../../sidewindows/BaseIcons.js';
+import BaseIcons from '../../BaseIcons.js';
 
 export const STOSCOMMANDS = {
   F1: 'STOS_F1',

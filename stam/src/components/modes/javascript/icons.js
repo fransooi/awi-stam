@@ -16,7 +16,7 @@
 *
 * @short JavaScript Icon Bar component
 */
-import BaseIcons from '../../sidewindows/BaseIcons.js';
+import BaseIcons from '../../BaseIcons.js';
 
 class JavascriptIcons extends BaseIcons {
   constructor(parentId,containerId) {
