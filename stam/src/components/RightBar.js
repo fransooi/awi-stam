@@ -29,7 +29,7 @@ export const RIGHTBARCOMMANDS = {
     REMOVE_SIDEWINDOW: 'REMOVE_RIGHT_SIDEWINDOW',
     TOGGLE_SIDEWINDOW: 'TOGGLE_RIGHT_SIDEWINDOW',
     IS_SIDEWINDOW_OPEN: 'IS_RIGHT_SIDEWINDOW_OPEN',
-    SETVISIBLE: 'SETVISIBLE',
+    TOGGLE_VISIBLE: 'TOGGLE_RIGHT_VISIBLE',
   };
   
 class RightBar extends SideBar {
@@ -48,6 +48,7 @@ class RightBar extends SideBar {
         this.messageMap[RIGHTBARCOMMANDS.REMOVE_SIDEWINDOW] = this.handleRemoveSideWindow.bind(this);
         this.messageMap[RIGHTBARCOMMANDS.TOGGLE_SIDEWINDOW] = this.handleToggleSideWindow.bind(this);
         this.messageMap[RIGHTBARCOMMANDS.IS_SIDEWINDOW_OPEN] = this.handleIsSideWindowOpen.bind(this);
+        this.messageMap[RIGHTBARCOMMANDS.TOGGLE_VISIBLE] = this.handleToggleVisible.bind(this);
     }
     async init(options)
     {

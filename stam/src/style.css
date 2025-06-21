@@ -530,7 +530,6 @@ form {
   /* Remove native resize for custom handle */
   resize: none;
   overflow: auto;
-  min-width: 200px;
   max-width: 50%;
 }
 
@@ -629,7 +628,6 @@ form {
   border-right: 1px solid var(--border-color);
   resize: horizontal;
   overflow: auto;
-  min-width: 200px;
   max-width: 50%;
 }
 

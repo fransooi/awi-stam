@@ -220,7 +220,7 @@ class MenuBar extends BaseComponent {
           { name: this.root.messages.getMessage('stam:menu-view-awi-window'), command: SIDEBARCOMMANDS.TOGGLE_SIDEWINDOW, disabled: false, data: { token: 'awi' } },
           { name: this.root.messages.getMessage('stam:menu-view-tv-window'), command: SIDEBARCOMMANDS.TOGGLE_SIDEWINDOW, disabled: false, data: { token: 'tv' } },
           '-',
-          { name: this.root.messages.getMessage('stam:menu-view-sidebar'), command: SIDEBARCOMMANDS.SETVISIBLE, disabled: false, data: { visible: true } },
+          { name: this.root.messages.getMessage('stam:menu-view-sidebar'), command: SIDEBARCOMMANDS.TOGGLE_VISIBLE, disabled: false, data: { visible: true } },
         ] },
         { name: this.root.messages.getMessage('stam:menuright-sidebar'), items: [
           { name: this.root.messages.getMessage('stam:menu-view-project-window'), command: RIGHTBARCOMMANDS.TOGGLE_SIDEWINDOW, disabled: false, data: { token: 'project' } },
@@ -228,7 +228,7 @@ class MenuBar extends BaseComponent {
           { name: this.root.messages.getMessage('stam:menu-view-awi-window'), command: RIGHTBARCOMMANDS.TOGGLE_SIDEWINDOW, disabled: false, data: { token: 'awi' } },
           { name: this.root.messages.getMessage('stam:menu-view-tv-window'), command: RIGHTBARCOMMANDS.TOGGLE_SIDEWINDOW, disabled: false, data: { token: 'tv' } },
           '-',
-          { name: this.root.messages.getMessage('stam:menu-view-rightbar'), command: SIDEBARCOMMANDS.SETVISIBLE, disabled: false, data: { visible: true } },
+          { name: this.root.messages.getMessage('stam:menu-view-rightbar'), command: RIGHTBARCOMMANDS.TOGGLE_VISIBLE, disabled: false, data: { visible: true } },
         ] },
         { name: this.root.messages.getMessage('stam:menu-menubar'), command: MENUCOMMANDS.TOGGLE_VISIBLE, disabled: false },
         { name: this.root.messages.getMessage('stam:menu-statusbar'), command: STATUSBARCOMMANDS.TOGGLE_VISIBLE, disabled: false, data: { visible: true } },
@@ -324,6 +324,12 @@ class MenuBar extends BaseComponent {
     var menubarInfo = await this.root.menuBar.getInformation();
     this.setItemProperty( MENUCOMMANDS.TOGGLE_VISIBLE, '', 'checked', menubarInfo.visible );
 
+    var leftBarInfo = await this.root.sideBar.getInformation();
+    this.setItemProperty( SIDEBARCOMMANDS.TOGGLE_VISIBLE, '', 'checked', leftBarInfo.visible );
+
+    var rightBarInfo = await this.root.rightBar.getInformation();
+    this.setItemProperty( RIGHTBARCOMMANDS.TOGGLE_VISIBLE, '', 'checked', rightBarInfo.visible );
+    
     var projectInfo, classroomInfo, editorInfo;
     if (socketInfo.loggedIn)
     {
@@ -363,6 +369,8 @@ class MenuBar extends BaseComponent {
     this.root.editorInfo = editorInfo;
     this.root.statusBarInfo = statusBarInfo;
     this.root.menubarInfo = menubarInfo;
+    this.root.leftBarInfo = leftBarInfo;
+    this.root.rightBarInfo = rightBarInfo;
   }
   
   async destroy() {

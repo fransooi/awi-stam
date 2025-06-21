@@ -25,11 +25,11 @@ import { PROJECTMESSAGES } from './ProjectManager.js';
 
 // Define message types for preference handling
 export const SIDEBARCOMMANDS = {
-  ADD_SIDEWINDOW: 'ADD_SIDEWINDOW',
-  REMOVE_SIDEWINDOW: 'REMOVE_SIDEWINDOW',
-  TOGGLE_SIDEWINDOW: 'TOGGLE_SIDEWINDOW',
-  IS_SIDEWINDOW_OPEN: 'IS_SIDEWINDOW_OPEN',
-  SETVISIBLE: 'SETVISIBLE',
+  ADD_SIDEWINDOW: 'ADD_LEFT_SIDEWINDOW',
+  REMOVE_SIDEWINDOW: 'REMOVE_LEFT_SIDEWINDOW',
+  TOGGLE_SIDEWINDOW: 'TOGGLE_LEFT_SIDEWINDOW',
+  IS_SIDEWINDOW_OPEN: 'IS_LEFT_SIDEWINDOW_OPEN',
+  TOGGLE_VISIBLE: 'TOGGLE_LEFT_VISIBLE',
 };
 
 class SideBar extends BaseComponent {
@@ -56,6 +56,7 @@ class SideBar extends BaseComponent {
     this.messageMap[SIDEBARCOMMANDS.REMOVE_SIDEWINDOW] = this.handleRemoveSideWindow.bind(this);
     this.messageMap[SIDEBARCOMMANDS.TOGGLE_SIDEWINDOW] = this.handleToggleSideWindow.bind(this);
     this.messageMap[SIDEBARCOMMANDS.IS_SIDEWINDOW_OPEN] = this.handleIsSideWindowOpen.bind(this);
+    this.messageMap[SIDEBARCOMMANDS.TOGGLE_VISIBLE] = this.handleToggleVisible.bind(this);
     //this.messageMap[PROJECTMESSAGES.PROJECT_CLOSED] = this.handleProjectClosed.bind(this);
     this.messageMap[PROJECTMESSAGES.PROJECT_LOADED] = this.handleProjectLoaded.bind(this);
   }
@@ -156,12 +157,6 @@ class SideBar extends BaseComponent {
     // Patch the SideWindow.getWindowObjectFromElement method to use our registry
     this.patchSideWindowGetWindowObjectMethod();
 
-    // Set width?
-    if (this.widthToSet) {
-      this.parentContainer.style.width = `${this.widthToSet}px`;
-      this.widthToSet=0;
-    }
-    
     // Container for children
     return this.windowsContainer;
   }
@@ -318,6 +313,25 @@ class SideBar extends BaseComponent {
         const { type, height } = layout.windows[i];
         await this.handleAddSideWindow({ type, height }, this.componentId);
       }
+    }
+  }
+
+  async handleToggleVisible(data, sender) {
+    this.visible = !this.visible;
+    this.updateVisibility();
+    return this.visible;
+  }
+  updateVisibility() {
+    if (this.visible && this.previousWidth) {
+      this.parentContainer.style.width = `${this.previousWidth}px`;
+    } else {
+      this.previousWidth = this.parentContainer.offsetWidth;
+      this.parentContainer.style.width = '0px';
+    }
+  }
+  getInformation(){
+    return {
+      visible: this.visible,
     }
   }
 
